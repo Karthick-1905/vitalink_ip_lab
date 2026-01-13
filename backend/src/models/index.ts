@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
+import { UserType } from "@src/validators";
+
 
 
 // ==========================================
@@ -49,16 +51,23 @@ const HealthLogSchema = new Schema({
 
 // --- ADMIN ---
 const AdminSchema = new Schema({
-  username: { type: String, required: true, unique: true },
+  admin_id: { type: String, required: true, unique: true },
+
   password_hash: { type: String, required: true },
-  role: { type: String, default: 'superadmin' },
+  user_type: { type: String, default: UserType[UserType.ADMIN] },
+  permission: { type : String , 
+    enum : ['FULL_ACCESS', 'READ_ONLY', 'LIMITED_ACCESS'] ,
+    default: 'FULL_ACCESS'
+  },
   created_at: { type: Date, default: Date.now }
 });
 
 // --- DOCTOR ---
 const DoctorSchema = new Schema({
   doctor_id: { type: String, required: true, unique: true },
-  full_name: { type: String, required: true },
+  name: { type: String, required: true },
+  user_type: { type: String, default: UserType[UserType.DOCTOR] },
+
   department: { type: String, default: 'Cardiology' },
   contact_number: { type: String },
   password_hash: { type: String, required: true },
@@ -68,14 +77,12 @@ const DoctorSchema = new Schema({
 
 // --- PATIENT ---
 const PatientSchema = new Schema({
-  patient_id: { type: String, required: true, unique: true }, // e.g., "PAT-200"
+  patient_id: { type: String, required: true, unique: true }, // OP Number
   assigned_doctor_id: { type: String, required: true, index: true }, // Foreign Key
-  
+  user_type: { type: String, default: UserType[UserType.PATIENT] },
+
   // Auth & Profile
-  auth: {
-    username: { type: String, required: true }, // OP Number
-    password_hash: { type: String, required: true }
-  },
+  password_hash: { type: String, required: true },
   demographics: {
     name: { type: String, required: true },
     age: { type: Number },
