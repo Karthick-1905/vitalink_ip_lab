@@ -8,3 +8,5 @@ export interface JWTPayload {
   user_id: string;
   user_type: UserType;
 }
+
+export { registerSchema, loginSchema } from './user.validator'

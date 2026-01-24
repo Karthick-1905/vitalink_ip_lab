@@ -31,7 +31,7 @@ const PatientProfileSchema = new mongoose.Schema({
       max: { type: Number, default: 3.0 }
     }
   },
-  weekly_dosage: { type: DosageScheduleSchema, default: () => ({}) },
+  weekly_dosage: DosageScheduleSchema,
   inr_history: [InrLogSchema],
   health_logs: [HealthLogSchema],
   account_status: { 

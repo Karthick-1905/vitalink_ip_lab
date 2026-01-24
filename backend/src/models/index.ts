@@ -1,5 +1,6 @@
 import { Schema } from "mongoose";
 
+// Define sub-schemas first (before importing models that use them)
 export const DosageScheduleSchema = new Schema({
   monday: { type: Number, default: 0 },
   tuesday: { type: Number, default: 0 },
@@ -34,4 +35,17 @@ export const HealthLogSchema = new Schema({
   },
   is_resolved: { type: Boolean, default: false }
 });
+
+// Now import models
+import User from './user.model'
+import DoctorProfile from './doctorprofile.model'
+import PatientProfile from './patientprofile.model'
+import AdminProfile from './adminprofile.schema'
+
+export { User, DoctorProfile, PatientProfile, AdminProfile }
+
+// Aliases for backward compatibility
+export const Admin = AdminProfile
+export const Doctor = DoctorProfile
+export const Patient = PatientProfile
 
