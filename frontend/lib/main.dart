@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
       // themeMode: ThemeMode.system,
       initialRoute: AppRouter.initialRoute,
       routes: AppRouter.routes,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
