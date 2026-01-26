@@ -73,10 +73,22 @@ class _LoginPageState extends State<LoginPage> {
                       // Logos row above the form
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset('assets/images/psg_logo_2.jpg.jpeg'),
-                          SizedBox(width: 16),
-                          Image.asset('assets/images/psg_ims.png'),
+                        children: const [
+                          SizedBox(
+                            height: 60,
+                            child: Image(
+                              image: AssetImage('assets/images/psg_logo_2.jpg.jpeg'),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          SizedBox(
+                            height: 60,
+                            child: Image(
+                              image: AssetImage('assets/images/psg_ims.png'),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 24),

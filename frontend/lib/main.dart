@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/app/theme.dart';
-import 'package:frontend/features/login/login_page.dart';
+
 
 void main() {
-  runApp(const LoginPage());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -16,8 +16,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Frontend',
       theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      // darkTheme: AppTheme.dark,
+      // themeMode: ThemeMode.system,
       initialRoute: AppRouter.initialRoute,
       routes: AppRouter.routes,
     );

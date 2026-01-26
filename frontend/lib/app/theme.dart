@@ -25,7 +25,7 @@ class AppTheme {
 		colorScheme: ColorScheme.fromSeed(
 			seedColor: AppColors.primary,
 			brightness: Brightness.light,
-			background: AppColors.backgroundLight,
+			surface: AppColors.backgroundLight,
 		).copyWith(
 			primary: AppColors.primary,
 			secondary: AppColors.secondary,
@@ -47,7 +47,7 @@ class AppTheme {
 		colorScheme: ColorScheme.fromSeed(
 			seedColor: AppColors.primary,
 			brightness: Brightness.dark,
-			background: AppColors.backgroundDark,
+			surface: AppColors.backgroundDark,
 		).copyWith(
 			primary: AppColors.primary,
 			secondary: AppColors.secondary,
