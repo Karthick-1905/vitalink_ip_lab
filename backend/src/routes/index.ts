@@ -1,12 +1,14 @@
 import { Router } from "express";
-import user_router from "./user.routes";
 import doctor_router from "./doctor.routes";
 import auth_router from "./auth.routes";
-
+import patient_router from "./patient.routes";
+import admin_router from "./admin.routes";
 
 const router = Router();
-router.use("/users", user_router);
+
+router.use("/admin", admin_router);
 router.use("/doctors", doctor_router)
 router.use("/auth", auth_router);
+router.use("/patient", patient_router)
 
 export default router;

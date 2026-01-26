@@ -29,7 +29,8 @@ const PatientProfileSchema = new mongoose.Schema({
       max: { type: Number, default: 3.0 }
     },
     next_review_date: { type: Date },
-    instructions: { type: [String] }
+    instructions: { type: [String] },
+    taken_doses: {type : [Date]}
   },
   medical_history: [{ 
     diagnosis: { type: String },
