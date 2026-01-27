@@ -26,12 +26,12 @@ class PatientBottomNavBar extends StatelessWidget {
           label: 'Home',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_today),
-          label: 'Appointments',
+          icon: Icon(Icons.bloodtype),
+          label: 'Update INR',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.description),
-          label: 'Records',
+          icon: Icon(Icons.medication),
+          label: 'Take Dosage',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person),

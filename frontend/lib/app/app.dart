@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/app/routers.dart';
-import 'package:frontend/app/theme.dart';
+import 'package:frontend/core/di/theme.dart';
 
 class VitalinkApp extends StatelessWidget {
 	const VitalinkApp({super.key, required this.queryClient});

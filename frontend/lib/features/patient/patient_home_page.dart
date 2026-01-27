@@ -24,22 +24,13 @@ class _PatientHomePageState extends State<PatientHomePage> {
             // Home - already here
             break;
           case 1:
-            // Appointments
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigating to Appointments')),
-            );
+            Navigator.of(context).pushReplacementNamed('/patient-update-inr');
             break;
           case 2:
-            // Records
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigating to Records')),
-            );
+            Navigator.of(context).pushReplacementNamed('/patient-take-dosage');
             break;
           case 3:
-            // Profile
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigating to Profile')),
-            );
+            Navigator.of(context).pushReplacementNamed('/patient-profile');
             break;
         }
       },
