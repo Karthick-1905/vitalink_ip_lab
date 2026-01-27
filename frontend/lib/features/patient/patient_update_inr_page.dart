@@ -15,7 +15,6 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
   late TextEditingController _testDateController;
   late TextEditingController _notesController;
 
-  String? _selectedFile;
   String? _fileName;
   bool _isCritical = false;
 
@@ -308,7 +307,6 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                       GestureDetector(
                         onTap: () => setState(() {
                           _fileName = null;
-                          _selectedFile = null;
                         }),
                         child: Icon(Icons.close, color: Colors.grey[600]),
                       ),
@@ -455,7 +453,6 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
   void _simulateFileUpload(String fileName) {
     setState(() {
       _fileName = fileName;
-      _selectedFile = 'file_path_$fileName';
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
