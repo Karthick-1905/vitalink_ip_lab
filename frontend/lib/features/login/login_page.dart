@@ -40,15 +40,11 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _handleSuccess(LoginResponse response) {
-    final route = response.user.isDoctor
-        ? AppRoutes.doctorDashboard
-        : AppRoutes.patient;
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Login successful')),
     );
 
-    Navigator.of(context).pushNamedAndRemoveUntil(route, (previous) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.onboarding, (previous) => false);
   }
 
   void _handleError(Object error) {

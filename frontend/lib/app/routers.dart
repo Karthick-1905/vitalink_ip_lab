@@ -8,9 +8,11 @@ import 'package:frontend/features/patient/patient_take_dosage_page.dart';
 import 'package:frontend/features/patient/patient_health_reports_page.dart';
 import 'package:frontend/features/doctor/doctor_dashboard_page.dart';
 import 'package:frontend/features/doctor/add_patient_page.dart';
+import 'package:frontend/features/onboarding/onboarding_page.dart';
 
 class AppRoutes {
 	static const String login = '/login';
+	static const String onboarding = '/onboarding';
 	static const String patient = '/patient';
 	static const String patientRecords = '/patient-records';
 	static const String patientProfile = '/patient-profile';
@@ -28,6 +30,7 @@ class AppRouter {
 		'/': (_) => const LoginPage(),
 		'/patient-home': (_) => const PatientPage(),
 		AppRoutes.login: (_) => const LoginPage(),
+		AppRoutes.onboarding: (_) => const OnboardingPage(),
 		AppRoutes.patient: (_) => const PatientPage(),
 		AppRoutes.patientUpdateINR: (_) => const PatientUpdateINRPage(),
 		AppRoutes.patientTakeDosage: (_) => const PatientTakeDosagePage(),
