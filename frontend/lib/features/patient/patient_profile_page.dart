@@ -77,152 +77,131 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
         final latestINR = data['latest'] as double;
 
         return PatientScaffold(
-          pageTitle: '@ Profile Page',
+          pageTitle: 'My Profile',
           currentNavIndex: _currentNavIndex,
           onNavChanged: (index) => _handleNav(index),
           bodyDecoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFC8B5E1), Color(0xFFF8C7D7)],
-            ),
+            color: Color(0xFFF9FAFB),
           ),
           body: RefreshIndicator(
             onRefresh: () async => query.refetch(),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 40),
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top Header Section
-                  _buildTopSummary(profile),
-                  const SizedBox(height: 17),
-
-                  // Latest INR Card
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Latest INR :  ${latestINR.toStringAsFixed(1)}',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'AS OF : ${DateFormat('MMMM d, yyyy  h:mm a').format(DateTime.now())}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Top Section (Avatar, Name, Info Cards, Details, Actions)
+                  PatientProfileContent(
+                    profile: profile,
+                    onProfileUpdated: () => query.refetch(),
                   ),
-                  const SizedBox(height: 17),
+                  const SizedBox(height: 24),
 
-                  // Information Table
-                  _buildInfoTable(profile),
-                  const SizedBox(height: 17),
-
-                  // Medical History Card
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Medical History',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
+                  // Latest INR Card (Large)
+                  _buildPremiumSection(
+                    title: 'Current Status',
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        const SizedBox(height: 16),
-                        if (profile['medicalHistory']?.isEmpty ?? true)
-                          const Text('No medical history available', style: TextStyle(color: Colors.black54))
-                        else
-                          ...(profile['medicalHistory'] as List).map((h) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.circle, size: 6, color: Colors.black54),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        '${h['diagnosis']} for ${h['duration_value']} ${h['duration_unit']}',
-                                        style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
-                                      ),
-                                    ),
-                                  ],
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'LATEST INR READING',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white70,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                latestINR.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
                                 ),
-                              )),
-                      ],
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'INR',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.access_time, size: 14, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(
+                                  DateFormat('MMM d, yyyy • h:mm a').format(DateTime.now()),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 17),
+                  const SizedBox(height: 24),
 
                   // INR Trend Graph
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4, bottom: 12),
-                    child: Text(
-                      'INR Trend',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
+                  _buildPremiumSection(
+                    title: 'INR Trend History',
+                    child: _buildINRChart(history),
                   ),
-                  _buildINRChart(history),
-                  const SizedBox(height: 17),
+                  const SizedBox(height: 24),
 
-                  // Prescription Section
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4, bottom: 12),
-                    child: Text(
-                      'Prescription',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
+                  // Medical History
+                  _buildPremiumSection(
+                    title: 'Medical History',
+                    child: _buildMedicalHistoryList(profile),
                   ),
-                  _buildPrescriptionTable(profile),
-                  const SizedBox(height: 17),
+                  const SizedBox(height: 24),
 
-                  // Health Logs / Summary Card
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: _buildHealthLogs(profile),
+                  // Weekly Prescription
+                  _buildPremiumSection(
+                    title: 'Weekly Dosage Schedule',
+                    child: _buildPrescriptionTable(profile),
                   ),
-                  const SizedBox(height: 17),
-
-                  // Final Contact Table
-                  _buildContactTable(profile),
-                  const SizedBox(height: 17),
                 ],
               ),
             ),
@@ -237,7 +216,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;
     switch (index) {
-      case 0: Navigator.of(context).pushReplacementNamed(AppRoutes.patientHome); break;
+      case 0: Navigator.of(context).pushReplacementNamed(AppRoutes.patient); break;
       case 1: Navigator.of(context).pushReplacementNamed(AppRoutes.patientUpdateINR); break;
       case 2: Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage); break;
       case 3: Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports); break;
@@ -245,105 +224,190 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     }
   }
 
-  Widget _buildTopSummary(Map<String, dynamic> profile) {
-    final instructions = profile['instructions'] as List? ?? [];
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile['name'] ?? 'Patient Name',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '(Age: ${profile['age']}, Gender: ${profile['gender']?[0]})',
-                      style: const TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () => _showUpdateProfileDialog(profile),
-                icon: const Icon(Icons.edit, color: Color(0xFF0084FF)),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.all(12),
-                ),
-              ),
-            ],
+  Widget _buildPremiumSection({required String title, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF9CA3AF),
+              letterSpacing: 1,
+            ),
           ),
-          const SizedBox(height: 16),
-          const Divider(color: Colors.black12, height: 1),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Target INR :', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black87)),
-              Text(profile['targetINR'] ?? '0 - 0', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.black87)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: Colors.black12, height: 1),
-          const SizedBox(height: 16),
-          _summaryRow('Next Review Date', profile['nextReviewDate'] ?? 'N/A'),
-          const SizedBox(height: 16),
-          const Divider(color: Colors.black12, height: 1),
-          const SizedBox(height: 20),
-          const Text('Instructions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
-          const SizedBox(height: 12),
-          if (instructions.isEmpty)
-            const Text('No instructions provided', style: TextStyle(color: Colors.black54, fontSize: 13))
-          else
-            ...instructions.map((i) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(i, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87))),
-                  const Text('18 Oct 2025, 18:08', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                ],
-              ),
-            )),
-        ],
-      ),
+        ),
+        child,
+      ],
     );
   }
 
-  Widget _buildInfoTable(Map<String, dynamic> profile) {
+  Widget _buildMedicalHistoryList(Map<String, dynamic> profile) {
+    final history = profile['medicalHistory'] as List? ?? [];
+    
     return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Table(
-          columnWidths: const {
-            0: FlexColumnWidth(1.2),
-            1: FlexColumnWidth(2),
-          },
-          border: TableBorder.symmetric(inside: const BorderSide(color: Colors.black12)),
-          children: [
-            _tableRow('Doctor', profile['doctorName'] ?? 'N/A'),
-            _tableRow('Caregiver', profile['caregiver'] ?? 'N/A'),
-            _tableRow('Therapy', profile['therapyDrug'] ?? 'N/A'),
-            _tableRow('Therapy Start Date', profile['therapyStartDate'] ?? 'N/A'),
-            _tableRow('Next Review Date', profile['nextReviewDate'] ?? 'N/A'),
+      child: history.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('No medical history found', style: TextStyle(color: Colors.black45)),
+              ),
+            )
+          : Column(
+              children: history.map((h) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.history, color: Color(0xFFEF4444), size: 16),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              h['diagnosis'] ?? 'Condition',
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87),
+                            ),
+                            Text(
+                              'Since ${h['duration_value']} ${h['duration_unit']}',
+                              style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
+
+  Widget _buildINRChart(List<Map<String, dynamic>> inrHistory) {
+    if (inrHistory.isEmpty) {
+      return Container(
+        height: 150,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: Text('Insufficient data for trend', style: TextStyle(color: Colors.black45))),
+      );
+    }
+
+    final spots = inrHistory.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value['inr'])).toList();
+
+    return Container(
+      height: 220,
+      padding: const EdgeInsets.fromLTRB(8, 24, 24, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: Colors.grey.withValues(alpha: 0.1),
+              strokeWidth: 1,
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                interval: 1,
+                getTitlesWidget: (val, meta) {
+                  if (val.toInt() >= 0 && val.toInt() < inrHistory.length) {
+                    final date = inrHistory[val.toInt()]['date'] as String;
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        date.split('-')[0], // Day
+                        style: const TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w600),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 35,
+                getTitlesWidget: (val, meta) => Text(
+                  val.toStringAsFixed(1),
+                  style: const TextStyle(fontSize: 10, color: Colors.black45),
+                ),
+              ),
+            ),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(show: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: const Color(0xFF6366F1),
+              barWidth: 4,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                  radius: 4,
+                  color: Colors.white,
+                  strokeWidth: 3,
+                  strokeColor: const Color(0xFF6366F1),
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF6366F1).withValues(alpha: 0.2),
+                    const Color(0xFF6366F1).withValues(alpha: 0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -356,377 +420,65 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Table(
           columnWidths: const {
-            0: FlexColumnWidth(1.2),
-            1: FlexColumnWidth(2),
+            0: FlexColumnWidth(1),
+            1: FlexColumnWidth(1),
           },
-          border: TableBorder.symmetric(inside: const BorderSide(color: Colors.black12)),
+          border: TableBorder.symmetric(inside: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
           children: [
-            const TableRow(
-              decoration: BoxDecoration(color: Color(0x0D000000)), // black with 0.05 opacity
+            TableRow(
+              decoration: const BoxDecoration(color: Color(0xFFF9FAFB)),
               children: [
-                Padding(padding: EdgeInsets.all(12), child: Text('Day', style: TextStyle(fontWeight: FontWeight.w800))),
-                Padding(padding: EdgeInsets.all(12), child: Text('Dose', style: TextStyle(fontWeight: FontWeight.w800))),
+                _tableHeader('DAY'),
+                _tableHeader('DOSE (MG)'),
               ],
             ),
-            ...days.map((d) => _tableRow(d.substring(0, 3).toUpperCase(), '${dosage[d] ?? 0}')),
+            ...days.map((d) => TableRow(
+                  children: [
+                    _tableCell(d.toUpperCase().substring(0, 3)),
+                    _tableCell('${dosage[d] ?? 0}', isBold: true),
+                  ],
+                )),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHealthLogs(Map<String, dynamic> profile) {
-    final logs = profile['healthLogs'] as List? ?? [];
-    String sideEffects = 'None';
-    String lifestyle = 'None';
-    String medication = 'None';
-    String illness = 'None';
-
-    for(var log in logs) {
-      if(log['type'] == 'SIDE_EFFECT') sideEffects = log['description'];
-      if(log['type'] == 'LIFESTYLE') lifestyle = log['description'];
-      if(log['type'] == 'OTHER_MEDS') medication = log['description'];
-      if(log['type'] == 'ILLNESS') illness = log['description'];
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _healthLogRow('SIDE EFFECTS', sideEffects),
-        _healthLogRow('LIFESTYLE CHANGES', lifestyle),
-        _healthLogRow('OTHER MEDICATION', medication),
-        _healthLogRow('PROLONGED ILLNESS', illness),
-      ],
-    );
-  }
-
-  Widget _healthLogRow(String label, String value) {
+  Widget _tableHeader(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       child: Text(
-        '$label: $value',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+        text,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.black45, letterSpacing: 0.5),
       ),
     );
   }
 
-  Widget _buildContactTable(Map<String, dynamic> profile) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Table(
-          columnWidths: const {
-            0: FlexColumnWidth(1.2),
-            1: FlexColumnWidth(2),
-          },
-          border: TableBorder.symmetric(inside: const BorderSide(color: Colors.black12)),
-          children: [
-            _tableRow('Contact', profile['phone'] ?? 'N/A'),
-            _tableRow('Kin Name', profile['kinName'] ?? 'N/A'),
-            _tableRow('Kin Contact', profile['kinPhone'] ?? 'N/A'),
-          ],
+  Widget _tableCell(String text, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+          color: isBold ? Colors.black87 : Colors.black54,
         ),
       ),
-    );
-  }
-
-  Widget _buildINRChart(List<Map<String, dynamic>> inrHistory) {
-    if (inrHistory.isEmpty) {
-      return Container(
-        height: 150,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(child: Text('Insufficient data for graph', style: TextStyle(color: Colors.black54))),
-      );
-    }
-
-    final spots = inrHistory.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value['inr'])).toList();
-
-    return Container(
-      height: 200,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-      ),
-      child: LineChart(
-        LineChartData(
-          gridData: const FlGridData(show: false),
-          titlesData: FlTitlesData(
-            show: true,
-            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 22, getTitlesWidget: (val, meta) {
-              if (val.toInt() >= 0 && val.toInt() < inrHistory.length) {
-                return Text(inrHistory[val.toInt()]['date'].split('-')[0], style: const TextStyle(fontSize: 10));
-              }
-              return const SizedBox();
-            })),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: const Color(0xFFC04848),
-              barWidth: 4,
-              dotData: const FlDotData(show: true),
-              belowBarData: BarAreaData(show: true, color: const Color(0xFFC04848).withValues(alpha: 0.1)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _summaryRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 16, color: Colors.black54, fontWeight: FontWeight.w500)),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
-      ],
-    );
-  }
-
-  TableRow _tableRow(String label, String value) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Text(value, style: const TextStyle(color: Colors.black87)),
-        ),
-      ],
-    );
-  }
-
-  void _showUpdateProfileDialog(Map<String, dynamic> profile) {
-    final nameController = TextEditingController(text: profile['name']);
-    final ageController = TextEditingController(text: profile['age']?.toString() ?? '');
-    final phoneController = TextEditingController(text: profile['phone'] ?? '');
-    final caregiverController = TextEditingController(text: profile['caregiver'] ?? '');
-    final kinNameController = TextEditingController(text: profile['kinName'] ?? '');
-    final kinPhoneController = TextEditingController(text: profile['kinPhone'] ?? '');
-    final therapyDrugController = TextEditingController(text: profile['therapyDrug'] ?? '');
-    final therapyStartDateController = TextEditingController(text: profile['therapyStartDate'] ?? '');
-    
-    String? selectedGender = profile['gender'];
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => UseMutation<void, Map<String, dynamic>>(
-        options: MutationOptions<void, Map<String, dynamic>>(
-          mutationFn: (variables) => PatientService.updateProfile(
-            demographics: variables['demographics'],
-            medicalConfig: variables['medical_config'],
-          ),
-          onSuccess: (data, variables) {
-            Navigator.pop(dialogContext);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Profile updated successfully!'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            // Invalidate multiple queries to refetch updated data
-            final queryClient = QueryClientProvider.of(context);
-            queryClient.invalidateQueries(['patient', 'profile_full']);
-            queryClient.invalidateQueries(['patient', 'records_full']);
-            queryClient.invalidateQueries(['patient', 'home_data']);
-          },
-          onError: (error, variables) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${error.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          },
-        ),
-        builder: (context, mutation) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              'Update Profile',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTextField('Name', nameController),
-                  const SizedBox(height: 16),
-                  _buildTextField('Age', ageController, keyboardType: TextInputType.number),
-                  const SizedBox(height: 16),
-                  _buildTextField('Phone', phoneController, keyboardType: TextInputType.phone),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Gender',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  StatefulBuilder(
-                    builder: (context, setState) => DropdownButtonFormField<String>(
-                      value: selectedGender,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Male', child: Text('Male')),
-                        DropdownMenuItem(value: 'Female', child: Text('Female')),
-                        DropdownMenuItem(value: 'Other', child: Text('Other')),
-                      ],
-                      onChanged: (value) {
-                        setState(() => selectedGender = value);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTextField('Caregiver', caregiverController),
-                  const SizedBox(height: 16),
-                  _buildTextField('Kin Name', kinNameController),
-                  const SizedBox(height: 16),
-                  _buildTextField('Kin Phone', kinPhoneController, keyboardType: TextInputType.phone),
-                  const SizedBox(height: 16),
-                  _buildTextField('Therapy Drug', therapyDrugController),
-                  const SizedBox(height: 16),
-                  _buildTextField('Therapy Start Date (DD-MM-YYYY)', therapyStartDateController),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: mutation.isLoading
-                    ? null
-                    : () {
-                        final demographics = <String, dynamic>{};
-                        final medicalConfig = <String, dynamic>{};
-
-                        if (nameController.text.isNotEmpty) {
-                          demographics['name'] = nameController.text;
-                        }
-                        if (ageController.text.isNotEmpty) {
-                          demographics['age'] = int.tryParse(ageController.text) ?? 0;
-                        }
-                        if (selectedGender != null) {
-                          demographics['gender'] = selectedGender;
-                        }
-                        if (phoneController.text.isNotEmpty) {
-                          demographics['phone'] = phoneController.text;
-                        }
-                        if (caregiverController.text.isNotEmpty) {
-                          demographics['caregiver'] = caregiverController.text;
-                        }
-                        if (kinNameController.text.isNotEmpty) {
-                          demographics['kin_name'] = kinNameController.text;
-                        }
-                        if (kinPhoneController.text.isNotEmpty) {
-                          demographics['kin_phone'] = kinPhoneController.text;
-                        }
-                        if (therapyDrugController.text.isNotEmpty) {
-                          medicalConfig['therapy_drug'] = therapyDrugController.text;
-                        }
-                        if (therapyStartDateController.text.isNotEmpty) {
-                          medicalConfig['therapy_start_date'] = therapyStartDateController.text;
-                        }
-
-                        mutation.mutate({
-                          'demographics': demographics,
-                          'medical_config': medicalConfig,
-                        });
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0084FF),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: mutation.isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Update'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller, {
-    TextInputType? keyboardType,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          ),
-        ),
-      ],
     );
   }
 

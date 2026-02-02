@@ -128,7 +128,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
     if (index == _currentNavIndex) return;
     switch (index) {
       case 0:
-        Navigator.of(context).pushReplacementNamed(AppRoutes.patientHome);
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patient);
         break;
       case 1:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientUpdateINR);

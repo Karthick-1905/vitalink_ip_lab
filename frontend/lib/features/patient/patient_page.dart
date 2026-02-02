@@ -1,153 +1,610 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:frontend/core/widgets/index.dart';
+import 'package:frontend/services/patient_service.dart';
+import 'package:frontend/app/routers.dart';
+import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
+import 'package:intl/intl.dart';
 
-class PatientPage extends StatelessWidget {
+class PatientPage extends StatefulWidget {
   const PatientPage({super.key});
 
   @override
+  State<PatientPage> createState() => _PatientPageState();
+}
+
+class _PatientPageState extends State<PatientPage> {
+  final int _currentNavIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      pageTitle: '@ View Patient Page',
-      navbarBackgroundColor:Colors.white,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header with title and table view button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Viewing 2 Patients',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black87,
-                    elevation: 2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+    return UseQuery<Map<String, dynamic>>(
+      options: QueryOptions<Map<String, dynamic>>(
+        queryKey: const ['patient', 'home_data'],
+        queryFn: () async {
+          final profile = await PatientService.getProfile();
+          final history = await PatientService.getINRHistory();
+          final prescriptions = await PatientService.getPrescriptions();
+          final latestINR = await PatientService.getLatestINR();
+          final missedDoses = await PatientService.getMissedDoses();
+
+          return {
+            'profile': profile,
+            'history': history,
+            'prescriptions': prescriptions,
+            'latestINR': latestINR,
+            'missedDoses': missedDoses,
+          };
+        },
+      ),
+      builder: (context, query) {
+        if (query.isLoading) {
+          return PatientScaffold(
+            pageTitle: 'Dashboard',
+            currentNavIndex: _currentNavIndex,
+            onNavChanged: _handleNav,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (query.isError) {
+          return PatientScaffold(
+            pageTitle: 'Dashboard',
+            currentNavIndex: _currentNavIndex,
+            onNavChanged: _handleNav,
+            body: Center(child: Text('Error: ${query.error}')),
+          );
+        }
+
+        final data = query.data!;
+        final profile = data['profile'] as Map<String, dynamic>;
+        final missedDoses = data['missedDoses'] as Map<String, dynamic>;
+        final latestINR = data['latestINR'] as double;
+        final history = data['history'] as List;
+
+        return PatientScaffold(
+          pageTitle: 'Dashboard',
+          currentNavIndex: _currentNavIndex,
+          onNavChanged: _handleNav,
+          bodyDecoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFC0C9FA), Color(0xFFFDC5DF)],
+            ),
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async => query.refetch(),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // 1. Unified Profile Info Card
+                  _buildSectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (profile['name'] ?? 'Guest Patient').toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2D3748),
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '(Age: ${profile['age']}, Gender: ${profile['gender']})',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        ),
+                        _buildRowItem(
+                          label: 'Target INR',
+                          value: profile['targetINR'] ?? '2.0 - 3.0',
+                          valueStyle: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1A365D),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        ),
+                        _buildRowItem(
+                          label: 'Next Review Date',
+                          value: profile['nextReviewDate'] ?? 'N/A',
+                          valueStyle: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'LATEST INR',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF718096),
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  latestINR.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF6366F1),
+                                  ),
+                                ),
+                                Text(
+                                  DateFormat('MMM dd').format(DateTime.now()),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  child: const Text('Table View'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                  const SizedBox(height: 17),
 
-            // Search bar
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Search by Name or OP #...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 16,
+                  // 2. Instructions (Kept Separate as per request)
+                  if (profile['instructions'] is List && (profile['instructions'] as List).isNotEmpty)
+                    ...List.generate(
+                      (profile['instructions'] as List).length,
+                      (index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 17),
+                          child: _buildSectionCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'Instruction',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    Text(
+                                      profile['therapyStartDate'] ?? '',
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  profile['instructions'][index]?.toString() ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF2D3748),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 17),
+                      child: _buildSectionCard(
+                        child: const Text(
+                          'No special instructions recorded.',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey),
+                        ),
+                      ),
+                    ),
+
+                  // 3. Therapy Details Card
+                  _buildSectionCard(
+                    child: _buildSummaryTable([
+                      {'label': 'Assigned Doctor', 'value': profile['doctorName'] ?? 'Dr. Rajesh Kumar'},
+                      {'label': 'Relief Doctor', 'value': 'N/A'},
+                      {'label': 'Primary Caregiver', 'value': profile['caregiver'] ?? 'N/A'},
+                      {'label': 'Assigned Therapy', 'value': profile['therapyDrug'] ?? 'Heparin'},
+                    ]),
+                  ),
+                  const SizedBox(height: 17),
+
+                  // 4. Medical History (Dynamic Chart) Card
+                  _buildSectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'INR History Trend',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildINRChart(history.cast<Map<String, dynamic>>()),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 17),
+
+                  // 8. Prescription Grid Card
+                  _buildSectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Current Prescription',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        _buildPrescriptionTable(profile['weeklyDosage'] ?? {}),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 17),
+
+                  // 9. Monitoring & Side Effects Card
+                  _buildSectionCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Monitoring Logs',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildHealthNote('Side Effects', profile['sideEffects'] ?? 'None Reported'),
+                        _buildHealthNote('Lifestyle', profile['lifestyleChanges'] ?? 'Stable'),
+                        _buildHealthNote('Other Meds', profile['otherMedication'] ?? 'None'),
+                        _buildHealthNote('Illness', profile['prolongedIllness'] ?? 'None'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 17),
+
+                  // 10. Emergency Contact Card
+                  _buildSectionCard(
+                    child: _buildSummaryTable([
+                      {'label': 'Patient Phone', 'value': profile['phone'] ?? '+917448757584'},
+                      {'label': 'Emergency Kin', 'value': profile['kinName'] ?? 'N/A'},
+                      {'label': 'Kin Contact', 'value': profile['kinPhone'] ?? 'N/A'},
+                    ]),
+                  ),
+                  const SizedBox(height: 17),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.96),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(22),
+      child: child,
+    );
+  }
+
+  Widget _buildINRChart(List<Map<String, dynamic>> history) {
+    if (history.isEmpty) {
+      return Container(
+        height: 160,
+        alignment: Alignment.center,
+        child: const Text('Historical data pending...', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+      );
+    }
+
+    final spots = history.asMap().entries.map((e) {
+      return FlSpot(e.key.toDouble(), (e.value['inr'] as num).toDouble());
+    }).toList();
+
+    return SizedBox(
+      height: 220,
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            getDrawingHorizontalLine: (value) => FlLine(color: const Color(0xFFEDF2F7), strokeWidth: 1),
+            drawVerticalLine: false,
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 32,
+                getTitlesWidget: (val, meta) {
+                  if (val.toInt() >= 0 && val.toInt() < history.length) {
+                    final date = history[val.toInt()]['date'] as String;
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        date.split('-')[0],
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w900),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                getTitlesWidget: (val, meta) => Text(
+                  val.toStringAsFixed(1),
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w900),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Patient cards
-            _PatientCard(
-              name: 'Surya Narayanaa',
-              opNumber: 'OP #:',
-              age: 20,
-              gender: 'M',
-            ),
-            const SizedBox(height: 16),
-            _PatientCard(
-              name: 'Chandralekha',
-              opNumber: 'OP #:',
-              age: 53,
-              gender: 'F',
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(show: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: const Color(0xFF6366F1),
+              barWidth: 5,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                  radius: 6,
+                  color: Colors.white,
+                  strokeWidth: 4,
+                  strokeColor: const Color(0xFF6366F1),
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [const Color(0xFF6366F1).withOpacity(0.3), const Color(0xFF6366F1).withOpacity(0.0)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class _PatientCard extends StatelessWidget {
-  final String name;
-  final String opNumber;
-  final int age;
-  final String gender;
+  Widget _buildRowItem({required String label, required String value, TextStyle? valueStyle}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF718096),
+            letterSpacing: 1.0,
+          ),
+        ),
+        Text(
+          value,
+          style: valueStyle ?? const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF2D3748)),
+        ),
+      ],
+    );
+  }
 
-  const _PatientCard({
-    required this.name,
-    required this.opNumber,
-    required this.age,
-    required this.gender,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildSummaryTable(List<Map<String, String>> items) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+      child: Column(
+        children: items.map((item) {
+          final isLast = item == items.last;
+          return Container(
+            decoration: BoxDecoration(
+              border: Border(bottom: isLast ? BorderSide.none : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
             ),
-            const SizedBox(height: 8),
-            Text(
-              opNumber,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            Text(
-              'Age: $age, Gender: $gender',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'Show Options',
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF8FAFC),
+                      border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+                    ),
+                    child: Text(
+                      item['label']!.toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF64748B), letterSpacing: 0.8),
+                    ),
                   ),
                 ),
-              ),
+                Expanded(
+                  flex: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    child: Text(
+                      item['value']!,
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B)),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        }).toList(),
       ),
     );
+  }
+
+  Widget _buildPrescriptionTable(Map<String, dynamic> dosage) {
+    final days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1.5))),
+                    child: const Text('DAY', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF475569))),
+                  ),
+                ),
+                Expanded(
+                  flex: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: const Text('DOSE (MG)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF475569))),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ...days.map((day) {
+            final isLast = day == 'SUN';
+            final doseList = dosage[day.toLowerCase()];
+            final dose = (doseList is List && doseList.isNotEmpty) ? doseList[0]['dose'] : 0;
+            return Container(
+              decoration: BoxDecoration(
+                border: Border(bottom: isLast ? BorderSide.none : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1.5))),
+                      child: Text(day, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF1E293B))),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(dose.toString(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF4F46E5))),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthNote(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 5,
+            child: Text(
+              label.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF334155),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleNav(int index) {
+    if (index == _currentNavIndex) return;
+    switch (index) {
+      case 0: break;
+      case 1: Navigator.of(context).pushReplacementNamed(AppRoutes.patientUpdateINR); break;
+      case 2: Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage); break;
+      case 3: Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports); break;
+      case 4: Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile); break;
+    }
   }
 }

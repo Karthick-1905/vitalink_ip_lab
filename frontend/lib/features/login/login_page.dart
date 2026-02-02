@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
   void _handleSuccess(LoginResponse response) {
     final route = response.user.isDoctor
         ? AppRoutes.doctorDashboard
-        : AppRoutes.patientHome;
+        : AppRoutes.patient;
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Login successful')),
