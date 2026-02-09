@@ -12,7 +12,9 @@ import connectDB from "./config/db";
 
 const app = express();
 
+console.log("Backend: App initializing...");
 connectDB();
+console.log("Backend: Database connection initiated.");
 
 app.use(morgan('dev', {
   stream: {
@@ -35,6 +37,7 @@ app.use(cors({
 app.use(express.json());
 
 app.get("/health-check", (req, res) => {
+  console.log("Backend: Health check endpoint hit");
   return res.json(new ApiResponse(StatusCodes.OK, "Welcome to the API"))
 });
 
