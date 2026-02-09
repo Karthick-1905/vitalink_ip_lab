@@ -4,7 +4,7 @@
   "description": "A backend for the vitalink app in express and typescript",
   "main": "build/src/server.js",
   "_moduleAliases": {
-    "@alias": "build/src"
+    "@alias": "./build/src"
   },
   "scripts": {
     "dev": "nodemon --exec \"ts-node --require tsconfig-paths/register\" src/server.ts",
