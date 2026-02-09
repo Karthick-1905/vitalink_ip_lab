@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && npm install && npm run build",
-  "outputDirectory": "backend/build",
-  "installCommand": "cd backend && npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install",
   "framework": null,
   "rewrites": [
     {
