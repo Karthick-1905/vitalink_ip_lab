@@ -8,12 +8,12 @@ import { StatusCodes } from "http-status-codes";
 import morgan from "morgan";
 import logger from "./utils/logger";
 import cors from "cors";
-import connectDB from "./config/db";
+// import connectDB from "./config/db";
 
 const app = express();
 
 console.log("Backend: App initializing...");
-connectDB();
+// connectDB();
 console.log("Backend: Database connection initiated.");
 
 app.use(morgan('dev', {
