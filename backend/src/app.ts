@@ -8,8 +8,11 @@ import { StatusCodes } from "http-status-codes";
 import morgan from "morgan";
 import logger from "./utils/logger";
 import cors from "cors";
+import connectDB from "./config/db";
 
 const app = express();
+
+connectDB();
 
 app.use(morgan('dev', {
   stream: {
