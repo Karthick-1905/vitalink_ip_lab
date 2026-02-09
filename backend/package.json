@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon --exec \"ts-node --require tsconfig-paths/register\" src/server.ts",
     "build": "tsc && tsc-alias",
+    "vercel-build": "tsc && tsc-alias",
     "start": "node build/src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

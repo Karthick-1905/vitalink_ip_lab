@@ -31,7 +31,7 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/health-check", (req, res) => {
   return res.json(new ApiResponse(StatusCodes.OK, "Welcome to the API"))
 });
 
