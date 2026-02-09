@@ -3,7 +3,7 @@ class AppStrings {
 
 	/// Base URL for the backend API.
 	/// Note: Use http for local dev to avoid TLS/host issues in Flutter web.
-	static const String apiBaseUrl = 'http://localhost:3000';
+	static const String apiBaseUrl = 'https://vitalink-ip-lab-1.onrender.com';
 
 	/// Auth endpoints.
 	static const String loginPath = '/api/auth/login';
