@@ -5,7 +5,7 @@ import { DoctorProfile, PatientProfile, User } from '@alias/models'
 import { UserType } from '@alias/validators'
 import type { CreatePatientInput, UpdateProfileInput, UpdateReportInput } from '@alias/validators/doctor.validator'
 import mongoose from 'mongoose'
-import { uploadFile } from '@alias/utils/fileUpload'
+import { getDownloadUrl, uploadFile } from '@alias/utils/fileUpload'
 import logger from '@alias/utils/logger'
 
 export const getPatients = asyncHandler(async (req: Request, res: Response) => {
@@ -235,17 +235,36 @@ export const UpdateInstructions = asyncHandler(async (req: Request, res: Respons
 })
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized')
-  }
-
   const doctor = await User.findById(req.user.user_id).populate('profile_id')
   if (!doctor) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Doctor not found')
   }
 
+  const doctorProfile = doctor.profile_id as typeof DoctorProfile.prototype
+  let profilePictureUrl = null
+
+  if (doctorProfile?.profile_picture_url) {
+    try {
+      profilePictureUrl = await getDownloadUrl(doctorProfile.profile_picture_url)
+    } catch (error) {
+      logger.error('Error fetching profile picture URL', { error })
+    }
+  }
+
   const patientsCount = await PatientProfile.countDocuments({ assigned_doctor_id: doctor.profile_id })
-  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Profile fetched successfully', { doctor, patients_count: patientsCount }))
+
+  const response = {
+    doctor: {
+      ...doctor.toObject(),
+      profile_id: {
+        ...doctorProfile?.toObject(),
+        profile_picture_url: profilePictureUrl
+      }
+    },
+    patients_count: patientsCount
+  }
+
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Profile fetched successfully', response))
 })
 
 export const UpdateProfile = asyncHandler(async (req: Request<{}, {}, UpdateProfileInput["body"]>, res: Response) => {
@@ -268,7 +287,7 @@ export const getDoctors = asyncHandler(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Doctors fetched successfully", { doctors }))
 })
 
-export const updateReportsInstructions = asyncHandler(async (req: Request, res: Response) => {
+export const updateReportsInstructions = asyncHandler(async (req: Request<UpdateReportInput["params"], {}, UpdateReportInput["body"]>, res: Response) => {
   const { is_critical, notes } = req.body
   const { report_id, op_num } = req.params
 
@@ -276,8 +295,60 @@ export const updateReportsInstructions = asyncHandler(async (req: Request, res: 
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid report_id or op_num')
   }
 
-  // Find if The patient is doctors
+  const patient = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
+  if (!patient) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  }
 
+  const patientProfile = await PatientProfile.findById(patient.profile_id)
+  if (!patientProfile) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
+  }
+  if (patientProfile.assigned_doctor_id.toString() !== req.user.user_id) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized Doctor to View The Patient')
+  }
+
+  const report = patientProfile.inr_history.id(report_id)
+  if (!report) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Report not found')
+  }
+
+  if (is_critical !== undefined) report.is_critical = is_critical;
+  if (notes !== undefined) report.notes = notes;
+
+  await patientProfile.save()
+
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report instructions updated successfully'))
+})
+
+export const getReport = asyncHandler(async (req: Request, res: Response) => {
+  const { report_id, op_num } = req.params
+
+  if (!mongoose.Types.ObjectId.isValid(report_id)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid report_id or op_num')
+  }
+
+  const patient = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
+  if (!patient) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  }
+
+  const patientProfile = await PatientProfile.findById(patient.profile_id)
+  if (!patientProfile) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
+  }
+  if (patientProfile.assigned_doctor_id.toString() !== req.user.user_id) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized Doctor to View The Patient')
+  }
+
+  const report = patientProfile.inr_history.id(report_id)
+  if (!report) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Report not found')
+  }
+  const downloadUrl = await getDownloadUrl(report.file_url)
+  const reportResponse = { ...report.toObject(), file_url: downloadUrl }
+
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report fetched successfully', reportResponse))
 })
 
 export const updateProfilePicture = async (req: Request, res: Response) => {

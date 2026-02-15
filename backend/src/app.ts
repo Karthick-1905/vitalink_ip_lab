@@ -31,8 +31,8 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get("/health-check", (req, res) => {
-  return res.json(new ApiResponse(StatusCodes.OK, "Welcome to the API"))
+app.get("/", (req, res) => {
+  return res.json(new ApiResponse(StatusCodes.OK, "The Api is running"))
 });
 
 app.use("/api", router);
