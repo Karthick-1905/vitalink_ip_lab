@@ -39,7 +39,10 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void _handleSuccess(LoginResponse response) {
+  Future<void> _handleSuccess(LoginResponse response) async {
+    await QueryCache.instance.clear();
+    if (!mounted) return;
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Login successful')));
@@ -48,11 +51,17 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.of(
         context,
       ).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (previous) => false);
-    } else {
+    } else if (response.user.isDoctor || response.user.isPatient) {
       Navigator.of(context).pushNamedAndRemoveUntil(
         AppRoutes.onboarding,
         (previous) => false,
         arguments: response.user.isDoctor,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login failed: unknown user role from server'),
+        ),
       );
     }
   }
@@ -85,9 +94,9 @@ class _LoginPageState extends State<LoginPage> {
       body: UseMutation<LoginResponse, LoginRequest>(
         options: MutationOptions<LoginResponse, LoginRequest>(
           mutationFn: _authRepository.login,
-          onSuccess: (data, variables) {
+          onSuccess: (data, variables) async {
             if (!mounted) return;
-            _handleSuccess(data);
+            await _handleSuccess(data);
           },
           onError: (error, variables) {
             if (!mounted) return;

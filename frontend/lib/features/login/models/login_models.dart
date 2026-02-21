@@ -21,14 +21,59 @@ class UserModel {
     this.userTypeModel,
   });
 
+  static String _readString(dynamic value) {
+    if (value is String) return value;
+    if (value is Map) {
+      const nestedKeys = [
+        '_id',
+        'id',
+        'name',
+        'value',
+        'type',
+        'role',
+        'user_type',
+        'userType',
+        'label',
+      ];
+      for (final key in nestedKeys) {
+        final nested = _readString(value[key]);
+        if (nested.isNotEmpty) return nested;
+      }
+    }
+    return '';
+  }
+
+  static bool _readBool(dynamic value, {required bool fallback}) {
+    if (value is bool) return value;
+    return fallback;
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final profile = json['profile_id'];
+    final profileMap = profile is Map<String, dynamic> ? profile : null;
+    final roleFromUser = _readString(json['user_type']);
+    final roleFromModel = _readString(json['user_type_model']);
+    final roleFromRole = _readString(json['role']);
+    final roleFromProfile = _readString(profileMap?['user_type']);
+    final roleModelFromProfile = _readString(profileMap?['user_type_model']);
+
     return UserModel(
-      id: (json['_id'] ?? json['id'] ?? '') as String,
-      loginId: (json['login_id'] ?? '') as String,
-      userType: (json['user_type'] ?? '') as String,
-      isActive: (json['is_active'] ?? true) as bool,
-      profileId: json['profile_id'] as String?,
-      userTypeModel: json['user_type_model'] as String?,
+      id: _readString(json['_id']).isNotEmpty
+          ? _readString(json['_id'])
+          : _readString(json['id']),
+      loginId: _readString(json['login_id']),
+      userType: roleFromUser.isNotEmpty
+          ? roleFromUser
+          : roleFromRole.isNotEmpty
+          ? roleFromRole
+          : roleFromProfile,
+      isActive: _readBool(json['is_active'], fallback: true),
+      profileId: _readString(profile).isNotEmpty ? _readString(profile) : null,
+      userTypeModel: roleFromModel.isNotEmpty
+          ? roleFromModel
+          : roleModelFromProfile.isNotEmpty
+          ? roleModelFromProfile
+          : null,
     );
   }
 
@@ -39,9 +84,31 @@ class UserModel {
   final String? profileId;
   final String? userTypeModel;
 
-  bool get isDoctor => userType.toUpperCase() == 'DOCTOR';
-  bool get isPatient => userType.toUpperCase() == 'PATIENT';
-  bool get isAdmin => userType.toUpperCase() == 'ADMIN';
+  String _normalize(String? raw) =>
+      raw
+          ?.trim()
+          .toUpperCase()
+          .replaceAll(' ', '_')
+          .replaceAll('-', '_') ??
+      '';
+
+  String get _roleSource {
+    if (userTypeModel != null && userTypeModel!.trim().isNotEmpty) {
+      return _normalize(userTypeModel);
+    }
+    return _normalize(userType);
+  }
+
+  bool _matchesRole(String target) {
+    final role = _roleSource;
+    return role == target ||
+        role.endsWith('_$target') ||
+        role.contains(target);
+  }
+
+  bool get isDoctor => _matchesRole('DOCTOR');
+  bool get isPatient => _matchesRole('PATIENT');
+  bool get isAdmin => _matchesRole('ADMIN');
 }
 
 class LoginResponse {

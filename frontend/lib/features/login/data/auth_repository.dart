@@ -10,6 +10,15 @@ class AuthRepository {
   final ApiClient _apiClient;
   final SecureStorage _secureStorage;
 
+  String? _firstNonEmptyString(List<dynamic> values) {
+    for (final value in values) {
+      if (value is String && value.trim().isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
+  }
+
   Future<LoginResponse> login(LoginRequest request) async {
     final body = await _apiClient.post(
       request.path,
@@ -17,8 +26,19 @@ class AuthRepository {
       authenticated: false,
     );
 
-    final token = body['token'] as String?;
-    final userJson = body['user'] as Map<String, dynamic>?;
+    final payload = body['data'] is Map<String, dynamic>
+        ? body['data'] as Map<String, dynamic>
+        : body;
+    final token = _firstNonEmptyString([
+      payload['token'],
+      payload['access_token'],
+      payload['accessToken'],
+      body['token'],
+      body['access_token'],
+      body['accessToken'],
+    ]);
+    final user = payload['user'] ?? payload['account'] ?? body['user'];
+    final userJson = user is Map<String, dynamic> ? user : null;
 
     if (token == null || userJson == null) {
       throw ApiException('Malformed login response');
