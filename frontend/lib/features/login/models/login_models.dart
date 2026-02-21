@@ -8,10 +8,7 @@ class LoginRequest {
 
   String get path => AppStrings.loginPath;
 
-  Map<String, dynamic> toJson() => {
-        'login_id': loginId,
-        'password': password,
-      };
+  Map<String, dynamic> toJson() => {'login_id': loginId, 'password': password};
 }
 
 class UserModel {
@@ -44,6 +41,7 @@ class UserModel {
 
   bool get isDoctor => userType.toUpperCase() == 'DOCTOR';
   bool get isPatient => userType.toUpperCase() == 'PATIENT';
+  bool get isAdmin => userType.toUpperCase() == 'ADMIN';
 }
 
 class LoginResponse {

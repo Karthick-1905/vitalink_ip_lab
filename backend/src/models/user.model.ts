@@ -36,6 +36,7 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.pre('validate', async function () {
   const map: Record<string, string> = {
+    ADMIN: 'AdminProfile',
     DOCTOR: 'DoctorProfile',
     PATIENT: 'PatientProfile',
   }

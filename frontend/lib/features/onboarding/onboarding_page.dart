@@ -16,17 +16,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final List<OnboardingData> _pages = [
     OnboardingData(
       title: 'Smart Health Tracking',
-      description: 'Monitor your health vitals and INR levels with precision and ease using our advanced tracking system.',
+      description:
+          'Monitor your health vitals and INR levels with precision and ease using our advanced tracking system.',
       image: 'assets/onboarding/tracking.png',
     ),
     OnboardingData(
-      title: 'Team Collaboration',             
-      description: 'Work together efficiently and manage your health journey in one centralized platform with doctors and caregivers.',
+      title: 'Team Collaboration',
+      description:
+          'Work together efficiently and manage your health journey in one centralized platform with doctors and caregivers.',
       image: 'assets/onboarding/collaboration.png',
     ),
     OnboardingData(
       title: 'Real-time Alerts',
-      description: 'Stay informed with instant notifications for your dosage schedules and critical health report updates.',
+      description:
+          'Stay informed with instant notifications for your dosage schedules and critical health report updates.',
       image: 'assets/onboarding/alerts.png',
     ),
   ];
@@ -58,8 +61,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _finishOnboarding() {
-    final bool isDoctor = ModalRoute.of(context)?.settings.arguments as bool? ?? false;
-    final String route = isDoctor ? AppRoutes.doctorDashboard : AppRoutes.patient;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    // Support both bool (legacy: isDoctor) and String (userType) arguments
+    String route;
+    if (args is String && args.toUpperCase() == 'ADMIN') {
+      route = AppRoutes.adminDashboard;
+    } else {
+      final bool isDoctor = args is bool ? args : false;
+      route = isDoctor ? AppRoutes.doctorDashboard : AppRoutes.patient;
+    }
     Navigator.of(context).pushReplacementNamed(route);
   }
 
@@ -80,16 +90,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFF1E1E5E),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Skip', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Skip',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
-            
+
             // Page View
             Expanded(
               child: PageView.builder(
@@ -97,13 +113,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 itemCount: _pages.length,
                 onPageChanged: _onPageChanged,
                 itemBuilder: (context, index) {
-                  return OnboardingContent(
-                    data: _pages[index],
-                  );
+                  return OnboardingContent(data: _pages[index]);
                 },
               ),
             ),
-            
+
             // Bottom Navigation
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
@@ -116,7 +130,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     onTap: _previousPage,
                     isVisible: _currentPage > 0,
                   ),
-                  
+
                   // Indicators
                   Row(
                     children: List.generate(
@@ -124,7 +138,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       (index) => _buildIndicator(index == _currentPage),
                     ),
                   ),
-                  
+
                   // Next/Forward Button
                   _buildNavButton(
                     icon: Icons.chevron_right,
@@ -170,7 +184,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
       height: 4,
       width: isActive ? 24 : 12,
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFF1E1E5E) : const Color(0xFF1E1E5E).withOpacity(0.3),
+        color: isActive
+            ? const Color(0xFF1E1E5E)
+            : const Color(0xFF1E1E5E).withOpacity(0.3),
         borderRadius: BorderRadius.circular(2),
       ),
     );

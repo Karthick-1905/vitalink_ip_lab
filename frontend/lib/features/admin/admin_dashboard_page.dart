@@ -1,0 +1,316 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
+import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
+import 'package:frontend/core/widgets/admin/admin_dialogs.dart';
+import 'package:frontend/features/admin/data/admin_repository.dart';
+import 'package:frontend/features/admin/models/admin_stats_model.dart';
+import 'package:frontend/features/admin/doctor_management_page.dart';
+import 'package:frontend/features/admin/patient_management_page.dart';
+import 'package:frontend/features/admin/analytics_dashboard_page.dart';
+import 'package:frontend/features/admin/notification_broadcast_page.dart';
+import 'package:frontend/features/admin/audit_logs_page.dart';
+import 'package:frontend/features/admin/system_config_page.dart';
+
+class AdminDashboardPage extends StatefulWidget {
+  const AdminDashboardPage({super.key});
+
+  @override
+  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+}
+
+class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  int _selectedIndex = 0;
+  final AdminRepository _repo = AppDependencies.adminRepository;
+
+  @override
+  Widget build(BuildContext context) {
+    final tabs = [
+      _DashboardTab(repo: _repo),
+      const DoctorManagementPage(),
+      const PatientManagementPage(),
+      const AnalyticsDashboardPage(),
+      const NotificationBroadcastPage(),
+      const AuditLogsPage(),
+      const SystemConfigPage(),
+    ];
+
+    return AdminScaffold(
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+      body: IndexedStack(index: _selectedIndex, children: tabs),
+    );
+  }
+}
+
+// ─── Dashboard Home Tab ───
+
+class _DashboardTab extends StatelessWidget {
+  final AdminRepository repo;
+  const _DashboardTab({required this.repo});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return UseQuery<AdminStatsModel>(
+      options: QueryOptions<AdminStatsModel>(
+        queryKey: const ['admin', 'stats'],
+        queryFn: repo.getAdminStats,
+      ),
+      builder: (context, query) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('VitaLink Admin'),
+            centerTitle: true,
+          ),
+          body: RefreshIndicator(
+            onRefresh: () => query.refetch(),
+            child: query.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : query.isError
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Failed to load dashboard',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () => query.refetch(),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _DashboardContent(stats: query.data),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DashboardContent extends StatelessWidget {
+  final AdminStatsModel? stats;
+  const _DashboardContent({this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final s = stats;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Welcome
+        Text(
+          'Welcome, Admin!',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          _formattedDate(),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Stats grid
+        Row(
+          children: [
+            Expanded(
+              child: _StatsCard(
+                title: 'Total Doctors',
+                value: s?.doctorStats.total.toString() ?? '--',
+                icon: Icons.medical_services_rounded,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _StatsCard(
+                title: 'Total Patients',
+                value: s?.patientStats.total.toString() ?? '--',
+                icon: Icons.people_rounded,
+                color: Colors.green,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _StatsCard(
+                title: 'Active Doctors',
+                value: s?.doctorStats.active.toString() ?? '--',
+                icon: Icons.verified_user_rounded,
+                color: Colors.teal,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _StatsCard(
+                title: 'Active Patients',
+                value: s?.patientStats.active.toString() ?? '--',
+                icon: Icons.group_rounded,
+                color: Colors.purple,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Quick Actions
+        Text(
+          'Quick Actions',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _QuickActionCard(
+                title: 'Add Doctor',
+                icon: Icons.person_add_rounded,
+                color: Colors.blue,
+                onTap: () => showAddDoctorDialog(context),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _QuickActionCard(
+                title: 'Add Patient',
+                icon: Icons.person_add_alt_1_rounded,
+                color: Colors.green,
+                onTap: () => showAddPatientDialog(context),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _formattedDate() {
+    final now = DateTime.now();
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[now.month - 1]} ${now.day}, ${now.year}';
+  }
+}
+
+class _StatsCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _StatsCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              title,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 32),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
