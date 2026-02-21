@@ -19,8 +19,8 @@ class ApiClient {
   ApiClient({
     Dio? dio,
     SecureStorage? secureStorage,
-    String baseUrl = AppStrings.apiBaseUrl,
-  }) : _dio = dio ?? Dio(BaseOptions(baseUrl: baseUrl)),
+    String? baseUrl,
+  }) : _dio = dio ?? Dio(BaseOptions(baseUrl: baseUrl ?? AppStrings.apiBaseUrl)),
        _secureStorage = secureStorage ?? SecureStorage();
 
   final Dio _dio;
