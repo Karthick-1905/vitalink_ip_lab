@@ -470,35 +470,3 @@ class _TogglePill extends StatelessWidget {
     );
   }
 }
-
-class _PlaceholderPage extends StatelessWidget {
-  const _PlaceholderPage({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.design_services, color: Colors.black54, size: 36),
-          const SizedBox(height: 8),
-          Text('$label coming soon', style: const TextStyle(fontWeight: FontWeight.w600)),
-        ],
-      )
-          .padding(all: 18)
-          .decorated(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-    );
-  }
-}

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
-import 'package:frontend/core/widgets/patient/patient_dosage_widgets.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/services/patient_service.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
@@ -118,7 +117,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(

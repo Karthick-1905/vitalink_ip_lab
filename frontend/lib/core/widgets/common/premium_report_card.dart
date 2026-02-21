@@ -94,12 +94,12 @@ class PremiumReportCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: statusColor.withOpacity(0.08),
+            color: statusColor.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: statusColor.withOpacity(0.15), width: 1.5),
+        border: Border.all(color: statusColor.withValues(alpha: 0.15), width: 1.5),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -109,7 +109,7 @@ class PremiumReportCard extends StatelessWidget {
               Positioned(
                 right: -20,
                 top: -20,
-                child: Icon(Icons.warning_amber_rounded, size: 100, color: Colors.red.withOpacity(0.05)),
+                child: Icon(Icons.warning_amber_rounded, size: 100, color: Colors.red.withValues(alpha: 0.05)),
               ),
             Padding(
               padding: const EdgeInsets.all(20),
@@ -140,9 +140,9 @@ class PremiumReportCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
+                          color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: statusColor.withOpacity(0.3)),
+                          border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                         ),
                         child: Text(
                           'INR ${inr?.toStringAsFixed(1) ?? 'N/A'}',
@@ -161,7 +161,7 @@ class PremiumReportCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
+                          color: statusColor.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(

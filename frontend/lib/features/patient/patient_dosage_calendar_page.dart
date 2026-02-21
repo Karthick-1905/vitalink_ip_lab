@@ -125,7 +125,7 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -421,7 +421,7 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _getStatusColor(status).withOpacity(0.1),
+                color: _getStatusColor(status).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _getStatusColor(status),

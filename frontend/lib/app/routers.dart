@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/auth/session_bootstrap_page.dart';
+import 'package:frontend/core/auth/session_route_guard.dart';
 import 'package:frontend/features/login/login_page.dart';
 import 'package:frontend/features/patient/patient_page.dart';
 import 'package:frontend/features/patient/patient_records_page.dart';
@@ -13,6 +15,7 @@ import 'package:frontend/features/onboarding/onboarding_page.dart';
 import 'package:frontend/features/admin/admin_dashboard_page.dart';
 
 class AppRoutes {
+  static const String sessionBootstrap = '/session-bootstrap';
   static const String login = '/login';
   static const String onboarding = '/onboarding';
   static const String patient = '/patient';
@@ -28,22 +31,55 @@ class AppRoutes {
 }
 
 class AppRouter {
-  static const String initialRoute = AppRoutes.login;
+  static const String initialRoute = AppRoutes.sessionBootstrap;
 
   static final Map<String, WidgetBuilder> routes = {
-    '/': (_) => const LoginPage(),
-    '/patient-home': (_) => const PatientPage(),
+    '/': (_) => const SessionBootstrapPage(),
+    AppRoutes.sessionBootstrap: (_) => const SessionBootstrapPage(),
     AppRoutes.login: (_) => const LoginPage(),
-    AppRoutes.onboarding: (_) => const OnboardingPage(),
-    AppRoutes.patient: (_) => const PatientPage(),
-    AppRoutes.patientUpdateINR: (_) => const PatientUpdateINRPage(),
-    AppRoutes.patientTakeDosage: (_) => const PatientTakeDosagePage(),
-    AppRoutes.patientDosageCalendar: (_) => const PatientDosageCalendarPage(),
-    AppRoutes.patientHealthReports: (_) => const PatientHealthReportsPage(),
-    AppRoutes.patientRecords: (_) => const PatientRecordsPage(),
-    AppRoutes.patientProfile: (_) => const PatientProfilePage(),
-    AppRoutes.doctorDashboard: (_) => const DoctorDashboardPage(),
-    AppRoutes.doctorAddPatient: (_) => const AddPatientPage(),
-    AppRoutes.adminDashboard: (_) => const AdminDashboardPage(),
+    AppRoutes.onboarding: (_) => const SessionRouteGuard(
+      access: RouteAccess.patientOrDoctor,
+      child: OnboardingPage(),
+    ),
+    AppRoutes.patient: (_) => const SessionRouteGuard(
+      access: RouteAccess.patient,
+      child: PatientPage(),
+    ),
+    AppRoutes.patientUpdateINR: (_) => const SessionRouteGuard(
+      access: RouteAccess.patient,
+      child: PatientUpdateINRPage(),
+    ),
+    AppRoutes.patientTakeDosage: (_) => const SessionRouteGuard(
+      access: RouteAccess.patient,
+      child: PatientTakeDosagePage(),
+    ),
+    AppRoutes.patientDosageCalendar: (_) => const SessionRouteGuard(
+      access: RouteAccess.patient,
+      child: PatientDosageCalendarPage(),
+    ),
+    AppRoutes.patientHealthReports: (_) => const SessionRouteGuard(
+      access: RouteAccess.patient,
+      child: PatientHealthReportsPage(),
+    ),
+    AppRoutes.patientRecords: (_) => const SessionRouteGuard(
+      access: RouteAccess.patient,
+      child: PatientRecordsPage(),
+    ),
+    AppRoutes.patientProfile: (_) => const SessionRouteGuard(
+      access: RouteAccess.patient,
+      child: PatientProfilePage(),
+    ),
+    AppRoutes.doctorDashboard: (_) => const SessionRouteGuard(
+      access: RouteAccess.doctor,
+      child: DoctorDashboardPage(),
+    ),
+    AppRoutes.doctorAddPatient: (_) => const SessionRouteGuard(
+      access: RouteAccess.doctor,
+      child: AddPatientPage(),
+    ),
+    AppRoutes.adminDashboard: (_) => const SessionRouteGuard(
+      access: RouteAccess.admin,
+      child: AdminDashboardPage(),
+    ),
   };
 }

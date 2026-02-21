@@ -675,8 +675,8 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                         style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                       ),
                       const SizedBox(height: 12),
-                      Container(
-                        constraints: const BoxConstraints(maxHeight: 200),
+                      SizedBox(
+                        height: 200,
                         child: ListView.builder(
                           shrinkWrap: true,
                           itemCount: _doctors.length,
@@ -685,14 +685,24 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                             final loginId = doctor['login_id'] as String?;
                             final profile = doctor['profile_id'] as Map<String, dynamic>?;
                             final name = profile?['name'] ?? loginId ?? 'Unknown';
-                            
-                            return RadioListTile<String>(
-                              value: loginId ?? '',
-                              groupValue: _selectedDoctorId,
-                              onChanged: (val) => setState(() => _selectedDoctorId = val),
+                            final doctorId = loginId ?? '';
+                            final selected = _selectedDoctorId == doctorId;
+
+                            return ListTile(
+                              dense: true,
+                              onTap: doctorId.isEmpty
+                                  ? null
+                                  : () => setState(() => _selectedDoctorId = doctorId),
+                              leading: Icon(
+                                selected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                                color: selected
+                                    ? const Color(0xFFF59E0B)
+                                    : Colors.grey,
+                              ),
                               title: Text(name),
                               subtitle: loginId != null ? Text('ID: $loginId') : null,
-                              dense: true,
                             );
                           },
                         ),
@@ -709,15 +719,18 @@ class _ReassignDialogState extends State<_ReassignDialog> {
           onPressed: _selectedDoctorId == null || _isLoading
               ? null
               : () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   setState(() => _isLoading = true);
                   try {
                     await widget.repository.reassignPatient(widget.opNumber, _selectedDoctorId!);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    if (!mounted) return;
+                    messenger.showSnackBar(
                       const SnackBar(content: Text('Patient reassigned successfully')),
                     );
                     widget.onSuccess();
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    if (!mounted) return;
+                    messenger.showSnackBar(
                       SnackBar(content: Text('Error: $e')),
                     );
                   } finally {
@@ -900,12 +913,14 @@ class _DosageCardState extends State<_DosageCard> {
     setState(() => _isSaving = true);
     try {
       await widget.repository.updatePatientDosage(widget.opNumber, dosage);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Dosage updated successfully')),
       );
       widget.onUpdated();
       setState(() => _isEditing = false);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );

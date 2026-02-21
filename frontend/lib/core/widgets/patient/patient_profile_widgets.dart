@@ -869,7 +869,7 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
     required Function(String?) onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
       onChanged: onChanged,
       decoration: InputDecoration(

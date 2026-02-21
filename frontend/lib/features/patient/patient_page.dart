@@ -58,7 +58,6 @@ class _PatientPageState extends State<PatientPage> {
 
         final data = query.data!;
         final profile = data['profile'] as Map<String, dynamic>;
-        final missedDoses = data['missedDoses'] as Map<String, dynamic>;
         final latestINR = data['latestINR'] as double;
         final history = data['history'] as List;
 
@@ -323,11 +322,11 @@ class _PatientPageState extends State<PatientPage> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.96),
+        color: Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -413,7 +412,7 @@ class _PatientPageState extends State<PatientPage> {
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
-                  colors: [const Color(0xFF6366F1).withOpacity(0.3), const Color(0xFF6366F1).withOpacity(0.0)],
+                  colors: [const Color(0xFF6366F1).withValues(alpha: 0.3), const Color(0xFF6366F1).withValues(alpha: 0.0)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),

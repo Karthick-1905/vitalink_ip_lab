@@ -32,12 +32,12 @@ Future<bool> showAddDoctorDialog(
   final name = TextEditingController();
   final department = TextEditingController();
   final contact = TextEditingController();
+  bool loading = false;
 
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
-        bool loading = false;
         return AlertDialog(
           title: const Text('Register New Doctor'),
           content: SingleChildScrollView(
@@ -179,12 +179,12 @@ Future<bool> showEditDoctorDialog(
   final contact = TextEditingController(
     text: currentData['contact_number'] as String? ?? '',
   );
+  bool loading = false;
 
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
-        bool loading = false;
         return AlertDialog(
           title: const Text('Edit Doctor'),
           content: SingleChildScrollView(
@@ -297,6 +297,7 @@ Future<bool> showAddPatientDialog(
   List<Map<String, dynamic>> doctorList = List.from(doctors);
   bool doctorsLoading = doctorList.isEmpty;
   String? doctorsError;
+  bool loading = false;
 
   final result = await showDialog<bool>(
     context: context,
@@ -325,7 +326,6 @@ Future<bool> showAddPatientDialog(
               });
         }
 
-        bool loading = false;
         return AlertDialog(
           title: const Text('Onboard New Patient'),
           content: SingleChildScrollView(
@@ -471,8 +471,9 @@ Future<bool> showAddPatientDialog(
                   ? null
                   : () async {
                       if (!formKey.currentState!.validate() ||
-                          selectedDoctorId == null)
+                          selectedDoctorId == null) {
                         return;
+                      }
                       setState(() => loading = true);
                       try {
                         await _repo.createPatient({
@@ -543,12 +544,12 @@ Future<bool> showEditPatientDialog(
     text: currentData['phone'] as String? ?? '',
   );
   String? selectedGender = currentData['gender'] as String?;
+  bool loading = false;
 
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
-        bool loading = false;
         return AlertDialog(
           title: const Text('Edit Patient Details'),
           content: SingleChildScrollView(
@@ -690,11 +691,11 @@ Future<bool> showDeactivateConfirmDialog(
   required Future<void> Function() onConfirm,
   VoidCallback? onSuccess,
 }) async {
+  bool loading = false;
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
-        bool loading = false;
         return AlertDialog(
           title: Text('Deactivate $userType'),
           content: Text(
@@ -766,12 +767,12 @@ Future<bool> showStatusToggleDialog(
   VoidCallback? onSuccess,
 }) async {
   final action = isActive ? 'Deactivate' : 'Activate';
+  bool loading = false;
 
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
-        bool loading = false;
         return AlertDialog(
           title: Text('$action $userType'),
           content: Text('Are you sure you want to $action $userName?'),
@@ -842,12 +843,12 @@ Future<bool> showResetPasswordDialog(
 }) async {
   final formKey = GlobalKey<FormState>();
   final passwordCtrl = TextEditingController();
+  bool loading = false;
 
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
-        bool loading = false;
         return AlertDialog(
           title: Text('Reset Password for $userName'),
           content: Form(
@@ -933,6 +934,7 @@ Future<bool> showReassignPatientDialog(
   List<Map<String, dynamic>> doctorList = List.from(doctors);
   bool doctorsLoading = doctorList.isEmpty;
   String? doctorsError;
+  bool loading = false;
 
   final result = await showDialog<bool>(
     context: context,
@@ -961,7 +963,6 @@ Future<bool> showReassignPatientDialog(
               });
         }
 
-        bool loading = false;
         return AlertDialog(
           title: const Text('Reassign Doctor'),
           content: Column(
@@ -994,7 +995,7 @@ Future<bool> showReassignPatientDialog(
                 )
               else
                 DropdownButtonFormField<String>(
-                  value:
+                  initialValue:
                       doctorList.any(
                         (d) => (d['_id'] ?? d['id']) == selectedDoctorId,
                       )

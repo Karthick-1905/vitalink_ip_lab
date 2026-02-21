@@ -186,7 +186,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       decoration: BoxDecoration(
         color: isActive
             ? const Color(0xFF1E1E5E)
-            : const Color(0xFF1E1E5E).withOpacity(0.3),
+            : const Color(0xFF1E1E5E).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(2),
       ),
     );

@@ -80,7 +80,7 @@ class _AddPatientFormState extends State<AddPatientForm> {
   }
 
   Map<String, dynamic> _buildPayload() {
-    double? _numFromCtrl(TextEditingController c) {
+    double? numFromCtrl(TextEditingController c) {
       final v = c.text.trim();
       if (v.isEmpty) return null;
       return double.tryParse(v);
@@ -90,7 +90,7 @@ class _AddPatientFormState extends State<AddPatientForm> {
       final map = <String, double>{};
       void add(String key, String dayLabel, TextEditingController c) {
         if (_dayEnabled[dayLabel] != true) return;
-        final v = _numFromCtrl(c);
+        final v = numFromCtrl(c);
         if (v != null) map[key] = v;
       }
 
@@ -119,8 +119,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
       'age': _ageCtrl.text.trim().isEmpty ? null : int.tryParse(_ageCtrl.text.trim()),
       'gender': _gender,
       'contact_no': _contactCtrl.text.trim(),
-      'target_inr_min': _numFromCtrl(_targetMinCtrl),
-      'target_inr_max': _numFromCtrl(_targetMaxCtrl),
+      'target_inr_min': numFromCtrl(_targetMinCtrl),
+      'target_inr_max': numFromCtrl(_targetMaxCtrl),
       'therapy': _therapy,
       'therapy_start_date': _therapyStartCtrl.text.trim().isEmpty ? null : _therapyStartCtrl.text.trim(),
       'prescription': dosage(),

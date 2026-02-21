@@ -265,7 +265,7 @@ class _FilterBar extends StatelessWidget {
                       vertical: 8,
                     ),
                   ),
-                  value: actionFilter,
+                  initialValue: actionFilter,
                   items: [
                     const DropdownMenuItem(
                       value: null,
@@ -292,7 +292,7 @@ class _FilterBar extends StatelessWidget {
                       vertical: 8,
                     ),
                   ),
-                  value: successFilter,
+                  initialValue: successFilter,
                   items: const [
                     DropdownMenuItem(value: null, child: Text('All Status')),
                     DropdownMenuItem(value: 'true', child: Text('Success')),
@@ -371,7 +371,7 @@ class _AuditLogTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(log.description ?? 'No description'),
+            Text(log.description.isEmpty ? 'No description' : log.description),
             const SizedBox(height: 4),
             Row(
               children: [
@@ -420,13 +420,16 @@ class _AuditLogTile extends StatelessWidget {
   }
 
   Color _actionColor(String action) {
-    if (action.contains('CREATE') || action.contains('REGISTER'))
+    if (action.contains('CREATE') || action.contains('REGISTER')) {
       return Colors.green;
+    }
     if (action.contains('UPDATE')) return Colors.blue;
-    if (action.contains('DELETE') || action.contains('DEACTIVATE'))
+    if (action.contains('DELETE') || action.contains('DEACTIVATE')) {
       return Colors.red;
-    if (action.contains('LOGIN') || action.contains('LOGOUT'))
+    }
+    if (action.contains('LOGIN') || action.contains('LOGOUT')) {
       return Colors.purple;
+    }
     if (action.contains('PASSWORD')) return Colors.orange;
     return Colors.grey;
   }
@@ -434,11 +437,13 @@ class _AuditLogTile extends StatelessWidget {
   IconData _actionIcon(String action) {
     if (action.contains('LOGIN')) return Icons.login_rounded;
     if (action.contains('LOGOUT')) return Icons.logout_rounded;
-    if (action.contains('CREATE') || action.contains('REGISTER'))
+    if (action.contains('CREATE') || action.contains('REGISTER')) {
       return Icons.add_circle_outline_rounded;
+    }
     if (action.contains('UPDATE')) return Icons.edit_note_rounded;
-    if (action.contains('DELETE') || action.contains('DEACTIVATE'))
+    if (action.contains('DELETE') || action.contains('DEACTIVATE')) {
       return Icons.remove_circle_outline_rounded;
+    }
     if (action.contains('PASSWORD')) return Icons.lock_reset_rounded;
     return Icons.info_outline_rounded;
   }

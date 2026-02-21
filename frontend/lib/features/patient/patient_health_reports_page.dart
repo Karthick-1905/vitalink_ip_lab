@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
-import 'package:frontend/services/patient_service.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -58,7 +57,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
+            color: Colors.white.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -187,7 +186,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               );
-            }).toList(),
+            }),
             
             const SizedBox(height: 20),
             const Text(

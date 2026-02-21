@@ -1,7 +1,6 @@
 import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/features/admin/models/admin_stats_model.dart';
-import 'package:frontend/features/admin/models/system_config_model.dart';
 
 class AdminRepository {
   AdminRepository({required ApiClient apiClient}) : _apiClient = apiClient;
@@ -69,8 +68,9 @@ class AdminRepository {
     String? search,
   }) async {
     final params = <String, dynamic>{'page': page, 'limit': limit};
-    if (assignedDoctorId != null)
+    if (assignedDoctorId != null) {
       params['assigned_doctor_id'] = assignedDoctorId;
+    }
     if (accountStatus != null) params['account_status'] = accountStatus;
     if (search != null && search.isNotEmpty) params['search'] = search;
 

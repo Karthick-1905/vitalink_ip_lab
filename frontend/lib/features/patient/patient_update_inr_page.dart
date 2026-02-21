@@ -328,7 +328,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                 ],
               ),
               const SizedBox(height: 20),
-              ...reports.map((report) => _buildReportCard(report)).toList(),
+              ...reports.map((report) => _buildReportCard(report)),
             ],
           ),
         );
@@ -342,16 +342,6 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
     final notes = report['notes'] as String;
     final hasNotes = notes.isNotEmpty;
     final hasFile = (report['fileUrl'] as String).isNotEmpty;
-    final status = report['status'] as String;
-    
-    Color statusColor;
-    if (status == 'Normal') {
-      statusColor = const Color(0xFF6B7280);
-    } else if (status == 'Low') {
-      statusColor = const Color(0xFF6B7280);
-    } else {
-      statusColor = const Color(0xFF6B7280);
-    }
 
     return Container(
       width: double.infinity,

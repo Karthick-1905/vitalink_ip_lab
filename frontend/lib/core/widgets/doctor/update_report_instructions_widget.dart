@@ -313,7 +313,7 @@ class _UpdateReportInstructionsWidgetState
                         onChanged: (value) {
                           setState(() => _isCritical = value);
                         },
-                        activeColor: Colors.red[600],
+                        activeThumbColor: Colors.red[600],
                       ),
                     ],
                   ),

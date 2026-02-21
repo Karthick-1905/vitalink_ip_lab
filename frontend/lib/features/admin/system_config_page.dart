@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
-import 'package:frontend/features/admin/models/system_config_model.dart';
 import 'package:frontend/features/admin/models/admin_stats_model.dart';
 
 class SystemConfigPage extends StatefulWidget {
@@ -260,8 +259,9 @@ class _SystemConfigPageState extends State<SystemConfigPage> {
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'Required';
                               final n = double.tryParse(v);
-                              if (n == null || n < 0.5 || n > 10)
+                              if (n == null || n < 0.5 || n > 10) {
                                 return '0.5-10.0';
+                              }
                               return null;
                             },
                           ),
@@ -281,8 +281,9 @@ class _SystemConfigPageState extends State<SystemConfigPage> {
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'Required';
                               final n = double.tryParse(v);
-                              if (n == null || n < 0.5 || n > 10)
+                              if (n == null || n < 0.5 || n > 10) {
                                 return '0.5-10.0';
+                              }
                               return null;
                             },
                           ),

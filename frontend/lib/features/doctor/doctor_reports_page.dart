@@ -4,7 +4,6 @@ import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/features/doctor/data/doctor_repository.dart';
 import 'package:frontend/features/doctor/models/patient_model.dart';
 import 'package:frontend/core/widgets/common/premium_report_card.dart';
-import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class DoctorReportsPage extends StatefulWidget {
@@ -40,11 +39,11 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -134,10 +133,10 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withOpacity(0.05),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.analytics_outlined, size: 80, color: const Color(0xFF6366F1).withOpacity(0.2)),
+            child: Icon(Icons.analytics_outlined, size: 80, color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
           ),
           const SizedBox(height: 24),
           Text(
@@ -187,7 +186,7 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.history_rounded, size: 64, color: Colors.grey.withOpacity(0.3)),
+                Icon(Icons.history_rounded, size: 64, color: Colors.grey.withValues(alpha: 0.3)),
                 const SizedBox(height: 16),
                 Text(
                   'No reports found for $_selectedPatientName',
@@ -288,16 +287,16 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isCrit ? Colors.red.withOpacity(0.05) : Colors.grey[50],
+                          color: isCrit ? Colors.red.withValues(alpha: 0.05) : Colors.grey[50],
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isCrit ? Colors.red.withOpacity(0.2) : Colors.grey[200]!),
+                          border: Border.all(color: isCrit ? Colors.red.withValues(alpha: 0.2) : Colors.grey[200]!),
                         ),
                         child: SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text('Critical Status', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: isCrit ? Colors.red : Colors.black87)),
                           subtitle: Text('Flags this report for immediate attention', style: GoogleFonts.outfit(fontSize: 12)),
                           value: isCrit,
-                          activeColor: Colors.red,
+                          activeThumbColor: Colors.red,
                           onChanged: (v) => setS(() => isCrit = v),
                         ),
                       ),
@@ -410,7 +409,7 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   leading: CircleAvatar(
-                    backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                    backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.1),
                     child: Text(p.name[0], style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
                   ),
                   title: Text(p.name, style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),

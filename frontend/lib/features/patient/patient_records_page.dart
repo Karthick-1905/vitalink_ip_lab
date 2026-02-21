@@ -320,7 +320,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                 ),
               ),
             );
-          }).toList(),
+          }),
       ],
     );
   }
@@ -462,7 +462,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -590,7 +590,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${dose.toStringAsFixed(1)}',
+                    dose.toStringAsFixed(1),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

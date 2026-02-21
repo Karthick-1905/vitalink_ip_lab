@@ -24,7 +24,7 @@ class DoctorRepository {
 
   Future<DoctorProfileModel> getDoctorProfile() async {
     final response = await _apiClient.get(AppStrings.doctorProfilePath);
-    return DoctorProfileModel.fromJson(response as Map<String, dynamic>);
+    return DoctorProfileModel.fromJson(response);
   }
 
   Future<PatientDetailModel> getPatientDetail(String opNumber) async {

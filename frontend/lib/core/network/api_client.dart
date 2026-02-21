@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:math' show min;
 import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/core/storage/secure_storage.dart';
 
@@ -20,11 +19,69 @@ class ApiClient {
     Dio? dio,
     SecureStorage? secureStorage,
     String? baseUrl,
-  }) : _dio = dio ?? Dio(BaseOptions(baseUrl: baseUrl ?? AppStrings.apiBaseUrl)),
+  }) : _dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: baseUrl ?? AppStrings.apiBaseUrl,
+                connectTimeout: const Duration(seconds: 15),
+                sendTimeout: const Duration(seconds: 20),
+                receiveTimeout: const Duration(seconds: 20),
+              ),
+            ),
        _secureStorage = secureStorage ?? SecureStorage();
 
   final Dio _dio;
   final SecureStorage _secureStorage;
+  static const int _maxGetRetries = 2;
+  static const Duration _retryBaseDelay = Duration(milliseconds: 300);
+
+  void _logDebug(String message) {
+    if (kDebugMode) debugPrint(message);
+  }
+
+  Future<Response<Map<String, dynamic>>> _sendWithRetry(
+    Future<Response<Map<String, dynamic>>> Function() send, {
+    bool retryOnFailure = false,
+  }) async {
+    var attempt = 0;
+    while (true) {
+      try {
+        return await send();
+      } on DioException catch (e) {
+        final shouldRetry =
+            retryOnFailure &&
+            attempt < _maxGetRetries &&
+            _isTransientFailure(e);
+        if (!shouldRetry) rethrow;
+
+        attempt++;
+        final wait = Duration(
+          milliseconds: _retryBaseDelay.inMilliseconds * (1 << (attempt - 1)),
+        );
+        _logDebug(
+          'Transient API failure. Retrying in ${wait.inMilliseconds}ms (attempt $attempt/$_maxGetRetries)',
+        );
+        await Future.delayed(wait);
+      }
+    }
+  }
+
+  bool _isTransientFailure(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+        return true;
+      case DioExceptionType.badResponse:
+        final code = e.response?.statusCode ?? 0;
+        return code == 429 || code >= 500;
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.cancel:
+      case DioExceptionType.unknown:
+        return false;
+    }
+  }
 
   Future<Map<String, dynamic>> post(
     String path, {
@@ -33,10 +90,12 @@ class ApiClient {
   }) async {
     try {
       final headers = await _buildHeaders(includeAuth: authenticated);
-      final response = await _dio.post<Map<String, dynamic>>(
-        path,
-        data: data,
-        options: Options(headers: headers),
+      final response = await _sendWithRetry(
+        () => _dio.post<Map<String, dynamic>>(
+          path,
+          data: data,
+          options: Options(headers: headers),
+        ),
       );
       return _normalizeResponse(response);
     } on DioException catch (e) {
@@ -54,14 +113,16 @@ class ApiClient {
   }) async {
     try {
       final headers = await _buildHeaders(includeAuth: authenticated);
-      debugPrint('GET Request to: $path');
-      debugPrint('Headers: ${headers.toString()}');
-      final response = await _dio.get<Map<String, dynamic>>(
-        path,
-        queryParameters: queryParameters,
-        options: Options(headers: headers),
+      _logDebug('GET Request to: $path');
+      final response = await _sendWithRetry(
+        () => _dio.get<Map<String, dynamic>>(
+          path,
+          queryParameters: queryParameters,
+          options: Options(headers: headers),
+        ),
+        retryOnFailure: true,
       );
-      debugPrint('GET Response status: ${response.statusCode}');
+      _logDebug('GET Response status: ${response.statusCode}');
       return _normalizeResponse(response);
     } on DioException catch (e) {
       throw ApiException(
@@ -78,15 +139,15 @@ class ApiClient {
   }) async {
     try {
       final headers = await _buildHeaders(includeAuth: authenticated);
-      debugPrint('PUT Request to: $path');
-      debugPrint('Headers: ${headers.toString()}');
-      debugPrint('Data: $data');
-      final response = await _dio.put<Map<String, dynamic>>(
-        path,
-        data: data,
-        options: Options(headers: headers),
+      _logDebug('PUT Request to: $path');
+      final response = await _sendWithRetry(
+        () => _dio.put<Map<String, dynamic>>(
+          path,
+          data: data,
+          options: Options(headers: headers),
+        ),
       );
-      debugPrint('PUT Response status: ${response.statusCode}');
+      _logDebug('PUT Response status: ${response.statusCode}');
       return _normalizeResponse(response);
     } on DioException catch (e) {
       throw ApiException(
@@ -103,10 +164,12 @@ class ApiClient {
   }) async {
     try {
       final headers = await _buildHeaders(includeAuth: authenticated);
-      final response = await _dio.patch<Map<String, dynamic>>(
-        path,
-        data: data,
-        options: Options(headers: headers),
+      final response = await _sendWithRetry(
+        () => _dio.patch<Map<String, dynamic>>(
+          path,
+          data: data,
+          options: Options(headers: headers),
+        ),
       );
       return _normalizeResponse(response);
     } on DioException catch (e) {
@@ -124,13 +187,15 @@ class ApiClient {
   }) async {
     try {
       final headers = await _buildHeaders(includeAuth: authenticated);
-      debugPrint('DELETE Request to: $path');
-      final response = await _dio.delete<Map<String, dynamic>>(
-        path,
-        data: data,
-        options: Options(headers: headers),
+      _logDebug('DELETE Request to: $path');
+      final response = await _sendWithRetry(
+        () => _dio.delete<Map<String, dynamic>>(
+          path,
+          data: data,
+          options: Options(headers: headers),
+        ),
       );
-      debugPrint('DELETE Response status: ${response.statusCode}');
+      _logDebug('DELETE Response status: ${response.statusCode}');
       return _normalizeResponse(response);
     } on DioException catch (e) {
       throw ApiException(
@@ -149,10 +214,13 @@ class ApiClient {
   }) async {
     try {
       final headers = await _buildHeaders(includeAuth: authenticated);
-      final response = await _dio.get<Map<String, dynamic>>(
-        path,
-        queryParameters: queryParameters,
-        options: Options(headers: headers),
+      final response = await _sendWithRetry(
+        () => _dio.get<Map<String, dynamic>>(
+          path,
+          queryParameters: queryParameters,
+          options: Options(headers: headers),
+        ),
+        retryOnFailure: true,
       );
       final statusCode = response.statusCode ?? 500;
       final body = response.data ?? <String, dynamic>{};
@@ -179,16 +247,9 @@ class ApiClient {
 
     if (includeAuth) {
       final token = await _secureStorage.readToken();
-      debugPrint(
-        'Token from storage: ${token != null ? 'Present (${token.length} chars)' : 'NULL'}',
-      );
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
-        debugPrint(
-          'Authorization header set: Bearer ${token.substring(0, min(20, token.length))}...',
-        );
-      } else {
-        debugPrint('WARNING: Token is null or empty!');
+        _logDebug('Authorization header attached');
       }
     }
     return headers;
@@ -226,11 +287,11 @@ class ApiClient {
 
   String _extractMessage(DioException e) {
     final res = e.response;
-    debugPrint('API Error - Status Code: ${res?.statusCode}');
-    debugPrint('API Error - Response: ${res?.data}');
+    _logDebug('API Error - Status Code: ${res?.statusCode}');
+    _logDebug('API Error - Response: ${res?.data}');
 
     if (res?.statusCode == 401) {
-      debugPrint('Authentication failed - Token may be invalid or expired');
+      _logDebug('Authentication failed - token may be invalid or expired');
     }
 
     if (res?.data is Map<String, dynamic>) {
