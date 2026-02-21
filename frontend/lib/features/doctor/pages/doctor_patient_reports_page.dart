@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart'
-    show QueryClientProvider;
+    show QueryClientProvider, QueryClientProvider;
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/widgets/index.dart';
 
@@ -63,7 +63,7 @@ class _DoctorPatientReportsPageState extends State<DoctorPatientReportsPage> {
                   icon: const Icon(Icons.refresh),
                   onPressed: () {
                     // Trigger refetch
-                    QueryClientProvider.of(context)
+                    QueryCache.instance
                         .invalidateQueries(['reports', widget.patientOpNumber]);
                   },
                 ),
