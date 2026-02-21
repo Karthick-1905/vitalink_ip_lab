@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class PatientService {
-  static const String baseUrl = 'http://localhost:3000/api/patient';
+  static const String baseUrl = 'https://vitalink-ip-lab-1.onrender.com/api/patient';
   static const storage = FlutterSecureStorage();
 
   static final Dio _dio = Dio(
