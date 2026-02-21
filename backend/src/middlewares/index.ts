@@ -31,3 +31,16 @@ export const AllowPatient = asyncHandler(async (req: Request, res: Response, nex
   }
   next()
 })
+
+export const AllowAdmin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { user_id, user_type } = req.user;
+  if (user_type != UserType.ADMIN) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "ADMIN access only")
+  }
+
+  const user = await User.findById(user_id)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found")
+  }
+  next()
+})

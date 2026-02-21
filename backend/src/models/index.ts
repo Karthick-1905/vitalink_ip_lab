@@ -35,9 +35,13 @@ export const HealthLogSchema = new Schema({
 import User from './user.model'
 import DoctorProfile from './doctorprofile.model'
 import PatientProfile from './patientprofile.model'
+import AdminProfile from './adminprofile.model'
+import AuditLog from './auditlog.model'
+import SystemConfig from './systemconfig.model'
+import Notification from './notification.model'
 
 
-export { User, DoctorProfile, PatientProfile }
+export { User, DoctorProfile, PatientProfile, AdminProfile, AuditLog, SystemConfig, Notification }
 
 // Aliases for backward compatibility
 export const Doctor = DoctorProfile

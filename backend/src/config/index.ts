@@ -11,6 +11,8 @@ interface Config {
   accessKeyId: string
   secretAccessKey: string
   bucketName: string
+  defaultAdminEmail: string
+  defaultAdminPassword: string
 }
 
 function getRequiredEnv(key: string): string {
@@ -19,6 +21,10 @@ function getRequiredEnv(key: string): string {
     throw new Error(`Missing environment variable: ${key}`)
   }
   return value
+}
+
+function getOptionalEnv(key: string, defaultValue: string): string {
+  return process.env[key] || defaultValue
 }
 
 export const config: Config = {
@@ -30,7 +36,9 @@ export const config: Config = {
   logLevel: process.env.LOG_LEVEL || 'info',
   accessKeyId: process.env.ACCESS_KEY_ID || '',
   secretAccessKey: process.env.SECRET_ACCESS_KEY || '',
-  bucketName: process.env.S3_BUCKET_NAME
+  bucketName: process.env.S3_BUCKET_NAME,
+  defaultAdminEmail: getOptionalEnv('DEFAULT_ADMIN_EMAIL', 'admin@vitalink.com'),
+  defaultAdminPassword: getOptionalEnv('DEFAULT_ADMIN_PASSWORD', 'VitaLink@Admin123'),
 }
 
 

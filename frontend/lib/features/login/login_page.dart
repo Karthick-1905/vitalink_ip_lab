@@ -40,22 +40,28 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _handleSuccess(LoginResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Login successful')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Login successful')));
 
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.onboarding,
-      (previous) => false,
-      arguments: response.user.isDoctor,
-    );
+    if (response.user.isAdmin) {
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (previous) => false);
+    } else {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.onboarding,
+        (previous) => false,
+        arguments: response.user.isDoctor,
+      );
+    }
   }
 
   void _handleError(Object error) {
     final message = error is ApiException ? error.message : error.toString();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Login failed: $message')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Login failed: $message')));
   }
 
   void _submit(MutationResult<LoginResponse, LoginRequest> mutation) {
@@ -90,8 +96,9 @@ class _LoginPageState extends State<LoginPage> {
         ),
         builder: (context, mutation) {
           final error = mutation.error;
-          final errorText =
-              error is ApiException ? error.message : error?.toString();
+          final errorText = error is ApiException
+              ? error.message
+              : error?.toString();
 
           return SizedBox(
             width: screenWidth,
@@ -124,7 +131,8 @@ class _LoginPageState extends State<LoginPage> {
                     physics: const BouncingScrollPhysics(),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: screenHeight -
+                        minHeight:
+                            screenHeight -
                             MediaQuery.of(context).padding.top -
                             MediaQuery.of(context).padding.bottom,
                       ),
@@ -223,12 +231,16 @@ class _LoginPageState extends State<LoginPage> {
                                   // Error message
                                   if (mutation.isError && errorText != null)
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 16),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 16,
+                                      ),
                                       child: Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
                                           color: Colors.red.withAlpha(25),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Row(
                                           children: [
@@ -265,7 +277,9 @@ class _LoginPageState extends State<LoginPage> {
                                         foregroundColor: Colors.white,
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(30),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
                                         ),
                                       ),
                                       child: mutation.isLoading
@@ -276,8 +290,8 @@ class _LoginPageState extends State<LoginPage> {
                                                 strokeWidth: 2.5,
                                                 valueColor:
                                                     AlwaysStoppedAnimation(
-                                                  Colors.white,
-                                                ),
+                                                      Colors.white,
+                                                    ),
                                               ),
                                             )
                                           : Text(
@@ -350,7 +364,9 @@ class _LoginPageState extends State<LoginPage> {
                                   GestureDetector(
                                     onTap: () {
                                       // TODO: Implement password reset
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
                                           content: Text(
                                             'Password reset coming soon',
@@ -407,19 +423,21 @@ class _LoginPageState extends State<LoginPage> {
         style: GoogleFonts.poppins(fontSize: 15),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: GoogleFonts.poppins(
-            color: Colors.grey[500],
-            fontSize: 15,
-          ),
+          hintStyle: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 15),
           prefixIcon: Padding(
             padding: const EdgeInsets.only(left: 16, right: 12),
             child: Icon(icon, color: Colors.grey[500], size: 22),
           ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
           suffixIcon: suffixIcon,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
           errorStyle: GoogleFonts.poppins(fontSize: 12),
         ),
       ),
