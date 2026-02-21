@@ -21,3 +21,7 @@ export 'patient/patient_bottom_nav.dart';
 export 'patient/patient_scaffold.dart';
 export 'patient/patient_profile_widgets.dart';
 export 'patient/patient_dosage_widgets.dart';
+
+// Admin widgets
+export 'admin/admin_scaffold.dart';
+export 'admin/admin_dialogs.dart';
