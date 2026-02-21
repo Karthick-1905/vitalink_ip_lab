@@ -19,67 +19,77 @@ class PatientProfileContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Profile Avatar
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF6366F1), Color(0xFFA5B4FC)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: profile['profilePictureUrl'] != null
-              ? ClipOval(
-                  child: Image.network(
-                    profile['profilePictureUrl']!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => PatientAvatarPlaceholder(name: profile['name'] ?? 'P'),
+        // Profile Header - Picture on left, Name & Target INR on right
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Profile Avatar
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF6366F1), Color(0xFFA5B4FC)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
-                )
-              : PatientAvatarPlaceholder(name: profile['name'] ?? 'P'),
-        ),
-        const SizedBox(height: 20),
-
-        // Patient Name
-        Text(
-          profile['name'] ?? 'Patient Name',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-
-        // Target INR Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF6366F1), width: 1.5),
-          ),
-          child: Text(
-            'Target INR: ${profile['targetINR'] ?? '2.0 - 3.0'}',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6366F1),
+                ],
+              ),
+              child: profile['profilePictureUrl'] != null
+                  ? ClipOval(
+                      child: Image.network(
+                        profile['profilePictureUrl']!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => PatientAvatarPlaceholder(name: profile['name'] ?? 'P'),
+                      ),
+                    )
+                  : PatientAvatarPlaceholder(name: profile['name'] ?? 'P'),
             ),
-          ),
+            const SizedBox(width: 20),
+            
+            // Name and Target INR
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    profile['name'] ?? 'Patient Name',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF6366F1), width: 1.5),
+                    ),
+                    child: Text(
+                      'Target INR: ${profile['targetINR'] ?? '2.0 - 3.0'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6366F1),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
 
