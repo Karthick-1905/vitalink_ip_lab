@@ -55,7 +55,7 @@ export const updateProfileSchema = z.object({
         medical_config: z.object({
             therapy_start_date: z.union([
                 z.date(),
-                z.string().transform((val) => new Date(val))
+                ddmmyyyy
             ]).refine(
                 (date) => date <= new Date(),
                 { message: "Therapy start date cannot be in the future" }

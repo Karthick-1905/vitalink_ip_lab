@@ -23,6 +23,8 @@ class DoctorScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       drawer: drawer,
       bottomNavigationBar: DoctorBottomNavBar(
         currentIndex: currentNavIndex,

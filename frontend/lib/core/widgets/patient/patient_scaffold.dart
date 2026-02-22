@@ -25,13 +25,15 @@ class PatientScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       drawer: drawer,
       bottomNavigationBar: PatientBottomNavBar(
         currentIndex: currentNavIndex,
         onTap: onNavChanged,
       ),
       body: Container(
-        decoration: bodyDecoration,
+        decoration: bodyDecoration ?? const BoxDecoration(color: Colors.white),
         child: Column(
           children: [
             AppNavBar(
