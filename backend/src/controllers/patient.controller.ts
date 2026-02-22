@@ -7,6 +7,22 @@ import type { ReportInput, TakeDosageInput, UpdateHealthLog, UpdateProfileInput 
 import logger from '@alias/utils/logger'
 import { uploadFile, getDownloadUrl } from '@alias/utils/fileUpload'
 
+const getPatientUserOrThrow = async (userId: string, notFoundMessage = 'Patient not found') => {
+	const patientUser = await User.findById(userId)
+	if (!patientUser || patientUser.user_type !== UserType.PATIENT) {
+		throw new ApiError(StatusCodes.NOT_FOUND, notFoundMessage)
+	}
+	return patientUser
+}
+
+const getPatientProfileOrThrow = async (profileId: unknown, notFoundMessage = 'Patient profile not found') => {
+	const patientProfile = await PatientProfile.findById(profileId)
+	if (!patientProfile) {
+		throw new ApiError(StatusCodes.NOT_FOUND, notFoundMessage)
+	}
+	return patientProfile
+}
+
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 	const { user_id } = req.user
 	const user = await User.findById(user_id).populate({
@@ -29,12 +45,11 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
 		throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized')
 	}
 
-	const patientUser = await User.findById(req.user.user_id)
-	if (!patientUser || patientUser.user_type !== UserType.PATIENT) {
-		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
-	}
-
+	const patientUser = await getPatientUserOrThrow(req.user.user_id)
 	const patient = await PatientProfile.findById(patientUser.profile_id).select('inr_history health_logs weekly_dosage medical_config')
+	if (!patient) {
+		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
+	}
 
 	// Convert patient to plain object and generate presigned URLs for reports
 	const patientData = patient.toObject()
@@ -59,7 +74,7 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
 
 export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput['body']>, res: Response) => {
 	const { user_id } = req.user
-	const patientUser = await User.findById(user_id)
+	const patientUser = await getPatientUserOrThrow(user_id)
 
 	const { inr_value, test_date } = req.body
 	const parsed_inr_value = parseFloat(inr_value)
@@ -100,18 +115,17 @@ export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput
 		},
 		{ new: true }
 	)
+	if (!patient) {
+		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
+	}
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report submitted', { patient }))
 })
 
 // TODO: Need to Review The Routes and Logic After This Later
 export const missedDoses = asyncHandler(async (req: Request<{}, {}, {}>, res: Response) => {
-	const patientUser = await User.findById(req.user.user_id)
-
-	const patient = await PatientProfile.findById(patientUser.profile_id)
-	if (!patient) {
-		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
-	}
+	const patientUser = await getPatientUserOrThrow(req.user.user_id)
+	const patient = await getPatientProfileOrThrow(patientUser.profile_id)
 
 	const therapyStart = patient.medical_config?.therapy_start_date
 	const dosage = patient.weekly_dosage
@@ -150,7 +164,7 @@ export const missedDoses = asyncHandler(async (req: Request<{}, {}, {}>, res: Re
 })
 
 export const takeDosage = asyncHandler(async (req: Request<{}, {}, TakeDosageInput['body']>, res: Response) => {
-	const patientUser = await User.findById(req.user.user_id)
+	const patientUser = await getPatientUserOrThrow(req.user.user_id)
 
 	const { date } = req.body
 	const parsedDate = date instanceof Date ? date : parseDDMMYYYY(date)
@@ -159,10 +173,7 @@ export const takeDosage = asyncHandler(async (req: Request<{}, {}, TakeDosageInp
 	const normalizedDate = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate())
 
 	// Get the patient profile
-	const patient = await PatientProfile.findById(patientUser.profile_id)
-	if (!patient) {
-		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
-	}
+	const patient = await getPatientProfileOrThrow(patientUser.profile_id)
 
 	// Check if this date is already marked as taken
 	const takenDoses = patient.medical_config?.taken_doses || []
@@ -190,12 +201,8 @@ export const takeDosage = asyncHandler(async (req: Request<{}, {}, TakeDosageInp
 })
 
 export const getDosageCalendar = asyncHandler(async (req: Request, res: Response) => {
-	const patientUser = await User.findById(req.user.user_id)
-
-	const patient = await PatientProfile.findById(patientUser.profile_id)
-	if (!patient) {
-		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
-	}
+	const patientUser = await getPatientUserOrThrow(req.user.user_id)
+	const patient = await getPatientProfileOrThrow(patientUser.profile_id)
 
 	const therapyStart = patient.medical_config?.therapy_start_date
 	const dosage = patient.weekly_dosage
@@ -321,7 +328,7 @@ export const updateHealthLogs = asyncHandler(async (req: Request<{}, {}, UpdateH
 	const { type, description } = req.body
 	const { user_id } = req.user
 
-	const user = await User.findById(user_id)
+	const user = await getPatientUserOrThrow(user_id)
 	const patientprofile = await PatientProfile.findByIdAndUpdate(user.profile_id,
 		[{
 			$set: {
@@ -335,11 +342,14 @@ export const updateHealthLogs = asyncHandler(async (req: Request<{}, {}, UpdateH
 		}],
 		{ new: true, updatePipeline: true }
 	);
+	if (!patientprofile) {
+		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
+	}
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Health Logs Updated Suucessfully"))
 })
 
-export const updateProfilePicture = async (req: Request, res: Response) => {
+export const updateProfilePicture = asyncHandler(async (req: Request, res: Response) => {
 	if (!req.file) {
 		throw new ApiError(StatusCodes.BAD_REQUEST, "Image is required for setting up profile picture")
 	}
@@ -357,14 +367,11 @@ export const updateProfilePicture = async (req: Request, res: Response) => {
 		throw new ApiError(StatusCodes.INSUFFICIENT_STORAGE, "Error While Uploading report to cloud")
 	}
 
-	const user = await User.findById(user_id)
-	if (!user) {
-		throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
-	}
+	const user = await getPatientUserOrThrow(user_id)
 
 	await PatientProfile.findByIdAndUpdate(user.profile_id, { profile_picture_url: fileUrl }, { new: true })
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Profile Picture successfully changed"))
-}
+})
 
 function parseDDMMYYYY(date: string | Date): Date {
 	const regex = /^\d{2}-\d{2}-\d{4}$/
@@ -470,5 +477,3 @@ function findMissedDoses(medicationDates: string[], takenDates: Array<Date | str
 	})
 	return missed
 }
-
-

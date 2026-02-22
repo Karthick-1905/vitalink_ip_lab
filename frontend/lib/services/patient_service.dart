@@ -133,6 +133,28 @@ class PatientService {
     }
   }
 
+  static Future<void> submitHealthLog({
+    required String type,
+    required String description,
+  }) async {
+    _setupInterceptors();
+    try {
+      final response = await _dio.post(
+        '/health-logs',
+        data: {
+          'type': type,
+          'description': description,
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to submit health log');
+      }
+    } on DioException catch (e) {
+      throw Exception('Failed to submit health log: ${e.message}');
+    }
+  }
+
   static Future<void> markDoseAsTaken({
     required String date,
     required double dose,
@@ -249,22 +271,68 @@ class PatientService {
     }
   }
 
-  // Get latest INR value
-  static Future<double> getLatestINR() async {
+  static Future<Map<String, dynamic>> getLatestINRData() async {
     _setupInterceptors();
     try {
       final response = await _dio.get('/reports');
       if (response.statusCode == 200) {
         final inrHistory = response.data['data']['report']['inr_history'] as List;
-        if (inrHistory.isNotEmpty) {
-          return (inrHistory.first['inr_value'] as num).toDouble();
+        if (inrHistory.isEmpty) {
+          return {
+            'value': 0.0,
+            'date': 'N/A',
+          };
         }
-        return 0.0;
+
+        Map<String, dynamic>? latestEntry;
+        DateTime? latestDate;
+
+        for (final item in inrHistory) {
+          if (item is! Map) continue;
+
+          final entry = Map<String, dynamic>.from(item);
+          final entryDate = _parseDate(entry['test_date']);
+
+          if (latestEntry == null) {
+            latestEntry = entry;
+            latestDate = entryDate;
+            continue;
+          }
+
+          if (entryDate != null && (latestDate == null || entryDate.isAfter(latestDate))) {
+            latestEntry = entry;
+            latestDate = entryDate;
+          }
+        }
+
+        if (latestEntry == null) {
+          return {
+            'value': 0.0,
+            'date': 'N/A',
+          };
+        }
+
+        return {
+          'value': _toDouble(latestEntry['inr_value']),
+          'date': formatDate(latestEntry['test_date']),
+        };
       }
-      return 0.0;
+      return {
+        'value': 0.0,
+        'date': 'N/A',
+      };
     } on DioException catch (e) {
       throw Exception('Error: ${e.message}');
     }
+  }
+
+  // Get latest INR value
+  static Future<double> getLatestINR() async {
+    final latest = await getLatestINRData();
+    final value = latest['value'];
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
   // Helper function to format dates
@@ -292,6 +360,31 @@ class PatientService {
     } else {
       return 'High';
     }
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) return parsed;
+
+      final parts = value.split('-');
+      if (parts.length == 3) {
+        final day = int.tryParse(parts[0]);
+        final month = int.tryParse(parts[1]);
+        final year = int.tryParse(parts[2]);
+        if (day != null && month != null && year != null) {
+          return DateTime(year, month, day);
+        }
+      }
+    }
+    return null;
   }
 
   // Update patient profile

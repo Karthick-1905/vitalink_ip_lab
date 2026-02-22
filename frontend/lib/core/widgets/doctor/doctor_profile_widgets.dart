@@ -45,7 +45,8 @@ class DoctorProfileContent extends StatelessWidget {
                   child: Image.network(
                     profile.profilePictureUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => DoctorAvatarPlaceholder(name: profile.name),
+                    errorBuilder: (_, __, ___) =>
+                        DoctorAvatarPlaceholder(name: profile.name),
                   ),
                 )
               : DoctorAvatarPlaceholder(name: profile.name),
@@ -254,7 +255,8 @@ class DoctorProfileDetails extends StatelessWidget {
             DoctorDetailRow(label: 'Contact', value: profile.contactNumber!),
           ],
           const SizedBox(height: 12),
-          DoctorDetailRow(label: 'Total Patients', value: profile.patientsCount.toString()),
+          DoctorDetailRow(
+              label: 'Total Patients', value: profile.patientsCount.toString()),
         ],
       ),
     );
@@ -363,10 +365,10 @@ class DoctorActionButtons extends StatelessWidget {
 
   Future<void> _performLogout(BuildContext context) async {
     final SecureStorage secureStorage = AppDependencies.secureStorage;
-    
+
     // Clear the stored token and user data
     await secureStorage.clearAll();
-    
+
     // Navigate to login page and clear navigation stack
     if (context.mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil(
@@ -394,11 +396,11 @@ class DoctorEditProfileModal extends StatefulWidget {
 class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
   final _formKey = GlobalKey<FormState>();
   final DoctorRepository _repository = AppDependencies.doctorRepository;
-  
+
   late final TextEditingController _nameController;
   late final TextEditingController _departmentController;
   late final TextEditingController _contactController;
-  
+
   bool _isLoading = false;
   String? _error;
 
@@ -406,8 +408,10 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.profile.name);
-    _departmentController = TextEditingController(text: widget.profile.department);
-    _contactController = TextEditingController(text: widget.profile.contactNumber ?? '');
+    _departmentController =
+        TextEditingController(text: widget.profile.department);
+    _contactController =
+        TextEditingController(text: widget.profile.contactNumber ?? '');
   }
 
   @override
@@ -428,14 +432,15 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
 
     try {
       final data = <String, dynamic>{};
-      
+
       if (_nameController.text.trim() != widget.profile.name) {
         data['name'] = _nameController.text.trim();
       }
       if (_departmentController.text.trim() != widget.profile.department) {
         data['department'] = _departmentController.text.trim();
       }
-      if (_contactController.text.trim() != (widget.profile.contactNumber ?? '')) {
+      if (_contactController.text.trim() !=
+          (widget.profile.contactNumber ?? '')) {
         data['contact_number'] = _contactController.text.trim();
       }
 
@@ -445,7 +450,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
       }
 
       await _repository.updateProfile(data);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -456,6 +461,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
         widget.onSuccess();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
       if (mounted) {
@@ -467,7 +473,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: bottomInset),
       decoration: const BoxDecoration(
@@ -495,7 +501,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Header
                 Row(
                   children: [
@@ -542,9 +548,9 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Error message
-                if (_error != null) ...[  
+                if (_error != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -554,12 +560,14 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 20),
+                        const Icon(Icons.error_outline,
+                            color: Color(0xFFDC2626), size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _error!,
-                            style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13),
+                            style: const TextStyle(
+                                color: Color(0xFFDC2626), fontSize: 13),
                           ),
                         ),
                       ],
@@ -567,7 +575,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                
+
                 // Name field
                 _buildTextField(
                   controller: _nameController,
@@ -581,7 +589,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Department field
                 _buildTextField(
                   controller: _departmentController,
@@ -589,7 +597,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                   icon: Icons.business_outlined,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Contact field
                 _buildTextField(
                   controller: _contactController,
@@ -597,20 +605,24 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   validator: (value) {
-                    if (value != null && value.isNotEmpty && value.length != 10) {
+                    if (value != null &&
+                        value.isNotEmpty &&
+                        value.length != 10) {
                       return 'Contact number must be 10 digits';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Action buttons
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF6B7280),
                           side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -702,7 +714,8 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }

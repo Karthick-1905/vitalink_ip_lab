@@ -32,18 +32,18 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       ),
       builder: (context, query) {
         if (query.isLoading) {
-          return const PatientScaffold(
-            pageTitle: '@ Profile Page',
-            currentNavIndex: 0,
-            onNavChanged: _dummyOnNavChanged,
-            body: Center(child: CircularProgressIndicator()),
+          return PatientScaffold(
+            pageTitle: 'My Profile',
+            currentNavIndex: _currentNavIndex,
+            onNavChanged: (index) => _handleNav(index),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (query.isError) {
           return PatientScaffold(
-            pageTitle: '@ Profile Page',
-            currentNavIndex: 0,
+            pageTitle: 'My Profile',
+            currentNavIndex: _currentNavIndex,
             onNavChanged: (index) => _handleNav(index),
             body: Center(
               child: Column(
@@ -59,11 +59,11 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
         }
 
         if (!query.hasData) {
-          return const PatientScaffold(
-            pageTitle: '@ Profile Page',
-            currentNavIndex: 0,
-            onNavChanged: _dummyOnNavChanged,
-            body: Center(child: CircularProgressIndicator()),
+          return PatientScaffold(
+            pageTitle: 'My Profile',
+            currentNavIndex: _currentNavIndex,
+            onNavChanged: (index) => _handleNav(index),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -98,8 +98,6 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       },
     );
   }
-
-  static void _dummyOnNavChanged(int index) {}
 
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;

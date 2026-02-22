@@ -22,6 +22,7 @@ const PatientProfileSchema = new mongoose.Schema({
     }
   },
   medical_config: {
+    diagnosis: { type: String },
     therapy_drug: { type: String },
     therapy_start_date: { type: Date },
     target_inr: {

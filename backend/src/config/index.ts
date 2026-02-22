@@ -10,36 +10,55 @@ interface Config {
   logLevel: string
   accessKeyId: string
   secretAccessKey: string
-  bucketName: string
-  defaultAdminEmail: string
-  defaultAdminPassword: string
+  bucketName?: string
 }
 
-function getRequiredEnv(key: string): string {
-  const value = process.env[key]
-  if (!value) {
-    throw new Error(`Missing environment variable: ${key}`)
+const nodeEnv = process.env.NODE_ENV || 'development'
+const isProduction = nodeEnv === 'production'
+const isTest = nodeEnv === 'test'
+
+function getEnv(
+  key: string,
+  options: {
+    requiredInProduction?: boolean
+    defaultValue?: string
+  } = {}
+): string {
+  const value = process.env[key]?.trim()
+
+  if (value) {
+    return value
   }
-  return value
+
+  if (isProduction && options.requiredInProduction) {
+    throw new Error(`Missing required environment variable in production: ${key}`)
+  }
+
+  if (options.defaultValue !== undefined) {
+    return options.defaultValue
+  }
+
+  return ''
 }
 
-function getOptionalEnv(key: string, defaultValue: string): string {
-  return process.env[key] || defaultValue
-}
+const defaultDatabaseUrl = isTest
+  ? 'mongodb://localhost:27017/VitaLink_test'
+  : 'mongodb://localhost:27017/VitaLink'
+
+const defaultJwtSecret = isTest
+  ? 'test-only-jwt-secret'
+  : 'dev-only-jwt-secret-change-me'
 
 export const config: Config = {
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
-  databaseUrl: process.env.MONGO_URI || 'mongodb://localhost:27017/VitaLink',
-  jwtSecret: getRequiredEnv('JWT_SECRET'),
-  jwtExpiresIn: (process.env.JWT_EXPIRES_IN || '1h') as StringValue,
-  nodeEnv: process.env.NODE_ENV || 'development',
-  logLevel: process.env.LOG_LEVEL || 'info',
-  accessKeyId: process.env.ACCESS_KEY_ID || '',
-  secretAccessKey: process.env.SECRET_ACCESS_KEY || '',
+  databaseUrl: getEnv('MONGO_URI', { requiredInProduction: true, defaultValue: defaultDatabaseUrl }),
+  jwtSecret: getEnv('JWT_SECRET', { requiredInProduction: true, defaultValue: defaultJwtSecret }),
+  jwtExpiresIn: (getEnv('JWT_EXPIRES_IN', { defaultValue: '1h' }) as StringValue),
+  nodeEnv,
+  logLevel: getEnv('LOG_LEVEL', { defaultValue: 'info' }),
+  accessKeyId: getEnv('ACCESS_KEY_ID'),
+  secretAccessKey: getEnv('SECRET_ACCESS_KEY'),
   bucketName: process.env.S3_BUCKET_NAME,
-  defaultAdminEmail: getOptionalEnv('DEFAULT_ADMIN_EMAIL', 'admin@vitalink.com'),
-  defaultAdminPassword: getOptionalEnv('DEFAULT_ADMIN_PASSWORD', 'VitaLink@Admin123'),
 }
-
 
 

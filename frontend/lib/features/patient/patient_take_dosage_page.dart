@@ -27,11 +27,11 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
       ),
       builder: (context, query) {
         if (query.isLoading) {
-          return const PatientScaffold(
+          return PatientScaffold(
             pageTitle: 'Dosage Management',
             currentNavIndex: 2,
-            onNavChanged: _dummyOnNavChanged,
-            body: Center(child: CircularProgressIndicator()),
+            onNavChanged: (index) => _handleNav(index),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -57,11 +57,11 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
         }
 
         if (!query.hasData) {
-          return const PatientScaffold(
+          return PatientScaffold(
             pageTitle: 'Dosage Management',
             currentNavIndex: 2,
-            onNavChanged: _dummyOnNavChanged,
-            body: Center(child: CircularProgressIndicator()),
+            onNavChanged: (index) => _handleNav(index),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -128,9 +128,11 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                           margin: const EdgeInsets.only(bottom: 16),
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              Navigator.of(context).pushNamed(AppRoutes.patientDosageCalendar);
+                              Navigator.of(context)
+                                  .pushNamed(AppRoutes.patientDosageCalendar);
                             },
-                            icon: const Icon(Icons.calendar_month_rounded, size: 20),
+                            icon: const Icon(Icons.calendar_month_rounded,
+                                size: 20),
                             label: const Text(
                               'View Dosage Calendar',
                               style: TextStyle(
@@ -141,7 +143,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue.shade600,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
                               elevation: 2,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -152,7 +155,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                         // Recent Missed Doses Section
                         DosageSection(
                           title: 'Missed Doses',
-                          subtitle: 'Below are the missed doses for the last 7 days.\nClick on the date to mark it as taken.',
+                          subtitle:
+                              'Below are the missed doses for the last 7 days.\nClick on the date to mark it as taken.',
                           children: [
                             if (recentDoses.isEmpty)
                               Center(
@@ -171,7 +175,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                               GridView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 3,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 12,
@@ -182,7 +187,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                                   final date = recentDoses[index] as String;
                                   return DosageDateCard(
                                     date: date,
-                                    onTap: () => _showMarkAsTakenDialog(date, mutation),
+                                    onTap: () =>
+                                        _showMarkAsTakenDialog(date, mutation),
                                   );
                                 },
                               ),
@@ -225,7 +231,18 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
 
   Widget _buildPaginatedRemainingDoses(List<dynamic> doses) {
     final totalPages = (doses.length / _itemsPerPage).ceil();
-    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final safeTotalPages = totalPages > 0 ? totalPages : 1;
+    final safeCurrentPage = _currentPage.clamp(1, safeTotalPages).toInt();
+
+    if (safeCurrentPage != _currentPage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _currentPage = safeCurrentPage);
+        }
+      });
+    }
+
+    final startIndex = (safeCurrentPage - 1) * _itemsPerPage;
     final endIndex = (startIndex + _itemsPerPage).clamp(0, doses.length);
     final currentPageDoses = doses.sublist(startIndex, endIndex);
 
@@ -252,8 +269,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: _currentPage > 1
-                    ? () => setState(() => _currentPage--)
+                onPressed: safeCurrentPage > 1
+                    ? () => setState(() => _currentPage = safeCurrentPage - 1)
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF87CEEB),
@@ -267,7 +284,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
               ),
               const SizedBox(width: 16),
               Text(
-                'Page $_currentPage of $totalPages',
+                'Page $safeCurrentPage of $safeTotalPages',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -275,8 +292,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
               ),
               const SizedBox(width: 16),
               ElevatedButton(
-                onPressed: _currentPage < totalPages
-                    ? () => setState(() => _currentPage++)
+                onPressed: safeCurrentPage < safeTotalPages
+                    ? () => setState(() => _currentPage = safeCurrentPage + 1)
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0084FF),
@@ -453,8 +470,6 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
     );
   }
 
-  static void _dummyOnNavChanged(int index) {}
-
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;
     switch (index) {
@@ -467,7 +482,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
       case 2:
         break;
       case 3:
-        Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports);
+        Navigator.of(context)
+            .pushReplacementNamed(AppRoutes.patientHealthReports);
         break;
       case 4:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile);

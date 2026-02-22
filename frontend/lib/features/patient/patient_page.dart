@@ -4,7 +4,6 @@ import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/services/patient_service.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
-import 'package:intl/intl.dart';
 
 class PatientPage extends StatefulWidget {
   const PatientPage({super.key});
@@ -25,14 +24,15 @@ class _PatientPageState extends State<PatientPage> {
           final profile = await PatientService.getProfile();
           final history = await PatientService.getINRHistory();
           final prescriptions = await PatientService.getPrescriptions();
-          final latestINR = await PatientService.getLatestINR();
+          final latestINRData = await PatientService.getLatestINRData();
           final missedDoses = await PatientService.getMissedDoses();
 
           return {
             'profile': profile,
             'history': history,
             'prescriptions': prescriptions,
-            'latestINR': latestINR,
+            'latestINR': latestINRData['value'],
+            'latestINRDate': latestINRData['date'],
             'missedDoses': missedDoses,
           };
         },
@@ -58,7 +58,8 @@ class _PatientPageState extends State<PatientPage> {
 
         final data = query.data!;
         final profile = data['profile'] as Map<String, dynamic>;
-        final latestINR = data['latestINR'] as double;
+        final latestINR = (data['latestINR'] as num?)?.toDouble() ?? 0.0;
+        final latestINRDate = data['latestINRDate']?.toString() ?? 'N/A';
         final history = data['history'] as List;
 
         return PatientScaffold(
@@ -156,7 +157,7 @@ class _PatientPageState extends State<PatientPage> {
                                   ),
                                 ),
                                 Text(
-                                  DateFormat('MMM dd').format(DateTime.now()),
+                                  latestINRDate,
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,

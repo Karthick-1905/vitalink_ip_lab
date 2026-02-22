@@ -5,6 +5,9 @@ import 'package:frontend/core/widgets/common/logout_dialog.dart';
 
 /// Admin layout wrapper with responsive sidebar/drawer navigation.
 class AdminScaffold extends StatelessWidget {
+  static const double tabletBreakpoint = 600;
+  static const double desktopBreakpoint = 900;
+
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final Widget body;
@@ -17,6 +20,11 @@ class AdminScaffold extends StatelessWidget {
     required this.body,
     this.actions,
   });
+
+  static bool showsSidebar(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= tabletBreakpoint;
+
+  static bool usesShellAppBar(BuildContext context) => !showsSidebar(context);
 
   static const _destinations = <_NavItem>[
     _NavItem(Icons.dashboard_outlined, Icons.dashboard_rounded, 'Dashboard'),
@@ -38,10 +46,9 @@ class AdminScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isDesktop = width >= 900;
-    final isTablet = width >= 600 && width < 900;
-    final showSidebar = isDesktop || isTablet;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width >= desktopBreakpoint;
+    final showSidebar = showsSidebar(context);
 
     if (showSidebar) {
       return Scaffold(

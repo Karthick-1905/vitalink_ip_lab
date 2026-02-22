@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { authenticate, authorize, validate } from '@alias/middlewares'
 import { UserType } from '@alias/validators'
+import auditLogger from '@alias/middlewares/audit.middleware'
 import {
   createDoctor, getAllDoctors, updateDoctor, deactivateDoctor,
   createPatient, getAllPatients, updatePatient, deactivatePatient,
@@ -19,6 +20,7 @@ const router = Router()
 // All admin routes require authentication + ADMIN role
 router.use(authenticate)
 router.use(authorize([UserType.ADMIN]))
+router.use(auditLogger)
 
 // ─── Doctor Management ───
 router.post('/doctors', validate(createDoctorSchema), createDoctor)

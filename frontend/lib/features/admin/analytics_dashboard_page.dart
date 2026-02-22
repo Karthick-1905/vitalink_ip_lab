@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/admin_stats_model.dart';
 
@@ -18,6 +19,142 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
+
+    final body = UseQuery<AdminStatsModel>(
+      options: QueryOptions<AdminStatsModel>(
+        queryKey: const ['admin', 'analytics', 'stats'],
+        queryFn: _repo.getAdminStats,
+      ),
+      builder: (context, statsQuery) {
+        return UseQuery<RegistrationTrends>(
+          options: QueryOptions<RegistrationTrends>(
+            queryKey: ['admin', 'analytics', 'trends', _selectedPeriod],
+            queryFn: () => _repo.getTrends(period: _selectedPeriod),
+          ),
+          builder: (context, trendsQuery) {
+            return UseQuery<InrComplianceStats>(
+              options: QueryOptions<InrComplianceStats>(
+                queryKey: const ['admin', 'analytics', 'compliance'],
+                queryFn: _repo.getCompliance,
+              ),
+              builder: (context, complianceQuery) {
+                return UseQuery<List<DoctorWorkload>>(
+                  options: QueryOptions<List<DoctorWorkload>>(
+                    queryKey: const ['admin', 'analytics', 'workload'],
+                    queryFn: _repo.getWorkload,
+                  ),
+                  builder: (context, workloadQuery) {
+                    final isLoading =
+                        statsQuery.isLoading || trendsQuery.isLoading;
+
+                    if (isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    return SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!showPageScaffold)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Analytics Dashboard',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge,
+                                    ),
+                                  ),
+                                  DropdownButton<String>(
+                                    value: _selectedPeriod,
+                                    underline: const SizedBox(),
+                                    icon: const Icon(
+                                      Icons.calendar_today_rounded,
+                                      size: 20,
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: '7d',
+                                        child: Text('7 Days'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '30d',
+                                        child: Text('30 Days'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '90d',
+                                        child: Text('90 Days'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: '1y',
+                                        child: Text('1 Year'),
+                                      ),
+                                    ],
+                                    onChanged: (v) {
+                                      if (v != null) {
+                                        setState(() => _selectedPeriod = v);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          _SummaryCards(stats: statsQuery.data),
+                          const SizedBox(height: 24),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final isDesktop = width > 900;
+                              return Wrap(
+                                spacing: 16,
+                                runSpacing: 16,
+                                children: [
+                                  SizedBox(
+                                    width: isDesktop ? (width - 16) / 2 : width,
+                                    height: 350,
+                                    child:
+                                        _TrendsChart(trends: trendsQuery.data),
+                                  ),
+                                  SizedBox(
+                                    width: isDesktop ? (width - 16) / 2 : width,
+                                    height: 350,
+                                    child: _ComplianceChart(
+                                      compliance: complianceQuery.data,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: isDesktop ? (width - 16) / 2 : width,
+                                    height: 350,
+                                    child: _WorkloadChart(
+                                      workload: workloadQuery.data ?? [],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+
+    if (!showPageScaffold) {
+      return body;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics Dashboard'),
@@ -41,92 +178,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
           ),
         ],
       ),
-      body: UseQuery<AdminStatsModel>(
-        options: QueryOptions<AdminStatsModel>(
-          queryKey: const ['admin', 'analytics', 'stats'],
-          queryFn: _repo.getAdminStats,
-        ),
-        builder: (context, statsQuery) {
-          return UseQuery<RegistrationTrends>(
-            options: QueryOptions<RegistrationTrends>(
-              queryKey: ['admin', 'analytics', 'trends', _selectedPeriod],
-              queryFn: () => _repo.getTrends(period: _selectedPeriod),
-            ),
-            builder: (context, trendsQuery) {
-              return UseQuery<InrComplianceStats>(
-                options: QueryOptions<InrComplianceStats>(
-                  queryKey: const ['admin', 'analytics', 'compliance'],
-                  queryFn: _repo.getCompliance,
-                ),
-                builder: (context, complianceQuery) {
-                  return UseQuery<List<DoctorWorkload>>(
-                    options: QueryOptions<List<DoctorWorkload>>(
-                      queryKey: const ['admin', 'analytics', 'workload'],
-                      queryFn: _repo.getWorkload,
-                    ),
-                    builder: (context, workloadQuery) {
-                      final isLoading =
-                          statsQuery.isLoading || trendsQuery.isLoading;
-
-                      if (isLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      return SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _SummaryCards(stats: statsQuery.data),
-                            const SizedBox(height: 24),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final width = constraints.maxWidth;
-                                final isDesktop = width > 900;
-                                return Wrap(
-                                  spacing: 16,
-                                  runSpacing: 16,
-                                  children: [
-                                    SizedBox(
-                                      width:
-                                          isDesktop ? (width - 16) / 2 : width,
-                                      height: 350,
-                                      child: _TrendsChart(
-                                        trends: trendsQuery.data,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width:
-                                          isDesktop ? (width - 16) / 2 : width,
-                                      height: 350,
-                                      child: _ComplianceChart(
-                                        compliance: complianceQuery.data,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width:
-                                          isDesktop ? (width - 16) / 2 : width,
-                                      height: 350,
-                                      child: _WorkloadChart(
-                                        workload: workloadQuery.data ?? [],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
+      body: body,
     );
   }
 }

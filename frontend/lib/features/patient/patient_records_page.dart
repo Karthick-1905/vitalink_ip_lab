@@ -31,11 +31,11 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
       ),
       builder: (context, query) {
         if (query.isLoading) {
-          return const PatientScaffold(
+          return PatientScaffold(
             pageTitle: 'My Records',
             currentNavIndex: 3,
-            onNavChanged: _dummyOnNavChanged,
-            body: Center(child: CircularProgressIndicator()),
+            onNavChanged: (index) => _handleNav(index),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -50,7 +50,9 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                 children: [
                   Text('Error: ${query.error}'),
                   const SizedBox(height: 16),
-                  ElevatedButton(onPressed: () => query.refetch(), child: const Text('Retry')),
+                  ElevatedButton(
+                      onPressed: () => query.refetch(),
+                      child: const Text('Retry')),
                 ],
               ),
             ),
@@ -58,11 +60,11 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
         }
 
         if (!query.hasData) {
-          return const PatientScaffold(
+          return PatientScaffold(
             pageTitle: 'My Records',
             currentNavIndex: 3,
-            onNavChanged: _dummyOnNavChanged,
-            body: Center(child: CircularProgressIndicator()),
+            onNavChanged: (index) => _handleNav(index),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -93,7 +95,8 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                   Container(
                     decoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                        bottom:
+                            BorderSide(color: Colors.grey.shade300, width: 1),
                       ),
                     ),
                     child: Row(
@@ -110,7 +113,10 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                   if (_selectedTabIndex == 0)
                     _buildINRHistory(profile, history)
                   else if (_selectedTabIndex == 1)
-                    _buildHealthLogs(profile)
+                    _buildHealthLogs(
+                      profile,
+                      onDataChanged: () async => query.refetch(),
+                    )
                   else
                     _buildDosageSchedule(profile),
                 ],
@@ -121,8 +127,6 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
       },
     );
   }
-
-  static void _dummyOnNavChanged(int index) {}
 
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;
@@ -175,9 +179,10 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
     );
   }
 
-  Widget _buildINRHistory(Map<String, dynamic> profile, List<Map<String, dynamic>> history) {
+  Widget _buildINRHistory(
+      Map<String, dynamic> profile, List<Map<String, dynamic>> history) {
     final targetINR = profile['targetINR'] ?? '2.0 - 3.0';
-    
+
     return Column(
       children: [
         // Summary card
@@ -301,14 +306,17 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: isCritical ? Colors.orange[700] : Colors.green[700],
+                              color: isCritical
+                                  ? Colors.orange[700]
+                                  : Colors.green[700],
                             ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    if (record['notes'] != null && record['notes'] != 'No notes')
+                    if (record['notes'] != null &&
+                        record['notes'] != 'No notes')
                       Text(
                         record['notes'],
                         style: TextStyle(
@@ -325,35 +333,19 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
     );
   }
 
-  Widget _buildHealthLogs(Map<String, dynamic> profile) {
-    final logs = profile['health_logs'] as List? ?? [];
-
-    if (logs.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Column(
-            children: [
-              Icon(Icons.favorite, size: 64, color: Colors.grey[300]),
-              const SizedBox(height: 16),
-              Text(
-                'No health logs',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+  Widget _buildHealthLogs(
+    Map<String, dynamic> profile, {
+    required Future<void> Function() onDataChanged,
+  }) {
+    final logs =
+        profile['healthLogs'] as List? ?? profile['health_logs'] as List? ?? [];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ElevatedButton.icon(
-          onPressed: () => _showAddHealthLogDialog(),
+          onPressed: () =>
+              _showAddHealthLogDialog(onDataChanged: onDataChanged),
           icon: const Icon(Icons.add),
           label: const Text('Add Health Log'),
           style: ElevatedButton.styleFrom(
@@ -362,107 +354,128 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
           ),
         ),
         const SizedBox(height: 16),
-        ...logs.map((log) {
-          final type = log['type'] ?? 'OTHER';
-          final severity = log['severity'] ?? 'Normal';
-          final isResolved = log['is_resolved'] ?? true;
-          final dateStr = PatientService.formatDate(log['date']);
-
-          return Card(
-            elevation: 1,
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        if (logs.isEmpty)
+          Center(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _getLogTypeLabel(type),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            dateStr,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getSeverityColor(severity),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              severity,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isResolved
-                                  ? Colors.green.withValues(alpha: 0.1)
-                                  : Colors.orange.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              isResolved ? 'Resolved' : 'Ongoing',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: isResolved
-                                    ? Colors.green[700]
-                                    : Colors.orange[700],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                  Icon(Icons.favorite, size: 64, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
                   Text(
-                    log['description'] ?? 'No description',
+                    'No health logs',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[700],
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
                     ),
                   ),
                 ],
               ),
             ),
-          );
-        }),
+          )
+        else
+          ...logs.map((log) {
+            final type = log['type'] ?? 'OTHER';
+            final severity = log['severity'] ?? 'Normal';
+            final isResolved = log['is_resolved'] ?? true;
+            final dateStr = PatientService.formatDate(log['date']);
+
+            return Card(
+              elevation: 1,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getLogTypeLabel(type),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              dateStr,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getSeverityColor(severity),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                severity,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isResolved
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                isResolved ? 'Resolved' : 'Ongoing',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isResolved
+                                      ? Colors.green[700]
+                                      : Colors.orange[700],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      log['description'] ?? 'No description',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
       ],
     );
   }
@@ -571,7 +584,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
             } else if (value is String) {
               dose = double.tryParse(value) ?? 0.0;
             }
-            
+
             return Card(
               elevation: 1,
               shape: RoundedRectangleBorder(
@@ -614,89 +627,154 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
     );
   }
 
-  void _showAddHealthLogDialog() {
+  void _showAddHealthLogDialog(
+      {required Future<void> Function() onDataChanged}) {
+    final descriptionController = TextEditingController();
+    String selectedType = 'SIDE_EFFECT';
+    bool isSubmitting = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Health Log'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Log Type',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Add Health Log'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Log Type',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButton<String>(
-                isExpanded: true,
-                value: 'SIDE_EFFECT',
-                items: const [
-                  DropdownMenuItem(
-                    value: 'SIDE_EFFECT',
-                    child: Text('Side Effect'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'ILLNESS',
-                    child: Text('Illness'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'LIFESTYLE',
-                    child: Text('Lifestyle Change'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'OTHER_MEDS',
-                    child: Text('Other Medications'),
-                  ),
-                ],
-                onChanged: (value) {},
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Description',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                const SizedBox(height: 8),
+                DropdownButton<String>(
+                  isExpanded: true,
+                  value: selectedType,
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'SIDE_EFFECT',
+                      child: Text('Side Effect'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'ILLNESS',
+                      child: Text('Illness'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'LIFESTYLE',
+                      child: Text('Lifestyle Change'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'OTHER_MEDS',
+                      child: Text('Other Medications'),
+                    ),
+                  ],
+                  onChanged: isSubmitting
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          setDialogState(() => selectedType = value);
+                        },
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Enter details...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 16),
+                const Text(
+                  'Description',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
-                  contentPadding: const EdgeInsets.all(12),
                 ),
-                maxLines: 3,
-              ),
-            ],
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter details...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                  maxLines: 3,
+                  enabled: !isSubmitting,
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed:
+                  isSubmitting ? null : () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final dialogNavigator = Navigator.of(dialogContext);
+                      final description = descriptionController.text.trim();
+                      if (description.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a description'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isSubmitting = true);
+                      try {
+                        await PatientService.submitHealthLog(
+                          type: selectedType,
+                          description: description,
+                        );
+
+                        if (!mounted) return;
+                        if (dialogNavigator.canPop()) {
+                          dialogNavigator.pop();
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Health log added successfully'),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
+                        final queryClient = QueryClientProvider.of(context);
+                        queryClient
+                            .invalidateQueries(['patient', 'records_full']);
+                        queryClient
+                            .invalidateQueries(['patient', 'profile_full']);
+                        queryClient.invalidateQueries(['patient', 'home_data']);
+                        await onDataChanged();
+                      } catch (error) {
+                        if (!mounted) return;
+                        setDialogState(() => isSubmitting = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${error.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Add'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Health log added successfully'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
-    );
+    ).then((_) => descriptionController.dispose());
   }
 
   String _getLogTypeLabel(String type) {

@@ -20,7 +20,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
 
   final TextEditingController _inrValueController = TextEditingController();
   final TextEditingController _testDateController = TextEditingController();
-  
+
   PlatformFile? _selectedFile;
   DateTime _selectedDate = DateTime.now();
 
@@ -92,19 +92,24 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
         ),
         onSuccess: (data, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Report submitted successfully!'), backgroundColor: Colors.green),
+            const SnackBar(
+                content: Text('Report submitted successfully!'),
+                backgroundColor: Colors.green),
           );
           // Invalidate queries to refetch updated data
           final queryClient = QueryClientProvider.of(context);
           queryClient.invalidateQueries(['patient', 'home_data']);
           queryClient.invalidateQueries(['patient', 'records_full']);
           queryClient.invalidateQueries(['patient', 'profile_full']);
-          
-          Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports);
+
+          Navigator.of(context)
+              .pushReplacementNamed(AppRoutes.patientHealthReports);
         },
         onError: (error, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${error.toString()}'), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text('Error: ${error.toString()}'),
+                backgroundColor: Colors.red),
           );
         },
       ),
@@ -115,11 +120,23 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
           onNavChanged: (index) {
             if (index == _currentNavIndex) return;
             switch (index) {
-              case 0: Navigator.of(context).pushReplacementNamed(AppRoutes.patient); break;
-              case 1: break;
-              case 2: Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage); break;
-              case 3: Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports); break;
-              case 4: Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile); break;
+              case 0:
+                Navigator.of(context).pushReplacementNamed(AppRoutes.patient);
+                break;
+              case 1:
+                break;
+              case 2:
+                Navigator.of(context)
+                    .pushReplacementNamed(AppRoutes.patientTakeDosage);
+                break;
+              case 3:
+                Navigator.of(context)
+                    .pushReplacementNamed(AppRoutes.patientHealthReports);
+                break;
+              case 4:
+                Navigator.of(context)
+                    .pushReplacementNamed(AppRoutes.patientProfile);
+                break;
             }
           },
           bodyDecoration: const BoxDecoration(
@@ -140,60 +157,83 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('INR Value :', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
+                        const Text('INR Value :',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87)),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _inrValueController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           decoration: _inputDecoration('Enter INR value'),
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Please enter INR value';
-                            if (double.tryParse(value) == null) return 'Please enter a valid number';
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter INR value';
+                            }
+                            if (double.tryParse(value) == null) {
+                              return 'Please enter a valid number';
+                            }
                             return null;
                           },
                         ),
                         const SizedBox(height: 24),
-
-                        const Text('Date of Test :', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
+                        const Text('Date of Test :',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87)),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _testDateController,
                           readOnly: true,
                           onTap: () => _showDatePicker(context),
-                          decoration: _inputDecoration('dd-mm-yyyy --:--').copyWith(
+                          decoration:
+                              _inputDecoration('dd-mm-yyyy --:--').copyWith(
                             suffixIcon: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 12.0),
-                              child: Icon(Icons.calendar_month, color: Colors.black54),
+                              child: Icon(Icons.calendar_month,
+                                  color: Colors.black54),
                             ),
                           ),
                         ),
                         const SizedBox(height: 24),
-
-                        const Text('Upload Document:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
+                        const Text('Upload Document:',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87)),
                         const SizedBox(height: 12),
                         GestureDetector(
                           onTap: _pickFile,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0E5F5).withValues(alpha: 0.5),
+                              color: const Color(0xFFF0E5F5)
+                                  .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.black12),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.attach_file, color: Colors.black54, size: 20),
+                                const Icon(Icons.attach_file,
+                                    color: Colors.black54, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     _selectedFile?.name ?? 'Select a file',
                                     style: TextStyle(
-                                      color: _selectedFile != null ? Colors.black87 : Colors.black54,
+                                      color: _selectedFile != null
+                                          ? Colors.black87
+                                          : Colors.black54,
                                       fontSize: 15,
                                     ),
                                   ),
@@ -203,30 +243,36 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                           ),
                         ),
                         const SizedBox(height: 32),
-
                         SizedBox(
                           width: double.infinity,
                           height: 54,
                           child: ElevatedButton(
-                            onPressed: mutation.isLoading ? null : () {
-                              if (_formKey.currentState!.validate()) {
-                                mutation.mutate({
-                                  'inr_value': _inrValueController.text,
-                                  'test_date': _testDateController.text,
-                                  'file_bytes': _selectedFile?.bytes,
-                                  'file_name': _selectedFile?.name,
-                                });
-                              }
-                            },
+                            onPressed: mutation.isLoading
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      mutation.mutate({
+                                        'inr_value': _inrValueController.text,
+                                        'test_date': _testDateController.text,
+                                        'file_bytes': _selectedFile?.bytes,
+                                        'file_name': _selectedFile?.name,
+                                      });
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0084FF),
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                               elevation: 0,
                             ),
                             child: mutation.isLoading
-                                ? const CircularProgressIndicator(color: Colors.white)
-                                : const Text('Submit INR Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                : const Text('Submit INR Report',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700)),
                           ),
                         ),
                       ],
@@ -279,7 +325,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
         }
 
         final reports = query.data ?? [];
-        
+
         if (reports.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(32),
@@ -290,11 +336,15 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
             ),
             child: Column(
               children: [
-                Icon(Icons.description_outlined, size: 48, color: Colors.grey[400]),
+                Icon(Icons.description_outlined,
+                    size: 48, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 const Text(
                   'No reports yet',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black54),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -337,11 +387,13 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
   }
 
   Widget _buildReportCard(Map<String, dynamic> report) {
-    final inr = report['inr'] as double;
-    final isCritical = report['isCritical'] as bool;
-    final notes = report['notes'] as String;
+    final inrRaw = report['inr'];
+    final inr = (inrRaw is num) ? inrRaw.toDouble() : 0.0;
+    final isCritical = report['isCritical'] == true;
+    final notes = (report['notes'] as String?) ?? '';
     final hasNotes = notes.isNotEmpty;
-    final hasFile = (report['fileUrl'] as String).isNotEmpty;
+    final fileUrl = (report['fileUrl'] as String?) ?? '';
+    final hasFile = fileUrl.isNotEmpty;
 
     return Container(
       width: double.infinity,
@@ -367,7 +419,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(12),
@@ -385,7 +438,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                 if (isCritical) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(12),
@@ -393,7 +447,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.priority_high, color: Color(0xFF9CA3AF), size: 15),
+                        Icon(Icons.priority_high,
+                            color: Color(0xFF9CA3AF), size: 15),
                         SizedBox(width: 4),
                         Text(
                           'Needs Attention',
@@ -433,7 +488,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.medical_services_outlined, size: 16, color: const Color(0xFF6B7280)),
+                      Icon(Icons.medical_services_outlined,
+                          size: 16, color: const Color(0xFF6B7280)),
                       const SizedBox(width: 8),
                       const Text(
                         'Doctor\'s Feedback',
@@ -467,7 +523,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                 onPressed: () {
                   FilePreviewModal.show(
                     context,
-                    fileUrl: report['fileUrl'] as String,
+                    fileUrl: fileUrl,
                     fileName: 'INR_Report_${report['date']}.pdf',
                   );
                 },
@@ -504,9 +560,13 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0084FF), width: 1.5)),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF0084FF), width: 1.5)),
     );
   }
 }

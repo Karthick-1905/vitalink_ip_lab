@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/widgets/admin/admin_dialogs.dart';
+import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 
 class DoctorManagementPage extends StatefulWidget {
@@ -55,210 +56,254 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
         final pagination = dataMap['pagination'] as Map<String, dynamic>? ?? {};
         final total = pagination['total'] as int? ?? doctorsList.length;
         final pageSize = pagination['limit'] as int? ?? 20;
-        final totalPages = pagination['pages'] as int? ?? (total / pageSize).ceil();
+        final totalPages =
+            pagination['pages'] as int? ?? (total / pageSize).ceil();
+        final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Manage Doctors'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: _refresh,
-              ),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => showAddDoctorDialog(context, onSuccess: _refresh),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Doctor'),
-          ),
-          body: Column(
-            children: [
-              // Search
+        final addDoctorFab = FloatingActionButton.extended(
+          onPressed: () => showAddDoctorDialog(context, onSuccess: _refresh),
+          icon: const Icon(Icons.add),
+          label: const Text('Add Doctor'),
+        );
+
+        final content = Column(
+          children: [
+            if (!showPageScaffold)
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search doctors by name or ID...',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    filled: true,
-                    fillColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(28),
-                      borderSide: BorderSide.none,
-                    ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _page = 1);
-                            },
-                          )
-                        : null,
-                  ),
-                  onChanged: (_) => setState(() => _page = 1),
-                ),
-              ),
-
-              // Filter chips
-              if (_statusFilter != null || _departmentFilter != null)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      if (_statusFilter != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: InputChip(
-                            label: Text(
-                              _statusFilter == 'true' ? 'Active' : 'Inactive',
-                            ),
-                            onDeleted: () => setState(() {
-                              _statusFilter = null;
-                              _page = 1;
-                            }),
-                          ),
-                        ),
-                      if (_departmentFilter != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: InputChip(
-                            label: Text(_departmentFilter!),
-                            onDeleted: () => setState(() {
-                              _departmentFilter = null;
-                              _page = 1;
-                            }),
-                          ),
-                        ),
-                      TextButton(
-                        onPressed: () => setState(() {
-                          _statusFilter = null;
-                          _departmentFilter = null;
-                          _page = 1;
-                        }),
-                        child: const Text('Clear All'),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Filter bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    FilterChip(
-                      label: const Text('All'),
-                      selected: _statusFilter == null,
-                      onSelected: (_) => setState(() {
-                        _statusFilter = null;
-                        _page = 1;
-                      }),
+                    Text(
+                      'Manage Doctors',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Active'),
-                      selected: _statusFilter == 'true',
-                      onSelected: (_) => setState(() {
-                        _statusFilter = 'true';
-                        _page = 1;
-                      }),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Inactive'),
-                      selected: _statusFilter == 'false',
-                      onSelected: (_) => setState(() {
-                        _statusFilter = 'false';
-                        _page = 1;
-                      }),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.tonalIcon(
+                        onPressed: _refresh,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Refresh'),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+            // Search
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search doctors by name or ID...',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  filled: true,
+                  fillColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _page = 1);
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: (_) => setState(() => _page = 1),
+              ),
+            ),
 
-              // List
-              Expanded(
-                child: query.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : query.isError
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Error: ${query.error}'),
-                                const SizedBox(height: 16),
-                                FilledButton(
-                                  onPressed: _refresh,
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : doctorsList.isEmpty
-                            ? const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.medical_services_outlined,
-                                      size: 48,
-                                      color: Colors.grey,
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text('No doctors found'),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                padding: const EdgeInsets.only(bottom: 80),
-                                itemCount: doctorsList.length,
-                                itemBuilder: (context, index) {
-                                  final doc = doctorsList[index]
-                                      as Map<String, dynamic>;
-                                  return _DoctorListTile(
-                                    doctor: doc,
-                                    onRefresh: _refresh,
-                                  );
-                                },
-                              ),
+            // Filter chips
+            if (_statusFilter != null || _departmentFilter != null)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    if (_statusFilter != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InputChip(
+                          label: Text(
+                            _statusFilter == 'true' ? 'Active' : 'Inactive',
+                          ),
+                          onDeleted: () => setState(() {
+                            _statusFilter = null;
+                            _page = 1;
+                          }),
+                        ),
+                      ),
+                    if (_departmentFilter != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InputChip(
+                          label: Text(_departmentFilter!),
+                          onDeleted: () => setState(() {
+                            _departmentFilter = null;
+                            _page = 1;
+                          }),
+                        ),
+                      ),
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _statusFilter = null;
+                        _departmentFilter = null;
+                        _page = 1;
+                      }),
+                      child: const Text('Clear All'),
+                    ),
+                  ],
+                ),
               ),
 
-              // Pagination
-              if (totalPages > 1)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Theme.of(context).dividerColor),
-                    ),
+            // Filter bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  FilterChip(
+                    label: const Text('All'),
+                    selected: _statusFilter == null,
+                    onSelected: (_) => setState(() {
+                      _statusFilter = null;
+                      _page = 1;
+                    }),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left_rounded),
-                        onPressed:
-                            _page > 1 ? () => setState(() => _page--) : null,
-                      ),
-                      Text('Page $_page of $totalPages'),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right_rounded),
-                        onPressed: _page < totalPages
-                            ? () => setState(() => _page++)
-                            : null,
-                      ),
-                    ],
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Active'),
+                    selected: _statusFilter == 'true',
+                    onSelected: (_) => setState(() {
+                      _statusFilter = 'true';
+                      _page = 1;
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Inactive'),
+                    selected: _statusFilter == 'false',
+                    onSelected: (_) => setState(() {
+                      _statusFilter = 'false';
+                      _page = 1;
+                    }),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // List
+            Expanded(
+              child: query.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : query.isError
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Error: ${query.error}'),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: _refresh,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : doctorsList.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.medical_services_outlined,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text('No doctors found'),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 80),
+                              itemCount: doctorsList.length,
+                              itemBuilder: (context, index) {
+                                final doc =
+                                    doctorsList[index] as Map<String, dynamic>;
+                                return _DoctorListTile(
+                                  doctor: doc,
+                                  onRefresh: _refresh,
+                                );
+                              },
+                            ),
+            ),
+
+            // Pagination
+            if (totalPages > 1)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Theme.of(context).dividerColor),
                   ),
                 ),
-            ],
-          ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      onPressed:
+                          _page > 1 ? () => setState(() => _page--) : null,
+                    ),
+                    Text('Page $_page of $totalPages'),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      onPressed: _page < totalPages
+                          ? () => setState(() => _page++)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+
+        if (showPageScaffold) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Manage Doctors'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded),
+                  onPressed: _refresh,
+                ),
+              ],
+            ),
+            floatingActionButton: addDoctorFab,
+            body: content,
+          );
+        }
+
+        return Stack(
+          children: [
+            Positioned.fill(child: content),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: SafeArea(
+                top: false,
+                left: false,
+                child: addDoctorFab,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -274,8 +319,7 @@ class _DoctorListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final profile =
-        doctor['profile_id'] as Map<String, dynamic>? ??
+    final profile = doctor['profile_id'] as Map<String, dynamic>? ??
         doctor['doctor_profile'] as Map<String, dynamic>? ??
         {};
     final name = profile['name'] as String? ??
@@ -283,8 +327,7 @@ class _DoctorListTile extends StatelessWidget {
         'Unknown';
     final department = profile['department'] as String? ?? 'General';
     final isActive = doctor['is_active'] as bool? ?? true;
-    final id =
-        doctor['_id'] as String? ??
+    final id = doctor['_id'] as String? ??
         doctor['id'] as String? ??
         doctor['user_id'] as String? ??
         '';
@@ -362,7 +405,8 @@ class _DoctorListTile extends StatelessWidget {
                     ),
                     title: Text(
                       isActive ? 'Deactivate' : 'Activate',
-                      style: TextStyle(color: isActive ? Colors.red : Colors.green),
+                      style: TextStyle(
+                          color: isActive ? Colors.red : Colors.green),
                     ),
                     contentPadding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,

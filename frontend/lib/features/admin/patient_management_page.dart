@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/widgets/admin/admin_dialogs.dart';
+import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 
 class PatientManagementPage extends StatefulWidget {
@@ -55,177 +56,229 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
         final pagination = dataMap['pagination'] as Map<String, dynamic>? ?? {};
         final total = pagination['total'] as int? ?? patientsList.length;
         final pageSize = pagination['limit'] as int? ?? 20;
-        final totalPages = pagination['pages'] as int? ?? (total / pageSize).ceil();
+        final totalPages =
+            pagination['pages'] as int? ?? (total / pageSize).ceil();
+        final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Patient Management'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.filter_list_rounded),
-                onPressed: () => _showFilterSheet(context),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: _refresh,
-              ),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => showAddPatientDialog(context, onSuccess: _refresh),
-            icon: const Icon(Icons.person_add_alt_1_rounded),
-            label: const Text('Add Patient'),
-          ),
-          body: Column(
-            children: [
-              // Search
+        final addPatientFab = FloatingActionButton.extended(
+          onPressed: () => showAddPatientDialog(context, onSuccess: _refresh),
+          icon: const Icon(Icons.person_add_alt_1_rounded),
+          label: const Text('Add Patient'),
+        );
+
+        final content = Column(
+          children: [
+            if (!showPageScaffold)
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search patients by name or ID...',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    filled: true,
-                    fillColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(28),
-                      borderSide: BorderSide.none,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Patient Management',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _page = 1);
-                            },
-                          )
-                        : null,
-                  ),
-                  onChanged: (_) => setState(() => _page = 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () => _showFilterSheet(context),
+                          icon: const Icon(Icons.filter_list_rounded),
+                          label: const Text('Filter'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonalIcon(
+                          onPressed: _refresh,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Refresh'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-
-              // Filter chips
-              if (_statusFilter != null || _doctorFilter != null)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      if (_statusFilter != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: InputChip(
-                            label: Text(_statusFilter!),
-                            onDeleted: () => setState(() {
-                              _statusFilter = null;
-                              _page = 1;
-                            }),
-                          ),
-                        ),
-                      if (_doctorFilter != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: InputChip(
-                            label: Text('Doctor: $_doctorFilter'),
-                            onDeleted: () => setState(() {
-                              _doctorFilter = null;
-                              _page = 1;
-                            }),
-                          ),
-                        ),
-                      TextButton(
-                        onPressed: () => setState(() {
-                          _statusFilter = null;
-                          _doctorFilter = null;
-                          _page = 1;
-                        }),
-                        child: const Text('Clear All'),
-                      ),
-                    ],
+            // Search
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search patients by name or ID...',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  filled: true,
+                  fillColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    borderSide: BorderSide.none,
                   ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _page = 1);
+                          },
+                        )
+                      : null,
                 ),
-              const SizedBox(height: 8),
+                onChanged: (_) => setState(() => _page = 1),
+              ),
+            ),
 
-              // List
-              Expanded(
-                child: query.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : query.isError
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Error: ${query.error}'),
-                                const SizedBox(height: 16),
-                                FilledButton(
-                                  onPressed: _refresh,
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : patientsList.isEmpty
-                            ? const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.people_outline_rounded,
-                                      size: 48,
-                                      color: Colors.grey,
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text('No patients found'),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                padding: const EdgeInsets.only(bottom: 80),
-                                itemCount: patientsList.length,
-                                itemBuilder: (context, index) {
-                                  final patient = patientsList[index]
-                                      as Map<String, dynamic>;
-                                  return _PatientListTile(
-                                    patient: patient,
-                                    onRefresh: _refresh,
-                                  );
-                                },
+            // Filter chips
+            if (_statusFilter != null || _doctorFilter != null)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    if (_statusFilter != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InputChip(
+                          label: Text(_statusFilter!),
+                          onDeleted: () => setState(() {
+                            _statusFilter = null;
+                            _page = 1;
+                          }),
+                        ),
+                      ),
+                    if (_doctorFilter != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: InputChip(
+                          label: Text('Doctor: $_doctorFilter'),
+                          onDeleted: () => setState(() {
+                            _doctorFilter = null;
+                            _page = 1;
+                          }),
+                        ),
+                      ),
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _statusFilter = null;
+                        _doctorFilter = null;
+                        _page = 1;
+                      }),
+                      child: const Text('Clear All'),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+
+            // List
+            Expanded(
+              child: query.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : query.isError
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Error: ${query.error}'),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: _refresh,
+                                child: const Text('Retry'),
                               ),
-              ),
+                            ],
+                          ),
+                        )
+                      : patientsList.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.people_outline_rounded,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text('No patients found'),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 80),
+                              itemCount: patientsList.length,
+                              itemBuilder: (context, index) {
+                                final patient =
+                                    patientsList[index] as Map<String, dynamic>;
+                                return _PatientListTile(
+                                  patient: patient,
+                                  onRefresh: _refresh,
+                                );
+                              },
+                            ),
+            ),
 
-              // Pagination
-              if (totalPages > 1)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Theme.of(context).dividerColor),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left_rounded),
-                        onPressed:
-                            _page > 1 ? () => setState(() => _page--) : null,
-                      ),
-                      Text('Page $_page of $totalPages'),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right_rounded),
-                        onPressed: _page < totalPages
-                            ? () => setState(() => _page++)
-                            : null,
-                      ),
-                    ],
+            // Pagination
+            if (totalPages > 1)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Theme.of(context).dividerColor),
                   ),
                 ),
-            ],
-          ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      onPressed:
+                          _page > 1 ? () => setState(() => _page--) : null,
+                    ),
+                    Text('Page $_page of $totalPages'),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      onPressed: _page < totalPages
+                          ? () => setState(() => _page++)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+
+        if (showPageScaffold) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Patient Management'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.filter_list_rounded),
+                  onPressed: () => _showFilterSheet(context),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded),
+                  onPressed: _refresh,
+                ),
+              ],
+            ),
+            floatingActionButton: addPatientFab,
+            body: content,
+          );
+        }
+
+        return Stack(
+          children: [
+            Positioned.fill(child: content),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: SafeArea(
+                top: false,
+                left: false,
+                child: addPatientFab,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -325,8 +378,7 @@ class _PatientListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final profile =
-        patient['profile_id'] as Map<String, dynamic>? ??
+    final profile = patient['profile_id'] as Map<String, dynamic>? ??
         patient['patient_profile'] as Map<String, dynamic>? ??
         {};
     final demographics = profile['demographics'] as Map<String, dynamic>? ?? {};
@@ -336,8 +388,7 @@ class _PatientListTile extends StatelessWidget {
     final age = demographics['age'];
     final gender = demographics['gender'] as String? ?? '';
     final isActive = patient['is_active'] as bool? ?? true;
-    final id =
-        patient['_id'] as String? ??
+    final id = patient['_id'] as String? ??
         patient['id'] as String? ??
         patient['user_id'] as String? ??
         '';
@@ -383,16 +434,15 @@ class _PatientListTile extends StatelessWidget {
             ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded),
-              onSelected: (action) =>
-                  _handleAction(
-                    context,
-                    action,
-                    id,
-                    name,
-                    opNum,
-                    demographics,
-                    isActive,
-                  ),
+              onSelected: (action) => _handleAction(
+                context,
+                action,
+                id,
+                name,
+                opNum,
+                demographics,
+                isActive,
+              ),
               itemBuilder: (_) => [
                 const PopupMenuItem(
                   value: 'edit',
@@ -433,7 +483,8 @@ class _PatientListTile extends StatelessWidget {
                     ),
                     title: Text(
                       isActive ? 'Deactivate' : 'Activate',
-                      style: TextStyle(color: isActive ? Colors.red : Colors.green),
+                      style: TextStyle(
+                          color: isActive ? Colors.red : Colors.green),
                     ),
                     contentPadding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,

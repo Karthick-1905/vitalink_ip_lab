@@ -1,10 +1,9 @@
 class AppStrings {
   AppStrings._();
 
-
-	/// Base URL for the backend API.
-	/// Note: Use http for local dev to avoid TLS/host issues in Flutter web.
-	static const String apiBaseUrl = 'https://vitalink-ip-lab-1.onrender.com';
+  /// Base URL for the backend API.
+  /// Note: Use http for local dev to avoid TLS/host issues in Flutter web.
+  static const String apiBaseUrl = 'https://vitalink-ip-lab-1.onrender.com';
 
   /// Auth endpoints.
   static const String loginPath = '/api/auth/login';
@@ -36,4 +35,5 @@ class AppStrings {
   /// Secure storage keys.
   static const String tokenKey = 'auth_token';
   static const String userKey = 'auth_user';
+  static const String onboardingCompletedKey = 'onboarding_completed';
 }

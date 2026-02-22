@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/admin_stats_model.dart';
 
@@ -175,6 +176,228 @@ class _SystemConfigPageState extends State<SystemConfigPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
+    final body = _isLoading && !_hasUnsavedChanges
+        ? const Center(child: CircularProgressIndicator())
+        : Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (!showPageScaffold)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _isLoading ? null : _loadConfig,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Reload'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _isLoading ? null : _saveConfig,
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.save),
+                            label: const Text('Save'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_hasUnsavedChanges)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.orange),
+                        SizedBox(width: 8),
+                        Text(
+                          'You have unsaved changes',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // System Health
+                _buildHealthSection(theme),
+                const SizedBox(height: 16),
+
+                // INR Thresholds
+                _buildCard(
+                  theme,
+                  'Medical Thresholds',
+                  Icons.medical_services,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _inrLowCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'INR Critical Low',
+                            suffixText: 'INR',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: _onFieldChanged,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Required';
+                            final n = double.tryParse(v);
+                            if (n == null || n < 0.5 || n > 10) {
+                              return '0.5-10.0';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _inrHighCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'INR Critical High',
+                            suffixText: 'INR',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: _onFieldChanged,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Required';
+                            final n = double.tryParse(v);
+                            if (n == null || n < 0.5 || n > 10) {
+                              return '0.5-10.0';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Session Settings
+                _buildCard(
+                  theme,
+                  'Session Settings',
+                  Icons.timer,
+                  TextFormField(
+                    controller: _sessionTimeoutCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Session Timeout',
+                      suffixText: 'min',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: _onFieldChanged,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Required';
+                      final n = int.tryParse(v);
+                      if (n == null || n < 1 || n > 1440) return '1-1440';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Rate Limiting
+                _buildCard(
+                  theme,
+                  'Rate Limiting',
+                  Icons.speed,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _maxRequestsCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Max Requests',
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: _onFieldChanged,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Required';
+                            final n = int.tryParse(v);
+                            if (n == null || n < 1) return '>0';
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _windowDurationCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Window Duration',
+                            suffixText: 'sec',
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: _onFieldChanged,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Required';
+                            final n = int.tryParse(v);
+                            if (n == null || n < 1) return '>0';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Feature Flags
+                _buildCard(
+                  theme,
+                  'Feature Flags',
+                  Icons.flag,
+                  Column(
+                    children: _featureFlags.entries
+                        .map(
+                          (e) => SwitchListTile(
+                            title: Text(
+                              e.key.replaceAll('_', ' ').toUpperCase(),
+                            ),
+                            value: e.value,
+                            onChanged: (v) => setState(() {
+                              _featureFlags[e.key] = v;
+                              _hasUnsavedChanges = true;
+                            }),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 64),
+              ],
+            ),
+          );
+
+    if (!showPageScaffold) {
+      return body;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -203,191 +426,7 @@ class _SystemConfigPageState extends State<SystemConfigPage> {
           const SizedBox(width: 16),
         ],
       ),
-      body: _isLoading && !_hasUnsavedChanges
-          ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (_hasUnsavedChanges)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.warning_amber, color: Colors.orange),
-                          SizedBox(width: 8),
-                          Text(
-                            'You have unsaved changes',
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // System Health
-                  _buildHealthSection(theme),
-                  const SizedBox(height: 16),
-
-                  // INR Thresholds
-                  _buildCard(
-                    theme,
-                    'Medical Thresholds',
-                    Icons.medical_services,
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _inrLowCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'INR Critical Low',
-                              suffixText: 'INR',
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            onChanged: _onFieldChanged,
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
-                              final n = double.tryParse(v);
-                              if (n == null || n < 0.5 || n > 10) {
-                                return '0.5-10.0';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _inrHighCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'INR Critical High',
-                              suffixText: 'INR',
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            onChanged: _onFieldChanged,
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
-                              final n = double.tryParse(v);
-                              if (n == null || n < 0.5 || n > 10) {
-                                return '0.5-10.0';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Session Settings
-                  _buildCard(
-                    theme,
-                    'Session Settings',
-                    Icons.timer,
-                    TextFormField(
-                      controller: _sessionTimeoutCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Session Timeout',
-                        suffixText: 'min',
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: _onFieldChanged,
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Required';
-                        final n = int.tryParse(v);
-                        if (n == null || n < 1 || n > 1440) return '1-1440';
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Rate Limiting
-                  _buildCard(
-                    theme,
-                    'Rate Limiting',
-                    Icons.speed,
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _maxRequestsCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Max Requests',
-                            ),
-                            keyboardType: TextInputType.number,
-                            onChanged: _onFieldChanged,
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
-                              final n = int.tryParse(v);
-                              if (n == null || n < 1) return '>0';
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _windowDurationCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Window Duration',
-                              suffixText: 'sec',
-                            ),
-                            keyboardType: TextInputType.number,
-                            onChanged: _onFieldChanged,
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
-                              final n = int.tryParse(v);
-                              if (n == null || n < 1) return '>0';
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Feature Flags
-                  _buildCard(
-                    theme,
-                    'Feature Flags',
-                    Icons.flag,
-                    Column(
-                      children: _featureFlags.entries
-                          .map(
-                            (e) => SwitchListTile(
-                              title: Text(
-                                e.key.replaceAll('_', ' ').toUpperCase(),
-                              ),
-                              value: e.value,
-                              onChanged: (v) => setState(() {
-                                _featureFlags[e.key] = v;
-                                _hasUnsavedChanges = true;
-                              }),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 64),
-                ],
-              ),
-            ),
+      body: body,
     );
   }
 

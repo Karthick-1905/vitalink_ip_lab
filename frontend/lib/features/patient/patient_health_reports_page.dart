@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
-import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:frontend/services/patient_service.dart';
 
 class PatientHealthReportsPage extends StatefulWidget {
   const PatientHealthReportsPage({super.key});
 
   @override
-  State<PatientHealthReportsPage> createState() => _PatientHealthReportsPageState();
+  State<PatientHealthReportsPage> createState() =>
+      _PatientHealthReportsPageState();
 }
 
 class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
   final int _currentNavIndex = 3;
   int _selectedTabIndex = 0;
-  
+
   // Controllers for text inputs
   final TextEditingController _descriptionController = TextEditingController();
-  
+
   // Side effects checkboxes
   final Map<String, bool> _sideEffects = {
     'Heavy Menstrual Bleeding': false,
@@ -168,7 +168,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Checkboxes
             ..._sideEffects.keys.map((effect) {
               return CheckboxListTile(
@@ -187,7 +187,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 dense: true,
               );
             }),
-            
+
             const SizedBox(height: 20),
             const Text(
               'Describe any other side effects you are experiencing',
@@ -216,7 +216,8 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF0084FF), width: 2),
+                  borderSide:
+                      const BorderSide(color: Color(0xFF0084FF), width: 2),
                 ),
                 contentPadding: const EdgeInsets.all(16),
               ),
@@ -226,7 +227,9 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: mutation.isLoading ? null : () => _submitSideEffects(mutation),
+                onPressed: mutation.isLoading
+                    ? null
+                    : () => _submitSideEffects(mutation),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0084FF),
                   foregroundColor: Colors.white,
@@ -334,7 +337,8 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF0084FF), width: 2),
+                  borderSide:
+                      const BorderSide(color: Color(0xFF0084FF), width: 2),
                 ),
                 contentPadding: const EdgeInsets.all(16),
               ),
@@ -398,7 +402,8 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
     }
     if (_descriptionController.text.trim().isNotEmpty) {
       if (description.isNotEmpty) {
-        description += '\n\nAdditional details: ${_descriptionController.text.trim()}';
+        description +=
+            '\n\nAdditional details: ${_descriptionController.text.trim()}';
       } else {
         description = _descriptionController.text.trim();
       }
@@ -407,7 +412,8 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
     if (description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select at least one side effect or enter a description'),
+          content: Text(
+              'Please select at least one side effect or enter a description'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -421,36 +427,10 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
   }
 
   Future<void> _submitHealthLog(Map<String, dynamic> variables) async {
-    const storage = FlutterSecureStorage();
-    final token = await storage.read(key: 'auth_token');
-
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: 'https://vitalink-ip-lab-1.onrender.com/api/patient',
-        contentType: Headers.jsonContentType,
-        validateStatus: (status) => status != null && status < 500,
-      ),
+    await PatientService.submitHealthLog(
+      type: variables['type'] as String,
+      description: variables['description'] as String,
     );
-
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          return handler.next(options);
-        },
-      ),
-    );
-
-    final response = await dio.post(
-      '/health-logs',
-      data: variables,
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to submit health log');
-    }
   }
 
   void _resetForm() {

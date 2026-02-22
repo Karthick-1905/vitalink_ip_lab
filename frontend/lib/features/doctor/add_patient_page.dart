@@ -105,27 +105,38 @@ class _AddPatientFormState extends State<AddPatientForm> {
     }
 
     Map<String, dynamic>? medicalHistory() {
-      if (_historyDiagCtrl.text.trim().isEmpty && _historyDurationCtrl.text.trim().isEmpty) return null;
+      if (_historyDiagCtrl.text.trim().isEmpty &&
+          _historyDurationCtrl.text.trim().isEmpty) {
+        return null;
+      }
       return {
-        'diagnosis': _historyDiagCtrl.text.trim().isEmpty ? null : _historyDiagCtrl.text.trim(),
+        'diagnosis': _historyDiagCtrl.text.trim().isEmpty
+            ? null
+            : _historyDiagCtrl.text.trim(),
         'duration_value': double.tryParse(_historyDurationCtrl.text.trim()),
-        'duration_unit': _historyDurationCtrl.text.trim().isEmpty ? null : _historyUnit,
+        'duration_unit':
+            _historyDurationCtrl.text.trim().isEmpty ? null : _historyUnit,
       };
     }
 
     final payload = <String, dynamic>{
       'name': _nameCtrl.text.trim(),
       'op_num': _opCtrl.text.trim(),
-      'age': _ageCtrl.text.trim().isEmpty ? null : int.tryParse(_ageCtrl.text.trim()),
+      'age': _ageCtrl.text.trim().isEmpty
+          ? null
+          : int.tryParse(_ageCtrl.text.trim()),
       'gender': _gender,
       'contact_no': _contactCtrl.text.trim(),
       'target_inr_min': numFromCtrl(_targetMinCtrl),
       'target_inr_max': numFromCtrl(_targetMaxCtrl),
       'therapy': _therapy,
-      'therapy_start_date': _therapyStartCtrl.text.trim().isEmpty ? null : _therapyStartCtrl.text.trim(),
+      'therapy_start_date': _therapyStartCtrl.text.trim().isEmpty
+          ? null
+          : _therapyStartCtrl.text.trim(),
       'prescription': dosage(),
       'medical_history': medicalHistory() == null ? null : [medicalHistory()],
-      'kin_name': _kinNameCtrl.text.trim().isEmpty ? null : _kinNameCtrl.text.trim(),
+      'kin_name':
+          _kinNameCtrl.text.trim().isEmpty ? null : _kinNameCtrl.text.trim(),
       'kin_contact_number': _kinContactCtrl.text.trim(),
     };
 
@@ -145,7 +156,9 @@ class _AddPatientFormState extends State<AddPatientForm> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(primary: const Color(0xFF6B5FB3)),
+            colorScheme: Theme.of(context)
+                .colorScheme
+                .copyWith(primary: const Color(0xFF6B5FB3)),
           ),
           child: child ?? const SizedBox.shrink(),
         );
@@ -154,7 +167,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
 
     if (picked != null) {
       _therapyStartDate = picked;
-      final formatted = '${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}';
+      final formatted =
+          '${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}';
       _therapyStartCtrl.text = formatted;
       setState(() {});
     }
@@ -166,31 +180,38 @@ class _AddPatientFormState extends State<AddPatientForm> {
       options: MutationOptions<void, Map<String, dynamic>>(
         mutationFn: _repo.addPatient,
         onSuccess: (data, variables) {
-          QueryClientProvider.of(context).invalidateQueries(const ['doctor', 'patients']);
+          QueryClientProvider.of(context)
+              .invalidateQueries(const ['doctor', 'patients']);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Patient added successfully')),
           );
           widget.onSuccess?.call();
         },
         onError: (error, variables) {
-          final message = error is ApiException ? error.message : error.toString();
+          final message =
+              error is ApiException ? error.message : error.toString();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed: $message')),
           );
         },
       ),
       builder: (context, mutation) {
+        final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
         return ScrollConfiguration(
-          behavior: const MaterialScrollBehavior().copyWith(physics: const BouncingScrollPhysics()),
+          behavior: const MaterialScrollBehavior()
+              .copyWith(physics: const BouncingScrollPhysics()),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            padding: EdgeInsets.fromLTRB(20, 22, 20, 22 + keyboardInset),
             physics: const BouncingScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   'Welcome, $_doctorName',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white),
                 ).padding(bottom: 14),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(20),
@@ -215,23 +236,48 @@ class _AddPatientFormState extends State<AddPatientForm> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _sectionTitle('Patient Details'),
-                            _buildTextField(_nameCtrl, 'Name', hint: 'Enter patient name', isRequired: true),
-                            _buildTextField(_opCtrl, 'OP Number', hint: 'Enter OP number', isRequired: true),
+                            _buildTextField(_nameCtrl, 'Name',
+                                hint: 'Enter patient name', isRequired: true),
+                            _buildTextField(_opCtrl, 'OP Number',
+                                hint: 'Enter OP number', isRequired: true),
                             Row(
                               children: [
-                                Expanded(child: _buildTextField(_ageCtrl, 'Age', hint: 'Enter your age', keyboard: TextInputType.number)),
+                                Expanded(
+                                    child: _buildTextField(_ageCtrl, 'Age',
+                                        hint: 'Enter your age',
+                                        keyboard: TextInputType.number)),
                                 const SizedBox(width: 12),
-                                Expanded(child: _buildDropdown('Gender', _gender, ['Male', 'Female', 'Other'], (v) => setState(() => _gender = v), isRequired: true)),
+                                Expanded(
+                                    child: _buildDropdown(
+                                        'Gender',
+                                        _gender,
+                                        ['Male', 'Female', 'Other'],
+                                        (v) => setState(() => _gender = v),
+                                        isRequired: true)),
                               ],
                             ),
                             Row(
                               children: [
-                                Expanded(child: _buildTextField(_targetMinCtrl, 'Target INR Min', hint: 'Min', isRequired: true, keyboard: const TextInputType.numberWithOptions(decimal: true))),
+                                Expanded(
+                                    child: _buildTextField(
+                                        _targetMinCtrl, 'Target INR Min',
+                                        hint: 'Min',
+                                        isRequired: true,
+                                        keyboard: const TextInputType
+                                            .numberWithOptions(decimal: true))),
                                 const SizedBox(width: 12),
-                                Expanded(child: _buildTextField(_targetMaxCtrl, 'Target INR Max', hint: 'Max', isRequired: true, keyboard: const TextInputType.numberWithOptions(decimal: true))),
+                                Expanded(
+                                    child: _buildTextField(
+                                        _targetMaxCtrl, 'Target INR Max',
+                                        hint: 'Max',
+                                        isRequired: true,
+                                        keyboard: const TextInputType
+                                            .numberWithOptions(decimal: true))),
                               ],
                             ),
-                            _buildDropdown('Therapy', _therapy, _therapyOptions, (v) => setState(() => _therapy = v), isRequired: true),
+                            _buildDropdown('Therapy', _therapy, _therapyOptions,
+                                (v) => setState(() => _therapy = v),
+                                isRequired: true),
                             const SizedBox(height: 12),
                             _medicalHistoryCard(),
                             const SizedBox(height: 14),
@@ -246,9 +292,16 @@ class _AddPatientFormState extends State<AddPatientForm> {
                             _sectionTitle('Prescription *'),
                             _dosageList(),
                             const SizedBox(height: 14),
-                            _buildTextField(_contactCtrl, 'Contact', hint: 'Enter contact number', isRequired: true, keyboard: TextInputType.phone),
-                            _buildTextField(_kinNameCtrl, 'Kin Name', hint: 'Enter Kin name', isRequired: true),
-                            _buildTextField(_kinContactCtrl, 'Kin Contact', hint: 'Enter Kin Contact', isRequired: true, keyboard: TextInputType.phone),
+                            _buildTextField(_contactCtrl, 'Contact',
+                                hint: 'Enter contact number',
+                                isRequired: true,
+                                keyboard: TextInputType.phone),
+                            _buildTextField(_kinNameCtrl, 'Kin Name',
+                                hint: 'Enter Kin name', isRequired: true),
+                            _buildTextField(_kinContactCtrl, 'Kin Contact',
+                                hint: 'Enter Kin Contact',
+                                isRequired: true,
+                                keyboard: TextInputType.phone),
                             const SizedBox(height: 10),
                             SizedBox(
                               width: double.infinity,
@@ -256,7 +309,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
                                 onPressed: mutation.isLoading
                                     ? null
                                     : () {
-                                        if (_formKey.currentState?.validate() ?? false) {
+                                        if (_formKey.currentState?.validate() ??
+                                            false) {
                                           mutation.mutate(_buildPayload());
                                         }
                                       },
@@ -264,12 +318,19 @@ class _AddPatientFormState extends State<AddPatientForm> {
                                   backgroundColor: Colors.white,
                                   foregroundColor: Colors.black,
                                   elevation: 0,
-                                  side: const BorderSide(color: Colors.black87, width: 1),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  side: const BorderSide(
+                                      color: Colors.black87, width: 1),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                 ),
                                 child: mutation.isLoading
-                                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2))
                                     : const Text('Add Patient'),
                               ),
                             ),
@@ -291,7 +352,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
         padding: const EdgeInsets.only(bottom: 8, top: 12),
         child: Text(
           text,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
+          style: const TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
         ),
       );
 
@@ -316,15 +378,23 @@ class _AddPatientFormState extends State<AddPatientForm> {
         children: [
           const Text(
             'Medical History',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black87),
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87),
           ),
           const SizedBox(height: 10),
-          _buildTextField(_historyDiagCtrl, 'Diagnosis', hint: 'Enter diagnosis'),
+          _buildTextField(_historyDiagCtrl, 'Diagnosis',
+              hint: 'Enter diagnosis'),
           Row(
             children: [
-              Expanded(child: _buildTextField(_historyDurationCtrl, 'Duration', hint: 'Duration', keyboard: TextInputType.number)),
+              Expanded(
+                  child: _buildTextField(_historyDurationCtrl, 'Duration',
+                      hint: 'Duration', keyboard: TextInputType.number)),
               const SizedBox(width: 12),
-              Expanded(child: _buildDropdown('Unit', _historyUnit, _durationUnits, (v) => setState(() => _historyUnit = v))),
+              Expanded(
+                  child: _buildDropdown('Unit', _historyUnit, _durationUnits,
+                      (v) => setState(() => _historyUnit = v))),
             ],
           ),
           const SizedBox(height: 6),
@@ -335,9 +405,12 @@ class _AddPatientFormState extends State<AddPatientForm> {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 side: const BorderSide(color: Colors.black87, width: 1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text('+ Add Medical History', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)),
+              child: const Text('+ Add Medical History',
+                  style: TextStyle(
+                      color: Colors.black87, fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -360,7 +433,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
       children: [
         Text(
           isRequired ? '$label *' : label,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+          style: const TextStyle(
+              fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -383,7 +457,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
       ],
@@ -402,7 +477,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
       children: [
         Text(
           isRequired ? '$label *' : label,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+          style: const TextStyle(
+              fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -417,7 +493,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
           },
           decoration: InputDecoration(
             hintText: hint,
-            suffixIcon: const Icon(Icons.calendar_today, color: Color(0xFF6B7280)),
+            suffixIcon:
+                const Icon(Icons.calendar_today, color: Color(0xFF6B7280)),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -430,7 +507,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF6B5FB3)),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
       ],
@@ -449,19 +527,68 @@ class _AddPatientFormState extends State<AddPatientForm> {
       children: [
         Text(
           isRequired ? '$label *' : label,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+          style: const TextStyle(
+              fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
         ),
         const SizedBox(height: 6),
-        _StyledDropdown(
-          value: value,
-          hint: 'Select',
-          items: items,
-          isRequired: isRequired,
-          label: label,
-          onChanged: onChanged,
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          icon: Icon(Icons.keyboard_arrow_down,
+              color: Colors.grey[700], size: 24),
+          validator: (selectedValue) {
+            if (isRequired &&
+                (selectedValue == null || selectedValue.trim().isEmpty)) {
+              return '$label is required';
+            }
+            return null;
+          },
+          decoration: InputDecoration(
+            hintText: 'Select',
+            hintStyle: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF6B5FB3)),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          ),
+          items: items
+              .map((e) => DropdownMenuItem<String>(
+                    value: e,
+                    child: Text(
+                      e,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ))
+              .toList(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+          dropdownColor: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          menuMaxHeight: 300,
         ),
       ],
-    );
+    ).padding(bottom: 12);
   }
 
   Widget _dosageList() {
@@ -491,7 +618,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
           const SizedBox(width: 10),
           SizedBox(
             width: 48,
-            child: Text(day, style: const TextStyle(fontWeight: FontWeight.w600)),
+            child:
+                Text(day, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           const Spacer(),
           SizedBox(
@@ -499,7 +627,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
             child: TextFormField(
               controller: ctrl,
               enabled: enabled,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 hintText: 'mg',
                 suffixText: 'mg',
@@ -509,7 +638,8 @@ class _AddPatientFormState extends State<AddPatientForm> {
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               ),
             ),
           ),
@@ -545,70 +675,6 @@ class AddPatientPage extends StatelessWidget {
         ),
         child: SafeArea(
           child: const AddPatientForm(),
-        ),
-      ),
-    );
-  }
-}
-
-class _StyledDropdown extends StatelessWidget {
-  const _StyledDropdown({
-    required this.items,
-    required this.onChanged,
-    this.value,
-    this.hint,
-    this.isRequired = false,
-    this.label = '',
-  });
-
-  final List<String> items;
-  final String? value;
-  final String? hint;
-  final bool isRequired;
-  final String label;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[700], size: 24),
-          hint: Text(
-            hint ?? 'Select',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          style: const TextStyle(
-            color: Colors.black87,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-          items: items
-              .map((e) => DropdownMenuItem<String>(
-                    value: e,
-                    child: Text(e),
-                  ))
-              .toList(),
-          onChanged: (v) {
-            if (isRequired && (v == null || v.isEmpty)) return;
-            if (v != null) onChanged(v);
-          },
-          dropdownColor: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          menuMaxHeight: 300,
-          elevation: 8,
         ),
       ),
     );

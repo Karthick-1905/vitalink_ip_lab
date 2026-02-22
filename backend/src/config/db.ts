@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 import logger from '@alias/utils/logger'
+import { config } from '@alias/config'
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI as string);
+    const conn = await mongoose.connect(config.databaseUrl);
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
   }
   catch (err) {

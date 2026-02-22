@@ -1,10 +1,13 @@
 node_modules
 build
+coverage
+uploads
 .env
 .env.*
 .git
 .gitignore
+.dockerignore
 Dockerfile
-vercel.json
 README.md
+vercel.json
 npm-debug.log

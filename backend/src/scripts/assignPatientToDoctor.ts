@@ -3,6 +3,7 @@ import connectDB from '@alias/config/db'
 import { User, PatientProfile } from '@alias/models'
 import { UserType } from '@alias/validators'
 import logger from '@alias/utils/logger'
+import { getObjectIdString } from '@alias/utils/objectid'
 
 async function main() {
   const doctorLoginId = process.argv[2]
@@ -38,13 +39,16 @@ async function main() {
   }
 
   // Check current assignment
-  if (patientProfile.assigned_doctor_id?.toString() === doctorUser.profile_id.toString()) {
+  const assignedDoctorId = getObjectIdString(patientProfile.assigned_doctor_id)
+  const doctorUserId = getObjectIdString(doctorUser._id)
+  const doctorProfileId = getObjectIdString(doctorUser.profile_id)
+  if (assignedDoctorId && (assignedDoctorId === doctorUserId || assignedDoctorId === doctorProfileId)) {
     logger.warn(`Patient "${patientLoginId}" is already assigned to doctor "${doctorLoginId}"`)
     process.exit(0)
   }
 
   // Assign the patient to the doctor
-  patientProfile.assigned_doctor_id = doctorUser.profile_id
+  patientProfile.assigned_doctor_id = doctorUser._id
   await patientProfile.save()
 
   logger.info(`Successfully assigned patient "${patientLoginId}" to doctor "${doctorLoginId}"`)

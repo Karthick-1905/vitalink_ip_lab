@@ -2,9 +2,14 @@ import { StatusCodes } from 'http-status-codes'
 import { User, DoctorProfile, PatientProfile, AuditLog } from '@alias/models'
 import { ApiError } from '@alias/utils'
 import { UserType } from '@alias/validators'
+import { generateTemporaryPassword } from './password.service'
+import mongoose from 'mongoose'
 
 async function findDoctorByIdentifier(identifier: string) {
-  let doctor = await User.findById(identifier)
+  let doctor = null
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    doctor = await User.findById(identifier)
+  }
   if (!doctor || doctor.user_type !== UserType.DOCTOR) {
     doctor = await User.findOne({ login_id: identifier, user_type: UserType.DOCTOR })
   }
@@ -453,7 +458,7 @@ export async function performBatchOperation(
   operation: 'activate' | 'deactivate' | 'reset_password',
   userIds: string[]
 ) {
-  const results: { userId: string; success: boolean; message: string }[] = []
+  const results: { userId: string; success: boolean; message: string; temporary_password?: string }[] = []
 
   for (const userId of userIds) {
     try {
@@ -476,11 +481,19 @@ export async function performBatchOperation(
           results.push({ userId, success: true, message: 'User deactivated' })
           break
 
-        case 'reset_password':
-          user.password = 'VitaLink@User123'
+        case 'reset_password': {
+          const temporaryPassword = generateTemporaryPassword()
+          user.password = temporaryPassword
+          user.must_change_password = true
           await user.save()
-          results.push({ userId, success: true, message: 'Password reset to default' })
+          results.push({
+            userId,
+            success: true,
+            message: 'Password reset successfully',
+            temporary_password: temporaryPassword,
+          })
           break
+        }
 
         default:
           results.push({ userId, success: false, message: 'Invalid operation' })
@@ -502,7 +515,8 @@ export async function performBatchOperation(
 // ─── System Health ───
 
 export async function getSystemHealth() {
-  const mongoose = await import('mongoose')
+  const mongooseModule = await import('mongoose')
+  const mongooseInstance = mongooseModule.default
 
   const dbStates: Record<number, string> = {
     0: 'disconnected',
@@ -515,9 +529,9 @@ export async function getSystemHealth() {
     status: 'ok',
     uptime: process.uptime(),
     database: {
-      state: dbStates[mongoose.connection.readyState] || 'unknown',
-      host: mongoose.connection.host,
-      name: mongoose.connection.name,
+      state: dbStates[mongooseInstance.connection.readyState] || 'unknown',
+      host: mongooseInstance.connection.host,
+      name: mongooseInstance.connection.name,
     },
     memory: {
       rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + ' MB',

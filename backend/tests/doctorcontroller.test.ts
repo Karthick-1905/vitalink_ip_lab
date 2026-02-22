@@ -364,7 +364,7 @@ describe('Doctor Routes', () => {
             expect(response.data.data.patient).toBeDefined();
 
             const updatedPatient = await PatientProfile.findById(patientProfile._id);
-            expect(updatedPatient.assigned_doctor_id.toString()).toBe(secondDoctorUser.profile_id.toString());
+            expect(updatedPatient.assigned_doctor_id.toString()).toBe(secondDoctorUser._id.toString());
 
             await PatientProfile.findByIdAndUpdate(patientProfile._id, {
                 assigned_doctor_id: doctorProfile._id
@@ -630,7 +630,7 @@ describe('Doctor Routes', () => {
 
             expect(response.status).toBe(400);
             expect(response.data.success).toBe(false);
-            expect(response.data.message).toBe('Date must be in DD-MM-YYYY format');
+            expect(response.data.message).toBe('Validation failed');
         });
 
         test('should fail with non-string date', async () => {
@@ -983,7 +983,7 @@ describe('Doctor Routes', () => {
                     headers: { Authorization: `Bearer ${secondDoctorToken}` }
                 });
 
-                expect(response.status).toBe(401);
+                expect(response.status).toBe(403);
                 expect(response.data.success).toBe(false);
                 expect(response.data.message).toContain('Unauthorized');
             });

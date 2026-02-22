@@ -32,6 +32,7 @@ const UserSchema = new mongoose.Schema({
     required: [true, "user_type_model is required"],
   },
   is_active: { type: Boolean, default: true },
+  must_change_password: { type: Boolean, default: false },
 }, { timestamps: true });
 
 UserSchema.pre('validate', async function () {

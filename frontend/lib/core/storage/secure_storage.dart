@@ -46,8 +46,23 @@ class SecureStorage {
     await _storage.delete(key: AppStrings.userKey);
   }
 
+  /// Onboarding completion flag ──────────────────────────────────────────────
+
+  Future<void> markOnboardingCompleted() async {
+    await _storage.write(
+      key: AppStrings.onboardingCompletedKey,
+      value: 'true',
+    );
+  }
+
+  Future<bool> isOnboardingCompleted() async {
+    final value = await _storage.read(key: AppStrings.onboardingCompletedKey);
+    return value == 'true';
+  }
+
   Future<void> clearAll() async {
     await _storage.delete(key: AppStrings.tokenKey);
     await _storage.delete(key: AppStrings.userKey);
+    await _storage.delete(key: AppStrings.onboardingCompletedKey);
   }
 }

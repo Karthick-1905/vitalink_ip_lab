@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/audit_log_model.dart';
 
@@ -50,11 +51,191 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
         final pagination = dataMap['pagination'] as Map<String, dynamic>? ?? {};
         final total = pagination['total'] as int? ?? logsList.length;
         final pageSize = pagination['limit'] as int? ?? 50;
-        final totalPages = pagination['pages'] as int? ?? (total / pageSize).ceil();
+        final totalPages =
+            pagination['pages'] as int? ?? (total / pageSize).ceil();
 
         final logs = logsList
             .map((e) => AuditLogModel.fromJson(e as Map<String, dynamic>))
             .toList();
+        final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
+        final content = Column(
+          children: [
+            if (!showPageScaffold)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'System Audit Logs',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      icon: const Icon(Icons.refresh_rounded),
+                      onPressed: _refresh,
+                      tooltip: 'Refresh',
+                    ),
+                  ],
+                ),
+              ),
+            // Filters
+            _FilterBar(
+              actionFilter: _actionFilter,
+              successFilter: _successFilter,
+              startDate: _startDate,
+              endDate: _endDate,
+              onActionChanged: (v) => setState(() {
+                _actionFilter = v;
+                _page = 1;
+              }),
+              onSuccessChanged: (v) => setState(() {
+                _successFilter = v;
+                _page = 1;
+              }),
+              onDateRangeChanged: (s, e) => setState(() {
+                _startDate = s;
+                _endDate = e;
+                _page = 1;
+              }),
+              onClear: () => setState(() {
+                _actionFilter = null;
+                _successFilter = null;
+                _startDate = null;
+                _endDate = null;
+                _page = 1;
+              }),
+            ),
+
+            // Active filter chips
+            if (_actionFilter != null ||
+                _successFilter != null ||
+                _startDate != null)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    if (_actionFilter != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Chip(
+                          label: Text(_actionFilter!.replaceAll('_', ' ')),
+                          onDeleted: () => setState(() {
+                            _actionFilter = null;
+                            _page = 1;
+                          }),
+                        ),
+                      ),
+                    if (_successFilter != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Chip(
+                          label: Text(
+                            _successFilter == 'true' ? 'Success' : 'Failed',
+                          ),
+                          backgroundColor: _successFilter == 'true'
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
+                          onDeleted: () => setState(() {
+                            _successFilter = null;
+                            _page = 1;
+                          }),
+                        ),
+                      ),
+                    if (_startDate != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Chip(
+                          label: Text('$_startDate - ${_endDate ?? 'now'}'),
+                          onDeleted: () => setState(() {
+                            _startDate = null;
+                            _endDate = null;
+                            _page = 1;
+                          }),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+            // Content
+            Expanded(
+              child: query.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : query.isError
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Error: ${query.error}'),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: _refresh,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : logs.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.history_rounded,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text('No audit logs found'),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: logs.length,
+                              itemBuilder: (context, index) =>
+                                  _AuditLogTile(log: logs[index]),
+                            ),
+            ),
+
+            // Pagination
+            if (totalPages > 1)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Theme.of(context).dividerColor),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      onPressed:
+                          _page > 1 ? () => setState(() => _page--) : null,
+                    ),
+                    Text('Page $_page of ${totalPages > 0 ? totalPages : 1}'),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      onPressed: _page < totalPages
+                          ? () => setState(() => _page++)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+
+        if (!showPageScaffold) {
+          return content;
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -66,161 +247,7 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
               ),
             ],
           ),
-          body: Column(
-            children: [
-              // Filters
-              _FilterBar(
-                actionFilter: _actionFilter,
-                successFilter: _successFilter,
-                startDate: _startDate,
-                endDate: _endDate,
-                onActionChanged: (v) => setState(() {
-                  _actionFilter = v;
-                  _page = 1;
-                }),
-                onSuccessChanged: (v) => setState(() {
-                  _successFilter = v;
-                  _page = 1;
-                }),
-                onDateRangeChanged: (s, e) => setState(() {
-                  _startDate = s;
-                  _endDate = e;
-                  _page = 1;
-                }),
-                onClear: () => setState(() {
-                  _actionFilter = null;
-                  _successFilter = null;
-                  _startDate = null;
-                  _endDate = null;
-                  _page = 1;
-                }),
-              ),
-
-              // Active filter chips
-              if (_actionFilter != null ||
-                  _successFilter != null ||
-                  _startDate != null)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      if (_actionFilter != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Chip(
-                            label: Text(_actionFilter!.replaceAll('_', ' ')),
-                            onDeleted: () => setState(() {
-                              _actionFilter = null;
-                              _page = 1;
-                            }),
-                          ),
-                        ),
-                      if (_successFilter != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Chip(
-                            label: Text(
-                              _successFilter == 'true' ? 'Success' : 'Failed',
-                            ),
-                            backgroundColor: _successFilter == 'true'
-                                ? Colors.green.withValues(alpha: 0.1)
-                                : Colors.red.withValues(alpha: 0.1),
-                            onDeleted: () => setState(() {
-                              _successFilter = null;
-                              _page = 1;
-                            }),
-                          ),
-                        ),
-                      if (_startDate != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Chip(
-                            label: Text('$_startDate - ${_endDate ?? 'now'}'),
-                            onDeleted: () => setState(() {
-                              _startDate = null;
-                              _endDate = null;
-                              _page = 1;
-                            }),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-              // Content
-              Expanded(
-                child: query.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : query.isError
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Error: ${query.error}'),
-                                const SizedBox(height: 16),
-                                FilledButton(
-                                  onPressed: _refresh,
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : logs.isEmpty
-                            ? const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.history_rounded,
-                                      size: 48,
-                                      color: Colors.grey,
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text('No audit logs found'),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                padding: const EdgeInsets.all(16),
-                                itemCount: logs.length,
-                                itemBuilder: (context, index) =>
-                                    _AuditLogTile(log: logs[index]),
-                              ),
-              ),
-
-              // Pagination
-              if (totalPages > 1)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Theme.of(context).dividerColor),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left_rounded),
-                        onPressed:
-                            _page > 1 ? () => setState(() => _page--) : null,
-                      ),
-                      Text('Page $_page of ${totalPages > 0 ? totalPages : 1}'),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right_rounded),
-                        onPressed: _page < totalPages
-                            ? () => setState(() => _page++)
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+          body: content,
         );
       },
     );

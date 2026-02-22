@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { therapy_drug } from '.'
 
-const dosageScheduleSchema = z.object({
+const dosageScheduleBaseSchema = z.object({
   monday: z.number().default(0),
   tuesday: z.number().default(0),
   wednesday: z.number().default(0),
@@ -9,7 +9,13 @@ const dosageScheduleSchema = z.object({
   friday: z.number().default(0),
   saturday: z.number().default(0),
   sunday: z.number().default(0)
-}).optional()
+})
+
+const dosageScheduleSchema = dosageScheduleBaseSchema.optional()
+
+const opNumParamsSchema = z.object({
+  op_num: z.string("Op num should be a String").nonempty("op_num should not be empty")
+})
 
 const ddmmyyyy = z.preprocess((arg) => {
   if (arg === null || arg === undefined || arg === '') return undefined;
@@ -83,3 +89,42 @@ export const UpdateReportSchema = z.object({
 })
 
 export type UpdateReportInput = z.infer<typeof UpdateReportSchema>
+
+export const ReassignPatientSchema = z.object({
+  params: opNumParamsSchema,
+  body: z.object({
+    new_doctor_id: z.string("new_doctor_id should be a String").nonempty("new_doctor_id should not be empty")
+  }).strict()
+})
+
+export type ReassignPatientInput = z.infer<typeof ReassignPatientSchema>
+
+export const EditPatientDosageSchema = z.object({
+  params: opNumParamsSchema,
+  body: z.object({
+    prescription: dosageScheduleBaseSchema
+  }).strict()
+})
+
+export type EditPatientDosageInput = z.infer<typeof EditPatientDosageSchema>
+
+export const UpdateNextReviewSchema = z.object({
+  params: opNumParamsSchema,
+  body: z.object({
+    date: z.string("Date should be a string")
+      .regex(/^\d{2}-\d{2}-\d{4}$/, "Date must be in DD-MM-YYYY format")
+  }).strict()
+})
+
+export type UpdateNextReviewInput = z.infer<typeof UpdateNextReviewSchema>
+
+export const UpdateInstructionsSchema = z.object({
+  params: opNumParamsSchema,
+  body: z.object({
+    instructions: z.array(z.string("Each instruction must be a string"), {
+      error: "Instructions must be an array of strings",
+    })
+  }).strict()
+})
+
+export type UpdateInstructionsInput = z.infer<typeof UpdateInstructionsSchema>

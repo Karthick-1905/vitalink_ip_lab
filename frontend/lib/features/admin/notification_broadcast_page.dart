@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 
 class NotificationBroadcastPage extends StatefulWidget {
@@ -89,169 +90,198 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
+
+    final content = SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!showPageScaffold)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Broadcast Notification',
+                  style: theme.textTheme.titleLarge,
+                ),
+              ),
+            // Info card
+            Card(
+              color: theme.colorScheme.primaryContainer.withValues(
+                alpha: 0.3,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Broadcast a notification to selected user groups. All targeted users will receive this notification in-app.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Title
+            TextFormField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Notification Title',
+                prefixIcon: Icon(Icons.title_rounded),
+                border: OutlineInputBorder(),
+              ),
+              enabled: !_isSending,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+            ),
+            const SizedBox(height: 16),
+
+            // Message
+            TextFormField(
+              controller: _messageCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Message',
+                prefixIcon: Icon(Icons.message_rounded),
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
+              ),
+              maxLines: 4,
+              enabled: !_isSending,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Message is required'
+                  : null,
+            ),
+            const SizedBox(height: 24),
+
+            // Target
+            Text(
+              'Target Audience',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _TargetChip(
+                  label: 'All Users',
+                  value: 'ALL',
+                  icon: Icons.groups_rounded,
+                  selected: _target == 'ALL',
+                  onTap: () => setState(() => _target = 'ALL'),
+                ),
+                _TargetChip(
+                  label: 'Doctors',
+                  value: 'DOCTORS',
+                  icon: Icons.medical_services_rounded,
+                  selected: _target == 'DOCTORS',
+                  onTap: () => setState(() => _target = 'DOCTORS'),
+                ),
+                _TargetChip(
+                  label: 'Patients',
+                  value: 'PATIENTS',
+                  icon: Icons.people_rounded,
+                  selected: _target == 'PATIENTS',
+                  onTap: () => setState(() => _target = 'PATIENTS'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Priority
+            Text(
+              'Priority',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final priorityControl = SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(
+                      value: 'LOW',
+                      label: Text('Low'),
+                      icon: Icon(Icons.arrow_downward_rounded),
+                    ),
+                    ButtonSegment(
+                      value: 'MEDIUM',
+                      label: Text('Medium'),
+                      icon: Icon(Icons.remove_rounded),
+                    ),
+                    ButtonSegment(
+                      value: 'HIGH',
+                      label: Text('High'),
+                      icon: Icon(Icons.arrow_upward_rounded),
+                    ),
+                    ButtonSegment(
+                      value: 'CRITICAL',
+                      label: Text('Critical'),
+                      icon: Icon(Icons.warning_rounded),
+                    ),
+                  ],
+                  selected: {_priority},
+                  onSelectionChanged: (v) =>
+                      setState(() => _priority = v.first),
+                );
+
+                if (constraints.maxWidth >= 430) return priorityControl;
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: priorityControl,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+
+            // Send button
+            FilledButton.icon(
+              onPressed: _isSending ? null : _send,
+              icon: _isSending
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.send_rounded),
+              label: Text(_isSending ? 'Sending...' : 'Send Notification'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!showPageScaffold) {
+      return content;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Broadcast Notification')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Info card
-              Card(
-                color: theme.colorScheme.primaryContainer.withValues(
-                  alpha: 0.3,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Broadcast a notification to selected user groups. All targeted users will receive this notification in-app.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Title
-              TextFormField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notification Title',
-                  prefixIcon: Icon(Icons.title_rounded),
-                  border: OutlineInputBorder(),
-                ),
-                enabled: !_isSending,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Title is required'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Message
-              TextFormField(
-                controller: _messageCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Message',
-                  prefixIcon: Icon(Icons.message_rounded),
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 4,
-                enabled: !_isSending,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Message is required'
-                    : null,
-              ),
-              const SizedBox(height: 24),
-
-              // Target
-              Text(
-                'Target Audience',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _TargetChip(
-                    label: 'All Users',
-                    value: 'ALL',
-                    icon: Icons.groups_rounded,
-                    selected: _target == 'ALL',
-                    onTap: () => setState(() => _target = 'ALL'),
-                  ),
-                  _TargetChip(
-                    label: 'Doctors',
-                    value: 'DOCTORS',
-                    icon: Icons.medical_services_rounded,
-                    selected: _target == 'DOCTORS',
-                    onTap: () => setState(() => _target = 'DOCTORS'),
-                  ),
-                  _TargetChip(
-                    label: 'Patients',
-                    value: 'PATIENTS',
-                    icon: Icons.people_rounded,
-                    selected: _target == 'PATIENTS',
-                    onTap: () => setState(() => _target = 'PATIENTS'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Priority
-              Text(
-                'Priority',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
-                    value: 'LOW',
-                    label: Text('Low'),
-                    icon: Icon(Icons.arrow_downward_rounded),
-                  ),
-                  ButtonSegment(
-                    value: 'MEDIUM',
-                    label: Text('Medium'),
-                    icon: Icon(Icons.remove_rounded),
-                  ),
-                  ButtonSegment(
-                    value: 'HIGH',
-                    label: Text('High'),
-                    icon: Icon(Icons.arrow_upward_rounded),
-                  ),
-                  ButtonSegment(
-                    value: 'CRITICAL',
-                    label: Text('Critical'),
-                    icon: Icon(Icons.warning_rounded),
-                  ),
-                ],
-                selected: {_priority},
-                onSelectionChanged: (v) => setState(() => _priority = v.first),
-              ),
-              const SizedBox(height: 32),
-
-              // Send button
-              FilledButton.icon(
-                onPressed: _isSending ? null : _send,
-                icon: _isSending
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.send_rounded),
-                label: Text(_isSending ? 'Sending...' : 'Send Notification'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: content,
     );
   }
 }

@@ -25,13 +25,28 @@ class UpdateReportInstructionsWidget extends StatefulWidget {
 class _UpdateReportInstructionsWidgetState
     extends State<UpdateReportInstructionsWidget> {
   late TextEditingController _notesController;
+  late Future<Map<String, dynamic>> _reportFuture;
   bool _isCritical = false;
   bool _isUpdating = false;
+  bool _isFormInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _notesController = TextEditingController();
+    _reportFuture = _createReportFuture();
+  }
+
+  @override
+  void didUpdateWidget(covariant UpdateReportInstructionsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.opNumber != widget.opNumber ||
+        oldWidget.reportId != widget.reportId) {
+      _reportFuture = _createReportFuture();
+      _isFormInitialized = false;
+      _isCritical = false;
+      _notesController.clear();
+    }
   }
 
   @override
@@ -40,13 +55,17 @@ class _UpdateReportInstructionsWidgetState
     super.dispose();
   }
 
+  Future<Map<String, dynamic>> _createReportFuture() {
+    return AppDependencies.doctorRepository.getReport(
+      widget.opNumber,
+      widget.reportId,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
-      future: AppDependencies.doctorRepository.getReport(
-        widget.opNumber,
-        widget.reportId,
-      ),
+      future: _reportFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildLoadingState();
@@ -65,12 +84,10 @@ class _UpdateReportInstructionsWidgetState
         debugPrint('Report data: $reportData');
         final report = ReportModel.fromJson(reportData);
 
-        // Initialize form data from report
-        if (_notesController.text.isEmpty && report.notes != null) {
-          _notesController.text = report.notes!;
-        }
-        if (!_isCritical) {
+        if (!_isFormInitialized) {
+          _notesController.text = report.notes ?? '';
           _isCritical = report.isCritical;
+          _isFormInitialized = true;
         }
 
         return _buildUpdateForm(report);
@@ -301,7 +318,10 @@ class _UpdateReportInstructionsWidgetState
                             const SizedBox(height: 4),
                             Text(
                               'Flag this report for immediate attention',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
                                     color: Colors.grey[600],
                                   ),
                             ),
@@ -346,8 +366,8 @@ class _UpdateReportInstructionsWidgetState
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Text('Update Report'),

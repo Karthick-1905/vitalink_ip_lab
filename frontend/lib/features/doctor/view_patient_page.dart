@@ -45,9 +45,15 @@ class _ViewPatientPageState extends State<ViewPatientPage> {
   }
 
   void _navigateToPatient(int index) {
-    if (widget.allPatients == null || index < 0 || index >= widget.allPatients!.length) return;
+    if (widget.allPatients == null ||
+        index < 0 ||
+        index >= widget.allPatients!.length) {
+      return;
+    }
     final patient = widget.allPatients![index];
-    if (patient.opNumber == null) return;
+    if (patient.opNumber == null) {
+      return;
+    }
     setState(() {
       _currentIndex = index;
       _currentOpNumber = patient.opNumber!;
@@ -61,7 +67,8 @@ class _ViewPatientPageState extends State<ViewPatientPage> {
 
   @override
   Widget build(BuildContext context) {
-    final hasMultiple = widget.allPatients != null && widget.allPatients!.length > 1;
+    final hasMultiple =
+        widget.allPatients != null && widget.allPatients!.length > 1;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
@@ -177,21 +184,24 @@ class _NavButton extends StatelessWidget {
     return TextButton(
       onPressed: enabled ? onTap : null,
       style: TextButton.styleFrom(
-        foregroundColor: enabled ? const Color(0xFF6366F1) : const Color(0xFFD1D5DB),
+        foregroundColor:
+            enabled ? const Color(0xFF6366F1) : const Color(0xFFD1D5DB),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: iconAfter
             ? [
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(label,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(width: 4),
                 Icon(icon, size: 20),
               ]
             : [
                 Icon(icon, size: 20),
                 const SizedBox(width: 4),
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(label,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
               ],
       ),
     );
@@ -251,9 +261,9 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
               children: [
                 // Patient Header Card
                 _PatientHeaderCard(patient: patient),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Quick Actions
                 _QuickActionsCard(
                   opNumber: widget.opNumber,
@@ -261,14 +271,14 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
                   repository: widget.repository,
                   onPatientUpdated: () => patientQuery.refetch(),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Medical Configuration
                 _MedicalConfigCard(patient: patient),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Weekly Dosage
                 _DosageCard(
                   opNumber: widget.opNumber,
@@ -276,19 +286,19 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
                   repository: widget.repository,
                   onUpdated: () => patientQuery.refetch(),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Next of Kin
                 _NextOfKinCard(patient: patient),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Medical History
                 _MedicalHistoryCard(patient: patient),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // INR Reports Section
                 _InrReportsCard(
                   opNumber: widget.opNumber,
@@ -296,7 +306,7 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
                   isExpanded: _showReports,
                   onToggle: () => setState(() => _showReports = !_showReports),
                 ),
-                
+
                 const SizedBox(height: 32),
               ],
             ),
@@ -386,7 +396,9 @@ class _PatientHeaderCard extends StatelessWidget {
                     ],
                     if (patient.gender != null)
                       _InfoChip(
-                        icon: patient.gender == 'Male' ? Icons.male : Icons.female,
+                        icon: patient.gender == 'Male'
+                            ? Icons.male
+                            : Icons.female,
                         label: patient.gender!,
                         color: const Color(0xFFF59E0B),
                       ),
@@ -396,7 +408,8 @@ class _PatientHeaderCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.phone, size: 14, color: Color(0xFF6B7280)),
+                      const Icon(Icons.phone,
+                          size: 14, color: Color(0xFF6B7280)),
                       const SizedBox(width: 4),
                       Text(
                         patient.phone!,
@@ -523,7 +536,7 @@ class _QuickActionsCard extends StatelessWidget {
 
   void _showUpdateReviewDialog(BuildContext context) {
     DateTime? selectedDate;
-    
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -567,13 +580,16 @@ class _QuickActionsCard extends StatelessWidget {
                 onPressed: selectedDate == null
                     ? null
                     : () async {
-                        final dateStr = DateFormat('dd-MM-yyyy').format(selectedDate!);
+                        final dateStr =
+                            DateFormat('dd-MM-yyyy').format(selectedDate!);
                         try {
                           await repository.updateNextReview(opNumber, dateStr);
                           if (ctx.mounted) {
                             Navigator.of(ctx).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Review date updated successfully')),
+                              const SnackBar(
+                                  content:
+                                      Text('Review date updated successfully')),
                             );
                             onPatientUpdated();
                           }
@@ -644,11 +660,13 @@ class _ReassignDialogState extends State<_ReassignDialog> {
   Future<void> _loadDoctors() async {
     try {
       final doctors = await widget.repository.getDoctors();
+      if (!mounted) return;
       setState(() {
         _doctors = doctors;
         _loadingDoctors = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loadingDoctors = false;
@@ -672,7 +690,8 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                     children: [
                       const Text(
                         'Select a doctor to reassign this patient:',
-                        style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                        style:
+                            TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
@@ -683,8 +702,10 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                           itemBuilder: (context, index) {
                             final doctor = _doctors[index];
                             final loginId = doctor['login_id'] as String?;
-                            final profile = doctor['profile_id'] as Map<String, dynamic>?;
-                            final name = profile?['name'] ?? loginId ?? 'Unknown';
+                            final profile =
+                                doctor['profile_id'] as Map<String, dynamic>?;
+                            final name =
+                                profile?['name'] ?? loginId ?? 'Unknown';
                             final doctorId = loginId ?? '';
                             final selected = _selectedDoctorId == doctorId;
 
@@ -692,7 +713,8 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                               dense: true,
                               onTap: doctorId.isEmpty
                                   ? null
-                                  : () => setState(() => _selectedDoctorId = doctorId),
+                                  : () => setState(
+                                      () => _selectedDoctorId = doctorId),
                               leading: Icon(
                                 selected
                                     ? Icons.radio_button_checked
@@ -702,7 +724,8 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                                     : Colors.grey,
                               ),
                               title: Text(name),
-                              subtitle: loginId != null ? Text('ID: $loginId') : null,
+                              subtitle:
+                                  loginId != null ? Text('ID: $loginId') : null,
                             );
                           },
                         ),
@@ -722,10 +745,12 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                   final messenger = ScaffoldMessenger.of(context);
                   setState(() => _isLoading = true);
                   try {
-                    await widget.repository.reassignPatient(widget.opNumber, _selectedDoctorId!);
+                    await widget.repository
+                        .reassignPatient(widget.opNumber, _selectedDoctorId!);
                     if (!mounted) return;
                     messenger.showSnackBar(
-                      const SnackBar(content: Text('Patient reassigned successfully')),
+                      const SnackBar(
+                          content: Text('Patient reassigned successfully')),
                     );
                     widget.onSuccess();
                   } catch (e) {
@@ -747,7 +772,8 @@ class _ReassignDialogState extends State<_ReassignDialog> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Reassign'),
         ),
@@ -808,7 +834,8 @@ class _MedicalConfigCard extends StatelessWidget {
   String _formatDate(dynamic date) {
     if (date == null) return 'Not set';
     try {
-      final DateTime dt = date is DateTime ? date : DateTime.parse(date.toString());
+      final DateTime dt =
+          date is DateTime ? date : DateTime.parse(date.toString());
       return DateFormat('dd MMM yyyy').format(dt);
     } catch (_) {
       return date.toString();
@@ -868,7 +895,8 @@ class _MedicalConfigCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('• ', style: TextStyle(color: Color(0xFF6B7280))),
+                      const Text('• ',
+                          style: TextStyle(color: Color(0xFF6B7280))),
                       Expanded(
                         child: Text(
                           instr.toString(),
@@ -1039,7 +1067,7 @@ class _MedicalHistoryCard extends StatelessWidget {
           final diagnosis = item['diagnosis'];
           final durationValue = item['duration_value'];
           final durationUnit = item['duration_unit'];
-          
+
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
@@ -1233,7 +1261,8 @@ class _ErrorView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

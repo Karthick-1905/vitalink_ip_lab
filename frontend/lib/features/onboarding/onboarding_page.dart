@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/app/routers.dart';
+import 'package:frontend/core/storage/secure_storage.dart';
+import 'package:frontend/features/login/models/login_models.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -11,6 +13,7 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
+  final SecureStorage _storage = SecureStorage();
   int _currentPage = 0;
 
   final List<OnboardingData> _pages = [
@@ -60,17 +63,54 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
-  void _finishOnboarding() {
-    final args = ModalRoute.of(context)?.settings.arguments;
-    // Support both bool (legacy: isDoctor) and String (userType) arguments
-    String route;
-    if (args is String && args.toUpperCase() == 'ADMIN') {
-      route = AppRoutes.adminDashboard;
-    } else {
-      final bool isDoctor = args is bool ? args : false;
-      route = isDoctor ? AppRoutes.doctorDashboard : AppRoutes.patient;
+  String? _routeFromArguments(dynamic args) {
+    if (args is String) {
+      final normalized = args.trim().toUpperCase();
+      if (normalized == 'ADMIN') return AppRoutes.adminDashboard;
+      if (normalized == 'DOCTOR') return AppRoutes.doctorDashboard;
+      if (normalized == 'PATIENT') return AppRoutes.patient;
+      return null;
     }
+
+    // Legacy argument shape from login flow: bool isDoctor.
+    if (args is bool) {
+      return args ? AppRoutes.doctorDashboard : AppRoutes.patient;
+    }
+
+    return null;
+  }
+
+  Future<String?> _routeFromPersistedSession() async {
+    final token = await _storage.readToken();
+    final userJson = await _storage.readUser();
+    if (token == null || token.isEmpty || userJson == null) return null;
+
+    final user = UserModel.fromJson(userJson);
+    if (!user.isActive) return null;
+    if (user.isAdmin) return AppRoutes.adminDashboard;
+    if (user.isDoctor) return AppRoutes.doctorDashboard;
+    if (user.isPatient) return AppRoutes.patient;
+    return null;
+  }
+
+  void _finishOnboarding() async {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final routeFromArgs = _routeFromArguments(args);
+    final routeFromSession =
+        routeFromArgs == null ? await _routeFromPersistedSession() : null;
+    final route = routeFromArgs ?? routeFromSession ?? AppRoutes.patient;
+
+    // Persist that the user has completed onboarding so they skip it next login.
+    await _storage.markOnboardingCompleted();
+
+    if (!mounted) return;
     Navigator.of(context).pushReplacementNamed(route);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override

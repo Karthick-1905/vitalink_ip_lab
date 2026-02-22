@@ -1,4 +1,4 @@
-import { Router } from 'express'
+import { NextFunction, Request, Response, Router } from 'express'
 import multer from 'multer'
 import { authenticate, AllowPatient, validate } from '@alias/middlewares'
 import {
@@ -13,19 +13,80 @@ import {
 	updateProfile,
 } from '@alias/controllers/patient.controller'
 import { reportSchema, takeDosageSchema, updateHealthLogSchema, updateProfileSchema } from '@alias/validators/patient.validator'
+import { ApiError } from '@alias/utils'
+import { StatusCodes } from 'http-status-codes'
 
-const upload = multer({ dest: 'uploads/reports/' })
-const uploadpic = multer({ dest: 'uploads/profiles' })
+const REPORT_MAX_SIZE_BYTES = 10 * 1024 * 1024
+const PROFILE_PICTURE_MAX_SIZE_BYTES = 5 * 1024 * 1024
+
+const REPORT_MIME_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'])
+const PROFILE_PICTURE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'])
+
+const reportUpload = multer({
+	storage: multer.memoryStorage(),
+	limits: { fileSize: REPORT_MAX_SIZE_BYTES },
+	fileFilter: (_req, file, cb) => {
+		if (!REPORT_MIME_TYPES.has(file.mimetype)) {
+			cb(new ApiError(StatusCodes.BAD_REQUEST, 'Invalid file type. Only PDF, PNG, JPEG allowed'))
+			return
+		}
+		cb(null, true)
+	}
+})
+
+const profilePictureUpload = multer({
+	storage: multer.memoryStorage(),
+	limits: { fileSize: PROFILE_PICTURE_MAX_SIZE_BYTES },
+	fileFilter: (_req, file, cb) => {
+		if (!PROFILE_PICTURE_MIME_TYPES.has(file.mimetype)) {
+			cb(new ApiError(StatusCodes.BAD_REQUEST, 'Invalid file type. Only PNG, JPEG, JPG, and WEBP images are allowed'))
+			return
+		}
+		cb(null, true)
+	}
+})
+
+const uploadReportFile = (req: Request, res: Response, next: NextFunction) => {
+	reportUpload.single('file')(req, res, (err: unknown) => {
+		if (!err) {
+			next()
+			return
+		}
+
+		if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+			next(new ApiError(StatusCodes.BAD_REQUEST, 'File size exceeds 10MB limit'))
+			return
+		}
+
+		next(err as Error)
+	})
+}
+
+const uploadProfilePictureFile = (req: Request, res: Response, next: NextFunction) => {
+	profilePictureUpload.single('file')(req, res, (err: unknown) => {
+		if (!err) {
+			next()
+			return
+		}
+
+		if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+			next(new ApiError(StatusCodes.BAD_REQUEST, 'File size exceeds 5MB limit'))
+			return
+		}
+
+		next(err as Error)
+	})
+}
 
 const router = Router()
 
 router.route('/profile').get(authenticate, AllowPatient, getProfile).put(authenticate, AllowPatient, validate(updateProfileSchema), updateProfile)
 router.get('/reports', authenticate, AllowPatient, getReport)
-router.post('/reports', authenticate, AllowPatient, upload.single('file'), validate(reportSchema), submitReport)
+router.post('/reports', authenticate, AllowPatient, uploadReportFile, validate(reportSchema), submitReport)
 router.get('/missed-doses', authenticate, AllowPatient, missedDoses)
 router.get('/dosage-calendar', authenticate, AllowPatient, getDosageCalendar)
 router.post('/dosage', authenticate, AllowPatient, validate(takeDosageSchema), takeDosage)
 router.post('/health-logs', authenticate, AllowPatient, validate(updateHealthLogSchema), updateHealthLogs)
-router.post("/profile-pic", authenticate, AllowPatient, uploadpic.single('file'), updateProfilePicture)
+router.post("/profile-pic", authenticate, AllowPatient, uploadProfilePictureFile, updateProfilePicture)
 
 export default router

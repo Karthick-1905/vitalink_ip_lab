@@ -3,15 +3,65 @@ import { ApiError, ApiResponse, asyncHandler } from '@alias/utils'
 import { StatusCodes } from 'http-status-codes'
 import { DoctorProfile, PatientProfile, User } from '@alias/models'
 import { UserType } from '@alias/validators'
-import type { CreatePatientInput, UpdateProfileInput, UpdateReportInput } from '@alias/validators/doctor.validator'
+import type {
+  CreatePatientInput,
+  EditPatientDosageInput,
+  ReassignPatientInput,
+  UpdateInstructionsInput,
+  UpdateNextReviewInput,
+  UpdateProfileInput,
+  UpdateReportInput
+} from '@alias/validators/doctor.validator'
 import mongoose from 'mongoose'
 import { getDownloadUrl, uploadFile } from '@alias/utils/fileUpload'
 import logger from '@alias/utils/logger'
+import { getObjectIdString } from '@alias/utils/objectid'
+
+const getDoctorOwnershipIds = (doctor: { _id: unknown; profile_id?: unknown }): string[] => {
+  const ids = new Set<string>()
+  const userId = getObjectIdString(doctor._id)
+  const profileId = getObjectIdString(doctor.profile_id)
+  if (userId) ids.add(userId)
+  if (profileId) ids.add(profileId)
+  return Array.from(ids)
+}
+
+const isDoctorOwnerOfPatient = (patient: { assigned_doctor_id?: unknown }, doctor: { _id: unknown; profile_id?: unknown }): boolean => {
+  const assignedDoctorId = getObjectIdString(patient.assigned_doctor_id)
+  if (!assignedDoctorId) return false
+  const validDoctorIds = new Set(getDoctorOwnershipIds(doctor))
+  return validDoctorIds.has(assignedDoctorId)
+}
+
+const getDoctorUserOrThrow = async (userId: string) => {
+  const doctor = await User.findById(userId)
+  if (!doctor || doctor.user_type !== UserType.DOCTOR) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Doctor not found')
+  }
+  return doctor
+}
+
+const getPatientUserOrThrow = async (op_num: string) => {
+  const patientUser = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
+  if (!patientUser) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  }
+  return patientUser
+}
+
+const getPatientProfileOrThrow = async (profileId: unknown, notFoundMessage = 'Patient not found') => {
+  const patient = await PatientProfile.findById(profileId)
+  if (!patient) {
+    throw new ApiError(StatusCodes.NOT_FOUND, notFoundMessage)
+  }
+  return patient
+}
 
 export const getPatients = asyncHandler(async (req: Request, res: Response) => {
   const { user_id } = req.user
-  const doctor = await User.findById(user_id)
-  const patientProfiles = await PatientProfile.find({ assigned_doctor_id: doctor?.profile_id })
+  const doctor = await getDoctorUserOrThrow(user_id)
+  const doctorOwnershipIds = getDoctorOwnershipIds(doctor)
+  const patientProfiles = await PatientProfile.find({ assigned_doctor_id: { $in: doctorOwnershipIds } })
 
   // Get login_ids for each patient profile
   const patientUsers = await User.find({
@@ -37,21 +87,12 @@ export const getPatients = asyncHandler(async (req: Request, res: Response) => {
 export const viewPatient = asyncHandler(async (req: Request, res: Response) => {
   const { op_num } = req.params
   const { user_id } = req.user
-  const patientUser = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patientUser) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  const doctor = await getDoctorUserOrThrow(user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patient = await getPatientProfileOrThrow(patientUser.profile_id)
+  if (!isDoctorOwnerOfPatient(patient, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Patient Access')
   }
-
-  const patient = await PatientProfile.findById(patientUser.profile_id)
-
-  if (!patient) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
-  }
-
-  // TODO: Check Validations
-  // if(patient.assigned_doctor_id != user_id){
-  //   throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized Patient Access')
-  // }
 
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Patient fetched successfully', { patient }))
 })
@@ -61,7 +102,7 @@ export const addPatient = asyncHandler(async (req: Request<{}, {}, CreatePatient
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized')
   }
 
-  const doctorUser = await User.findById(req.user.user_id)
+  const doctorUser = await getDoctorUserOrThrow(req.user.user_id)
 
   const { name, op_num, age, gender, contact_no, target_inr_min, target_inr_max, therapy, therapy_start_date,
     prescription, medical_history, kin_name, kin_relation, kin_contact_number } = req.body
@@ -84,7 +125,7 @@ export const addPatient = asyncHandler(async (req: Request<{}, {}, CreatePatient
   }
 
   const patientProfile = await PatientProfile.create({
-    assigned_doctor_id: doctorUser.profile_id,
+    assigned_doctor_id: doctorUser._id,
     demographics: {
       name,
       age,
@@ -110,13 +151,18 @@ export const addPatient = asyncHandler(async (req: Request<{}, {}, CreatePatient
   res.status(StatusCodes.CREATED).json(new ApiResponse(StatusCodes.CREATED, 'Patient created successfully', { patient: patientProfile }))
 })
 
-export const reassignPatient = asyncHandler(async (req: Request, res: Response) => {
+export const reassignPatient = asyncHandler(async (
+  req: Request<ReassignPatientInput['params'], {}, ReassignPatientInput['body']>,
+  res: Response
+) => {
   const { op_num } = req.params
   const { new_doctor_id } = req.body
 
-  const patientUser = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patientUser) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  const currentDoctorUser = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const existingPatientProfile = await getPatientProfileOrThrow(patientUser.profile_id)
+  if (!isDoctorOwnerOfPatient(existingPatientProfile, currentDoctorUser)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Patient Access')
   }
 
   const doctorUser = await User.findOne({ login_id: new_doctor_id, user_type: UserType.DOCTOR })
@@ -126,20 +172,25 @@ export const reassignPatient = asyncHandler(async (req: Request, res: Response) 
 
   const patient = await PatientProfile.findByIdAndUpdate(
     patientUser.profile_id,
-    { assigned_doctor_id: doctorUser.profile_id },
+    { assigned_doctor_id: doctorUser._id },
     { new: true }
   )
 
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Patient reassigned successfully', { patient }))
 })
 
-export const editPatientDosage = asyncHandler(async (req: Request, res: Response) => {
+export const editPatientDosage = asyncHandler(async (
+  req: Request<EditPatientDosageInput['params'], {}, EditPatientDosageInput['body']>,
+  res: Response
+) => {
   const { op_num } = req.params
   const { prescription } = req.body
 
-  const patientUser = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patientUser) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  const doctor = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patientProfile = await getPatientProfileOrThrow(patientUser.profile_id)
+  if (!isDoctorOwnerOfPatient(patientProfile, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Patient Access')
   }
 
   const patient = await PatientProfile.findByIdAndUpdate(
@@ -154,12 +205,15 @@ export const editPatientDosage = asyncHandler(async (req: Request, res: Response
 export const getReports = asyncHandler(async (req: Request, res: Response) => {
   const { op_num } = req.params
 
-  const patientUser = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patientUser) {
+  const doctor = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patient = await PatientProfile.findById(patientUser.profile_id).select('assigned_doctor_id inr_history')
+  if (!patient) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
   }
-
-  const patient = await PatientProfile.findById(patientUser.profile_id).select('inr_history')
+  if (!isDoctorOwnerOfPatient(patient, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Doctor to View The Patient')
+  }
 
   // Convert S3 keys to presigned URLs for each report
   const reportsWithUrls = await Promise.all(
@@ -183,12 +237,12 @@ export const getReports = asyncHandler(async (req: Request, res: Response) => {
 export const updateReport = asyncHandler(async (req: Request<UpdateReportInput['params'], {}, UpdateReportInput['body']>, res: Response) => {
   const { op_num, report_id } = req.params
   const { notes, is_critical } = req.body
-  const patient = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  const patientProfile = await PatientProfile.findById(patient?.profile_id)
 
-  const doctor = await User.findById(req.user.user_id)
-  if (!patientProfile.assigned_doctor_id.equals(doctor.profile_id)) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized')
+  const doctor = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patientProfile = await getPatientProfileOrThrow(patientUser.profile_id)
+  if (!isDoctorOwnerOfPatient(patientProfile, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Patient Access')
   }
 
   const report = patientProfile.inr_history.id(report_id)
@@ -204,7 +258,10 @@ export const updateReport = asyncHandler(async (req: Request<UpdateReportInput['
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report updated successfully', { report }))
 })
 
-export const updateNextReview = asyncHandler(async (req: Request, res: Response) => {
+export const updateNextReview = asyncHandler(async (
+  req: Request<UpdateNextReviewInput['params'], {}, UpdateNextReviewInput['body']>,
+  res: Response
+) => {
   const { date } = req.body
   const { op_num } = req.params
   const dateRegex = /^\d{2}-\d{2}-\d{4}$/
@@ -216,9 +273,11 @@ export const updateNextReview = asyncHandler(async (req: Request, res: Response)
   const [day, month, year] = date.split('-').map(Number)
   const parsedDate = new Date(year, month - 1, day)
 
-  const patientUser = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patientUser) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  const doctor = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patientProfile = await getPatientProfileOrThrow(patientUser.profile_id)
+  if (!isDoctorOwnerOfPatient(patientProfile, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Patient Access')
   }
 
   const patient = await PatientProfile.findByIdAndUpdate(
@@ -230,17 +289,18 @@ export const updateNextReview = asyncHandler(async (req: Request, res: Response)
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Next review date updated successfully', { patient }))
 })
 
-export const UpdateInstructions = asyncHandler(async (req: Request, res: Response) => {
+export const UpdateInstructions = asyncHandler(async (
+  req: Request<UpdateInstructionsInput['params'], {}, UpdateInstructionsInput['body']>,
+  res: Response
+) => {
   const { instructions } = req.body
   const { op_num } = req.params
 
-  if (!Array.isArray(instructions) || !instructions.every(instr => typeof instr === 'string')) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Instructions must be an array of strings')
-  }
-
-  const patientUser = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patientUser) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
+  const doctor = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patientProfile = await getPatientProfileOrThrow(patientUser.profile_id)
+  if (!isDoctorOwnerOfPatient(patientProfile, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Patient Access')
   }
 
   const patient = await PatientProfile.findByIdAndUpdate(
@@ -254,7 +314,7 @@ export const UpdateInstructions = asyncHandler(async (req: Request, res: Respons
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   const doctor = await User.findById(req.user.user_id).populate('profile_id')
-  if (!doctor) {
+  if (!doctor || doctor.user_type !== UserType.DOCTOR) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Doctor not found')
   }
 
@@ -269,7 +329,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  const patientsCount = await PatientProfile.countDocuments({ assigned_doctor_id: doctor.profile_id })
+  const patientsCount = await PatientProfile.countDocuments({ assigned_doctor_id: { $in: getDoctorOwnershipIds(doctor) } })
 
   const response = {
     doctor: {
@@ -313,23 +373,12 @@ export const updateReportsInstructions = asyncHandler(async (req: Request<Update
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid report_id or op_num')
   }
 
-  const patient = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patient) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
-  }
+  const doctor = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patientProfile = await getPatientProfileOrThrow(patientUser.profile_id)
 
-  const patientProfile = await PatientProfile.findById(patient.profile_id)
-  if (!patientProfile) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
-  }
-
-  const doctor = await User.findById(req.user.user_id)
-  if (!doctor) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Doctor not found')
-  }
-
-  if (patientProfile.assigned_doctor_id.toString() !== doctor.profile_id.toString()) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized Doctor to View The Patient')
+  if (!isDoctorOwnerOfPatient(patientProfile, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Doctor to View The Patient')
   }
 
   const report = patientProfile.inr_history.id(report_id)
@@ -352,24 +401,12 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid report_id or op_num')
   }
 
-  const patient = await User.findOne({ login_id: op_num, user_type: UserType.PATIENT })
-  if (!patient) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
-  }
+  const doctor = await getDoctorUserOrThrow(req.user.user_id)
+  const patientUser = await getPatientUserOrThrow(op_num)
+  const patientProfile = await getPatientProfileOrThrow(patientUser.profile_id)
 
-  const patientProfile = await PatientProfile.findById(patient.profile_id)
-  if (!patientProfile) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
-  }
-
-  // Get doctor's profile_id from user_id
-  const doctor = await User.findById(req.user.user_id)
-  if (!doctor) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Doctor not found')
-  }
-
-  if (patientProfile.assigned_doctor_id.toString() !== doctor.profile_id.toString()) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized Doctor to View The Patient')
+  if (!isDoctorOwnerOfPatient(patientProfile, doctor)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Unauthorized Doctor to View The Patient')
   }
 
   const report = patientProfile.inr_history.id(report_id)
@@ -381,7 +418,7 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report fetched successfully', { report: reportResponse }))
 })
 
-export const updateProfilePicture = async (req: Request, res: Response) => {
+export const updateProfilePicture = asyncHandler(async (req: Request, res: Response) => {
   if (!req.file) {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Image is required for setting up profile picture")
   }
@@ -406,4 +443,4 @@ export const updateProfilePicture = async (req: Request, res: Response) => {
 
   await DoctorProfile.findByIdAndUpdate(user.profile_id, { profile_picture_url: fileUrl }, { new: true })
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Profile Picture successfully changed"))
-}
+})

@@ -59,40 +59,70 @@ class _DashboardTab extends StatelessWidget {
         queryFn: repo.getAdminStats,
       ),
       builder: (context, query) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('VitaLink Admin'),
-            centerTitle: true,
-          ),
-          body: RefreshIndicator(
-            onRefresh: () => query.refetch(),
-            child: query.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : query.isError
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: theme.colorScheme.error,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Failed to load dashboard',
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () => query.refetch(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _DashboardContent(stats: query.data),
-          ),
+        final refreshableBody = RefreshIndicator(
+          onRefresh: () async {
+            await query.refetch();
+          },
+          child: query.isLoading
+              ? const _ScrollableCentered(child: CircularProgressIndicator())
+              : query.isError
+                  ? _ScrollableCentered(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Failed to load dashboard',
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                            onPressed: () => query.refetch(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _DashboardContent(stats: query.data),
+        );
+
+        if (AdminScaffold.showsSidebar(context)) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('VitaLink Admin'),
+              centerTitle: true,
+            ),
+            body: refreshableBody,
+          );
+        }
+
+        return refreshableBody;
+      },
+    );
+  }
+}
+
+class _ScrollableCentered extends StatelessWidget {
+  final Widget child;
+
+  const _ScrollableCentered({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : MediaQuery.sizeOf(context).height;
+
+        return ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [SizedBox(height: height, child: Center(child: child))],
         );
       },
     );
@@ -109,6 +139,7 @@ class _DashboardContent extends StatelessWidget {
     final s = stats;
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         // Welcome

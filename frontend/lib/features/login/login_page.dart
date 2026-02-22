@@ -3,6 +3,7 @@ import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/network/api_client.dart';
+import 'package:frontend/core/storage/secure_storage.dart';
 import 'package:frontend/features/login/data/auth_repository.dart';
 import 'package:frontend/features/login/models/login_models.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -52,11 +53,24 @@ class _LoginPageState extends State<LoginPage> {
         context,
       ).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (previous) => false);
     } else if (response.user.isDoctor || response.user.isPatient) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.onboarding,
-        (previous) => false,
-        arguments: response.user.isDoctor,
-      );
+      // Skip onboarding for returning users who already completed it.
+      final storage = SecureStorage();
+      final alreadyOnboarded = await storage.isOnboardingCompleted();
+      if (!mounted) return;
+
+      if (alreadyOnboarded) {
+        final route = response.user.isDoctor
+            ? AppRoutes.doctorDashboard
+            : AppRoutes.patient;
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil(route, (previous) => false);
+      } else {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.onboarding,
+          (previous) => false,
+          arguments: response.user.isDoctor,
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -105,9 +119,8 @@ class _LoginPageState extends State<LoginPage> {
         ),
         builder: (context, mutation) {
           final error = mutation.error;
-          final errorText = error is ApiException
-              ? error.message
-              : error?.toString();
+          final errorText =
+              error is ApiException ? error.message : error?.toString();
 
           return SizedBox(
             width: screenWidth,
@@ -140,8 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                     physics: const BouncingScrollPhysics(),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight:
-                            screenHeight -
+                        minHeight: screenHeight -
                             MediaQuery.of(context).padding.top -
                             MediaQuery.of(context).padding.bottom,
                       ),
@@ -299,8 +311,8 @@ class _LoginPageState extends State<LoginPage> {
                                                 strokeWidth: 2.5,
                                                 valueColor:
                                                     AlwaysStoppedAnimation(
-                                                      Colors.white,
-                                                    ),
+                                                  Colors.white,
+                                                ),
                                               ),
                                             )
                                           : Text(
