@@ -653,7 +653,7 @@ class _AddPatientFormState extends State<AddPatientForm> {
         'Heparin',
         'Dabigatran',
         'Rivaroxaban',
-        'ACITROM',
+        'Acitrom',
       ];
 
   List<String> get _durationUnits => const ['Days', 'Weeks', 'Months', 'Years'];
