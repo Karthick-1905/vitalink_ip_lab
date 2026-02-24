@@ -53,46 +53,44 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
       onNavChanged: (index) {
         setState(() => _currentNavIndex = index);
       },
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFC8B5E1), Color(0xFFF8C7D7)],
-          ),
+      bodyDecoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFC8B5E1), Color(0xFFF8C7D7)],
         ),
-        child: SafeArea(
-          top: false,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            layoutBuilder: (current, previousChildren) => Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                ...previousChildren,
-                if (current != null)
-                  Align(alignment: Alignment.topCenter, child: current),
-              ],
-            ),
-            child: () {
-              switch (_currentNavIndex) {
-                case 1:
-                  return const AddPatientForm();
-                case 2:
-                  return const DoctorReportsPage();
-                case 3:
-                  return const DoctorProfilePage();
-                case 0:
-                default:
-                  return _PatientsView(
-                    repository: _doctorRepository,
-                    isTableView: _isTableView,
-                    onToggleView: (table) => setState(() => _isTableView = table),
-                    searchController: _searchController,
-                    filterPatients: _filteredPatients,
-                  );
-              }
-            }(),
+      ),
+      body: SafeArea(
+        top: false,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          layoutBuilder: (current, previousChildren) => Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              ...previousChildren,
+              if (current != null)
+                Align(alignment: Alignment.topCenter, child: current),
+            ],
           ),
+          child: () {
+            switch (_currentNavIndex) {
+              case 1:
+                return const AddPatientForm();
+              case 2:
+                return const DoctorReportsPage();
+              case 3:
+                return const DoctorProfilePage();
+              case 0:
+              default:
+                return _PatientsView(
+                  repository: _doctorRepository,
+                  isTableView: _isTableView,
+                  onToggleView: (table) => setState(() => _isTableView = table),
+                  searchController: _searchController,
+                  filterPatients: _filteredPatients,
+                );
+            }
+          }(),
         ),
       ),
     );
@@ -196,7 +194,8 @@ class _SearchBar extends StatelessWidget {
         hintText: '$count Viewing Patients',
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(32),
           borderSide: BorderSide.none,
@@ -329,19 +328,17 @@ class _TableView extends StatelessWidget {
               ),
             )
             .toList(),
-      )
-          .decorated(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          )
-          .padding(all: 4),
+      ).decorated(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ).padding(all: 4),
     );
   }
 }
@@ -357,20 +354,17 @@ class _EmptyState extends StatelessWidget {
         SizedBox(height: 8),
         Text('No patients found'),
       ],
-    )
-        .center()
-        .padding(vertical: 32)
-        .decorated(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        );
+    ).center().padding(vertical: 32).decorated(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
   }
 }
 
@@ -406,11 +400,14 @@ class _PatientCard extends StatelessWidget {
       child: <Widget>[
         Text(
           patient.name,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
+          style: const TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
         ),
         const SizedBox(height: 4),
-        Text('OP #: ${patient.opNumber ?? 'N/A'}', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-        Text('Age: ${patient.age ?? '-'}, Gender: ${patient.gender ?? '-'}', style: const TextStyle(color: Colors.black54, fontSize: 12)),
+        Text('OP #: ${patient.opNumber ?? 'N/A'}',
+            style: const TextStyle(color: Colors.black54, fontSize: 12)),
+        Text('Age: ${patient.age ?? '-'}, Gender: ${patient.gender ?? '-'}',
+            style: const TextStyle(color: Colors.black54, fontSize: 12)),
         const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerRight,
@@ -423,16 +420,16 @@ class _PatientCard extends StatelessWidget {
           .toColumn(crossAxisAlignment: CrossAxisAlignment.start)
           .padding(all: 14)
           .decorated(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
+        ],
+      ),
     );
   }
 }

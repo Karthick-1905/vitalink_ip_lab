@@ -9,6 +9,7 @@ class DoctorScaffold extends StatelessWidget {
   final Function(int) onNavChanged;
   final Widget? drawer;
   final Color navbarBackgroundColor;
+  final Decoration? bodyDecoration;
 
   const DoctorScaffold({
     super.key,
@@ -18,6 +19,7 @@ class DoctorScaffold extends StatelessWidget {
     required this.onNavChanged,
     this.drawer,
     this.navbarBackgroundColor = Colors.white,
+    this.bodyDecoration,
   });
 
   @override
@@ -30,16 +32,19 @@ class DoctorScaffold extends StatelessWidget {
         currentIndex: currentNavIndex,
         onTap: onNavChanged,
       ),
-      body: Column(
-        children: [
-          AppNavBar(
-            pageTitle: pageTitle,
-            backgroundColor: navbarBackgroundColor,
-          ),
-          Expanded(
-            child: body,
-          ),
-        ],
+      body: Container(
+        decoration: bodyDecoration ?? const BoxDecoration(color: Colors.white),
+        child: Column(
+          children: [
+            AppNavBar(
+              pageTitle: pageTitle,
+              backgroundColor: navbarBackgroundColor,
+            ),
+            Expanded(
+              child: body,
+            ),
+          ],
+        ),
       ),
     );
   }
