@@ -1,20 +1,26 @@
 import { Request, Response, NextFunction } from 'express'
 import { AuditLog } from '@alias/models'
 import { AuditAction } from '@alias/models/auditlog.model'
+import logger from '@alias/utils/logger'
 
 /**
  * Sanitizes request body by redacting sensitive fields
  */
 function sanitizeBody(body: any): any {
   if (!body || typeof body !== 'object') return body
+  const sensitiveFields = new Set(['password', 'new_password', 'current_password', 'token', 'secret'])
 
-  const sanitized = { ...body }
-  const sensitiveFields = ['password', 'new_password', 'current_password', 'token', 'secret']
+  if (Array.isArray(body)) {
+    return body.map((item) => sanitizeBody(item))
+  }
 
-  for (const field of sensitiveFields) {
-    if (sanitized[field]) {
-      sanitized[field] = '[REDACTED]'
+  const sanitized: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(body)) {
+    if (sensitiveFields.has(key.toLowerCase())) {
+      sanitized[key] = '[REDACTED]'
+      continue
     }
+    sanitized[key] = sanitizeBody(value)
   }
 
   return sanitized
@@ -73,7 +79,7 @@ export function auditLogger(req: Request, res: Response, next: NextFunction): vo
           success,
           error_message: !success ? (typeof body === 'string' ? body : undefined) : undefined,
         }).catch((err: Error) => {
-          console.error('Audit log creation failed:', err.message)
+          logger.error('Audit log creation failed', { error: err.message })
         })
       }
     }

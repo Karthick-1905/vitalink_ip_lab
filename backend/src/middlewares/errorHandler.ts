@@ -20,7 +20,7 @@ const errorHandler: ErrorRequestHandler = (err: any, req: Request, res: Response
 
   let error = err;
   if (!(err instanceof ApiError)) {
-    console.log(error);
+    logger.error('Unhandled error', { error })
     const statusCode = error instanceof mongoose.Error ? StatusCodes.BAD_REQUEST : StatusCodes.INTERNAL_SERVER_ERROR
     const message = error.message || "Something went Wrong"
     error = new ApiError(statusCode, message)

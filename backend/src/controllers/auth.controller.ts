@@ -11,7 +11,7 @@ export const loginController = asyncHandler(async (req: Request<{}, {}, LoginInp
   const { login_id, password } = req.body;
   const user = await User.findOne({ login_id })
   if (!user) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User Doesn't exist")
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials')
   }
   if (!user.is_active) {
     throw new ApiError(StatusCodes.FORBIDDEN, 'Account is inactive. Please contact support.')
@@ -29,7 +29,7 @@ export const loginController = asyncHandler(async (req: Request<{}, {}, LoginInp
 
   const token = generateToken({ user_id: user._id.toString(), user_type: user.user_type as UserType })
 
-  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "User Logined In Successfully", { token, user }))
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "User logged in successfully", { token, user }))
 })
 
 export const logoutController = asyncHandler((req: Request, res: Response) => {

@@ -17,6 +17,9 @@ function buildS3Key(folder:string, originalName: string) {
 }
 
 export async function getUploadUrl(folder:string, filename: string, type: string) {
+    if (!config.bucketName) {
+        throw new Error('S3_BUCKET_NAME is not configured');
+    }
     const key = buildS3Key(folder, filename);
     const command = new PutObjectCommand({
         Bucket: config.bucketName,
@@ -28,6 +31,9 @@ export async function getUploadUrl(folder:string, filename: string, type: string
 }
 
 export async function getDownloadUrl(key: string) {
+    if (!config.bucketName) {
+        throw new Error('S3_BUCKET_NAME is not configured');
+    }
     const command = new GetObjectCommand({
         Bucket: config.bucketName,
         Key: key,
@@ -38,12 +44,15 @@ export async function getDownloadUrl(key: string) {
 
 export async function uploadFile(folder:string, file: Express.Multer.File) {
     const { uploadUrl, key } = await getUploadUrl(folder, file.originalname, file.mimetype);
-    await fetch(uploadUrl, {
+    const response = await fetch(uploadUrl, {
         method: "PUT",
         body: file.buffer,
         headers: {
             "Content-Type": file.mimetype,
         },
     });
+    if (!response.ok) {
+        throw new Error(`File upload failed with status ${response.status}`);
+    }
     return key;
 }

@@ -94,11 +94,13 @@ export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput
 		}
 	}
 	let fileUrl = ''
-	try {
-		fileUrl = await uploadFile("uploads", file)
-	} catch (error) {
-		logger.error("Error While Uploading File to filebase", { error })
-		throw new ApiError(StatusCodes.INSUFFICIENT_STORAGE, "Error While Uploading report to cloud")
+	if (file) {
+		try {
+			fileUrl = await uploadFile("uploads", file)
+		} catch (error) {
+			logger.error("Error While Uploading File to filebase", { error })
+			throw new ApiError(StatusCodes.INSUFFICIENT_STORAGE, "Error While Uploading report to cloud")
+		}
 	}
 
 	const patient = await PatientProfile.findByIdAndUpdate(
@@ -380,7 +382,15 @@ function parseDDMMYYYY(date: string | Date): Date {
 		throw new ApiError(StatusCodes.BAD_REQUEST, 'Date must be in DD-MM-YYYY format')
 	}
 	const [day, month, year] = date.split('-').map(Number)
-	return new Date(year, month - 1, day)
+	const parsed = new Date(year, month - 1, day)
+	if (
+		parsed.getFullYear() !== year ||
+		parsed.getMonth() !== month - 1 ||
+		parsed.getDate() !== day
+	) {
+		throw new ApiError(StatusCodes.BAD_REQUEST, 'Date must be a valid calendar date in DD-MM-YYYY format')
+	}
+	return parsed
 }
 
 function formatDDMMYYYY(d: Date): string {

@@ -155,3 +155,50 @@ export const reassignPatientSchema = z.object({
     new_doctor_id: z.string().min(1, 'New doctor ID is required'),
   }),
 })
+
+export const updateSystemConfigSchema = z.object({
+  body: z.object({
+    inr_thresholds: z.object({
+      critical_low: z.number().positive().optional(),
+      critical_high: z.number().positive().optional(),
+    }).optional(),
+    session_timeout_minutes: z.number().int().positive().optional(),
+    rate_limit: z.object({
+      max_requests: z.number().int().positive().optional(),
+      window_minutes: z.number().int().positive().optional(),
+    }).optional(),
+    feature_flags: z.record(z.string(), z.boolean()).optional(),
+  }).strict(),
+})
+
+export const broadcastNotificationSchema = z.object({
+  body: z.object({
+    title: z.string().min(1, 'Title is required').max(200),
+    message: z.string().min(1, 'Message is required').max(2000),
+    target: z.enum(['ALL', 'DOCTORS', 'PATIENTS', 'SPECIFIC']),
+    user_ids: z.array(z.string().min(1)).optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+  }).strict().superRefine((value, ctx) => {
+    if (value.target === 'SPECIFIC' && (!value.user_ids || value.user_ids.length === 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'user_ids is required when target is SPECIFIC',
+        path: ['user_ids'],
+      })
+    }
+  }),
+})
+
+export const batchOperationSchema = z.object({
+  body: z.object({
+    operation: z.enum(['activate', 'deactivate', 'reset_password']),
+    user_ids: z.array(z.string().min(1)).min(1, 'At least one user ID is required'),
+  }).strict(),
+})
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    target_user_id: z.string().min(1, 'Target user ID is required'),
+    new_password: z.string().min(8).optional(),
+  }).strict(),
+})

@@ -56,9 +56,8 @@ export const config: Config = {
   jwtExpiresIn: (getEnv('JWT_EXPIRES_IN', { defaultValue: '1h' }) as StringValue),
   nodeEnv,
   logLevel: getEnv('LOG_LEVEL', { defaultValue: 'info' }),
-  accessKeyId: getEnv('ACCESS_KEY_ID'),
-  secretAccessKey: getEnv('SECRET_ACCESS_KEY'),
-  bucketName: process.env.S3_BUCKET_NAME,
+  accessKeyId: getEnv('ACCESS_KEY_ID', { requiredInProduction: true }),
+  secretAccessKey: getEnv('SECRET_ACCESS_KEY', { requiredInProduction: true }),
+  bucketName: getEnv('S3_BUCKET_NAME', { requiredInProduction: true }),
 }
-
 

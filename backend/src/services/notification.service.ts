@@ -1,6 +1,8 @@
 import { User, Notification } from '@alias/models'
 import { NotificationType, NotificationPriority } from '@alias/models/notification.model'
 import { UserType } from '@alias/validators'
+import { ApiError } from '@alias/utils'
+import { StatusCodes } from 'http-status-codes'
 
 export type BroadcastTarget = 'ALL' | 'DOCTORS' | 'PATIENTS' | 'SPECIFIC'
 
@@ -31,7 +33,7 @@ export async function broadcastNotification(
 
     case 'SPECIFIC':
       if (!specificUserIds || specificUserIds.length === 0) {
-        throw new Error('No user IDs provided for SPECIFIC target')
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'No user IDs provided for SPECIFIC target')
       }
       userIds = specificUserIds
       break

@@ -12,7 +12,8 @@ import {
 import {
   createDoctorSchema, updateDoctorSchema, getDoctorsSchema,
   createPatientSchema, updatePatientSchema, getUsersSchema,
-  reassignPatientSchema, userIdParamSchema,
+  reassignPatientSchema, userIdParamSchema, updateSystemConfigSchema,
+  broadcastNotificationSchema, batchOperationSchema, resetPasswordSchema,
 } from '@alias/validators/admin.validator'
 
 const router = Router()
@@ -42,16 +43,16 @@ router.get('/audit-logs', getAuditLogs)
 
 // ─── System Config ───
 router.get('/config', getSystemConfig)
-router.put('/config', updateSystemConfig)
+router.put('/config', validate(updateSystemConfigSchema), updateSystemConfig)
 
 // ─── Notifications ───
-router.post('/notifications/broadcast', broadcastNotification)
+router.post('/notifications/broadcast', validate(broadcastNotificationSchema), broadcastNotification)
 
 // ─── Batch Operations ───
-router.post('/users/batch', performBatchOperation)
+router.post('/users/batch', validate(batchOperationSchema), performBatchOperation)
 
 // ─── Password Reset ───
-router.post('/users/reset-password', resetUserPassword)
+router.post('/users/reset-password', validate(resetPasswordSchema), resetUserPassword)
 
 // ─── System Health ───
 router.get('/system/health', getSystemHealth)

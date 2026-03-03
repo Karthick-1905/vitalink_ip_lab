@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { verifyToken, extractTokenFromHeader } from '@alias/utils/jwt.utils'
 import { JWTPayload, UserType } from '@alias/validators'
+import { User } from '@alias/models'
 
 /**
  * Extend Express Request to include user data
@@ -18,7 +19,7 @@ declare global {
  * Authenticate middleware - verifies JWT token from Authorization header
  * Attaches user data to req.user if valid
  */
-export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization
     const token = extractTokenFromHeader(authHeader)
@@ -43,6 +44,28 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 
     // Attach user data to request
     req.user = payload
+    const user = await User.findById(payload.user_id).select('is_active user_type').lean()
+    if (!user) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Invalid or expired authentication token.',
+      })
+      return
+    }
+    if (!user.is_active) {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: 'Account is inactive. Please contact support.',
+      })
+      return
+    }
+    if (user.user_type !== payload.user_type) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Invalid or expired authentication token.',
+      })
+      return
+    }
     next()
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
