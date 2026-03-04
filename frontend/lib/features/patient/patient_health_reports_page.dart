@@ -3,9 +3,17 @@ import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/patient_query_keys.dart';
 
 class PatientHealthReportsPage extends StatefulWidget {
-  const PatientHealthReportsPage({super.key});
+  final bool embedInShell;
+  final ValueChanged<int>? onTabChanged;
+
+  const PatientHealthReportsPage({
+    super.key,
+    this.embedInShell = false,
+    this.onTabChanged,
+  });
 
   @override
   State<PatientHealthReportsPage> createState() =>
@@ -41,9 +49,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return PatientScaffold(
-      pageTitle: 'Health Reports',
-      currentNavIndex: _currentNavIndex,
+    return _buildPageContainer(
       bodyDecoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -51,7 +57,6 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
           colors: [Color(0xFFC8B5E1), Color(0xFFF8C7D7)],
         ),
       ),
-      onNavChanged: (index) => _handleNav(index),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Container(
@@ -94,6 +99,23 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPageContainer({
+    required Widget body,
+    Decoration? bodyDecoration,
+  }) {
+    if (widget.embedInShell) {
+      return body;
+    }
+
+    return PatientScaffold(
+      pageTitle: 'Health Reports',
+      currentNavIndex: _currentNavIndex,
+      bodyDecoration: bodyDecoration,
+      onNavChanged: _handleNav,
+      body: body,
     );
   }
 
@@ -142,9 +164,9 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
           _resetForm();
           // Invalidate queries to refetch updated data
           final queryClient = QueryClientProvider.of(context);
-          queryClient.invalidateQueries(['patient', 'profile_full']);
-          queryClient.invalidateQueries(['patient', 'records_full']);
-          queryClient.invalidateQueries(['patient', 'home_data']);
+          queryClient.invalidateQueries(PatientQueryKeys.profileFull());
+          queryClient.invalidateQueries(PatientQueryKeys.recordsFull());
+          queryClient.invalidateQueries(PatientQueryKeys.homeData());
         },
         onError: (error, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -293,9 +315,9 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
           _resetForm();
           // Invalidate queries to refetch updated data
           final queryClient = QueryClientProvider.of(context);
-          queryClient.invalidateQueries(['patient', 'profile_full']);
-          queryClient.invalidateQueries(['patient', 'records_full']);
-          queryClient.invalidateQueries(['patient', 'home_data']);
+          queryClient.invalidateQueries(PatientQueryKeys.profileFull());
+          queryClient.invalidateQueries(PatientQueryKeys.recordsFull());
+          queryClient.invalidateQueries(PatientQueryKeys.homeData());
         },
         onError: (error, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -442,6 +464,10 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
 
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;
+    if (widget.embedInShell) {
+      widget.onTabChanged?.call(index);
+      return;
+    }
     switch (index) {
       case 0:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patient);

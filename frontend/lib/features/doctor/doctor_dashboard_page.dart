@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/doctor_query_keys.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/features/doctor/data/doctor_repository.dart';
 import 'package:frontend/features/doctor/models/patient_model.dart';
@@ -112,14 +113,14 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
   String _titleForIndex(int index) {
     switch (index) {
       case 1:
-        return '@ Add Patient Page';
+        return 'Add Patient';
       case 2:
-        return '@ Reports';
+        return 'Reports';
       case 3:
-        return '@ Profile';
+        return 'Profile';
       case 0:
       default:
-        return '@ Patients';
+        return 'Patients';
     }
   }
 }
@@ -143,7 +144,7 @@ class _PatientsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return UseQuery<List<PatientModel>>(
       options: QueryOptions<List<PatientModel>>(
-        queryKey: const ['doctor', 'patients'],
+        queryKey: DoctorQueryKeys.patients(),
         queryFn: repository.getPatients,
       ),
       builder: (context, query) {

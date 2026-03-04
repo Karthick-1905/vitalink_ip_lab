@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/doctor_query_keys.dart';
 import 'package:frontend/features/doctor/data/doctor_repository.dart';
 import 'package:frontend/features/doctor/models/patient_model.dart';
 import 'package:frontend/core/widgets/common/premium_report_card.dart';
@@ -36,19 +37,8 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -70,43 +60,62 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
   Widget _buildPatientPicker() {
     return UseQuery<List<PatientModel>>(
       options: QueryOptions<List<PatientModel>>(
-        queryKey: const ['doctor', 'patients'],
+        queryKey: DoctorQueryKeys.patients(),
         queryFn: _repository.getPatients,
       ),
       builder: (context, query) {
         final patients = query.data ?? [];
+        final bool hasSelection = _selectedPatientName != null;
 
         return InkWell(
           onTap: query.isLoading ? null : () => _showPatientSearch(patients),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.person_search_rounded,
-                    color: Color(0xFF6366F1), size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _selectedPatientName ?? 'Select Patient to View Reports',
-                    style: GoogleFonts.outfit(
-                      fontSize: 16,
-                      fontWeight: _selectedPatientName != null
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                      color: _selectedPatientName != null
-                          ? const Color(0xFF1F2937)
-                          : const Color(0xFF6B7280),
+          borderRadius: BorderRadius.circular(28),
+          child: Material(
+            color: Colors.transparent,
+            child: Ink(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.person_search_rounded,
+                    color: hasSelection
+                        ? const Color(0xFF4F46E5)
+                        : const Color(0xFF6B7280),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _selectedPatientName ?? 'Select patient to view reports',
+                      style: GoogleFonts.outfit(
+                        fontSize: 15.5,
+                        fontWeight:
+                            hasSelection ? FontWeight.w600 : FontWeight.w500,
+                        color: hasSelection
+                            ? const Color(0xFF1F2937)
+                            : const Color(0xFF6B7280),
+                      ),
                     ),
                   ),
-                ),
-                const Icon(Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF6B7280)),
-              ],
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: hasSelection
+                        ? const Color(0xFF4F46E5)
+                        : const Color(0xFF6B7280),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -180,7 +189,7 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
   Widget _buildReportsView() {
     return UseQuery<List<dynamic>>(
       options: QueryOptions<List<dynamic>>(
-        queryKey: ['doctor', 'patient', _selectedPatientOp!, 'reports'],
+        queryKey: DoctorQueryKeys.patientReports(_selectedPatientOp!),
         queryFn: () => _repository.getPatientReports(_selectedPatientOp!),
       ),
       builder: (context, query) {
@@ -254,7 +263,8 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
               repository.updateReport(_selectedPatientOp!, rId, vars),
           onSuccess: (_, __) {
             qClient.invalidateQueries(
-                ['doctor', 'patient', _selectedPatientOp!, 'reports']);
+              DoctorQueryKeys.patientReports(_selectedPatientOp!),
+            );
             Navigator.pop(ctx);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Report Updated Successfully')),

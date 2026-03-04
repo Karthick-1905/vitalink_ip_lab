@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/doctor_query_keys.dart';
 import 'package:frontend/features/doctor/data/doctor_repository.dart';
 import 'package:frontend/features/doctor/models/doctor_profile_model.dart';
 import 'package:frontend/core/widgets/index.dart';
@@ -14,7 +15,7 @@ class DoctorProfilePage extends StatelessWidget {
 
     return UseQuery<DoctorProfileModel>(
       options: QueryOptions<DoctorProfileModel>(
-        queryKey: const ['doctor', 'profile'],
+        queryKey: DoctorQueryKeys.profile(),
         queryFn: repository.getDoctorProfile,
       ),
       builder: (context, query) {
@@ -31,8 +32,7 @@ class DoctorProfilePage extends StatelessWidget {
                     child: CircularProgressIndicator(),
                   ),
                 ),
-              if (query.isError)
-                _ErrorWidget(error: query.error.toString()),
+              if (query.isError) _ErrorWidget(error: query.error.toString()),
               if (query.isSuccess && query.data != null)
                 DoctorProfileContent(
                   profile: query.data!,

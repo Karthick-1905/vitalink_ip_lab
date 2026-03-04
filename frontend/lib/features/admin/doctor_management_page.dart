@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/admin_query_keys.dart';
 import 'package:frontend/core/widgets/admin/admin_dialogs.dart';
 import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
@@ -34,15 +35,13 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
 
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
-        queryKey: [
-          'admin',
-          'doctors',
-          _page,
-          search,
-          _statusFilter ?? '',
-          _departmentFilter ?? '',
-          _refreshKey,
-        ],
+        queryKey: AdminQueryKeys.doctors(
+          page: _page,
+          search: search,
+          statusFilter: _statusFilter ?? '',
+          departmentFilter: _departmentFilter ?? '',
+          refreshKey: _refreshKey,
+        ),
         queryFn: () => _repo.getAllDoctors(
           page: _page,
           search: search.isNotEmpty ? search : null,

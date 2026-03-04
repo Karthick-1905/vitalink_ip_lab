@@ -10,6 +10,7 @@ class PatientScaffold extends StatelessWidget {
   final Widget? drawer;
   final Color navbarBackgroundColor;
   final Decoration? bodyDecoration;
+  final int unreadDoctorUpdatesCount;
 
   const PatientScaffold({
     super.key,
@@ -20,6 +21,7 @@ class PatientScaffold extends StatelessWidget {
     this.drawer,
     this.navbarBackgroundColor = Colors.white,
     this.bodyDecoration,
+    this.unreadDoctorUpdatesCount = 0,
   });
 
   @override
@@ -31,6 +33,7 @@ class PatientScaffold extends StatelessWidget {
       bottomNavigationBar: PatientBottomNavBar(
         currentIndex: currentNavIndex,
         onTap: onNavChanged,
+        unreadDoctorUpdatesCount: unreadDoctorUpdatesCount,
       ),
       body: Container(
         decoration: bodyDecoration ?? const BoxDecoration(color: Colors.white),

@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/patient_query_keys.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 
 class PatientProfilePage extends StatefulWidget {
-  const PatientProfilePage({super.key});
+  final bool embedInShell;
+  final ValueChanged<int>? onTabChanged;
+
+  const PatientProfilePage({
+    super.key,
+    this.embedInShell = false,
+    this.onTabChanged,
+  });
 
   @override
   State<PatientProfilePage> createState() => _PatientProfilePageState();
@@ -19,12 +27,14 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
   Widget build(BuildContext context) {
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
-        queryKey: const ['patient', 'profile_full'],
+        queryKey: PatientQueryKeys.profileFull(),
         queryFn: () async {
           final profile = await AppDependencies.patientRepository.getProfile();
-          final history = await AppDependencies.patientRepository.getINRHistory();
+          final history =
+              await AppDependencies.patientRepository.getINRHistory();
           final latest = await AppDependencies.patientRepository.getLatestINR();
-          final doctorUpdates = await AppDependencies.patientRepository.getDoctorUpdates(limit: 5);
+          final doctorUpdates = await AppDependencies.patientRepository
+              .getDoctorUpdates(limit: 5);
           return {
             'profile': profile,
             'history': history,
@@ -35,26 +45,22 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       ),
       builder: (context, query) {
         if (query.isLoading) {
-          return PatientScaffold(
-            pageTitle: 'My Profile',
-            currentNavIndex: _currentNavIndex,
-            onNavChanged: (index) => _handleNav(index),
+          return _buildPageContainer(
             body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (query.isError) {
-          return PatientScaffold(
-            pageTitle: 'My Profile',
-            currentNavIndex: _currentNavIndex,
-            onNavChanged: (index) => _handleNav(index),
+          return _buildPageContainer(
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('Error: ${query.error}'),
                   const SizedBox(height: 16),
-                  ElevatedButton(onPressed: () => query.refetch(), child: const Text('Retry')),
+                  ElevatedButton(
+                      onPressed: () => query.refetch(),
+                      child: const Text('Retry')),
                 ],
               ),
             ),
@@ -62,21 +68,24 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
         }
 
         if (!query.hasData) {
-          return PatientScaffold(
-            pageTitle: 'My Profile',
-            currentNavIndex: _currentNavIndex,
-            onNavChanged: (index) => _handleNav(index),
+          return _buildPageContainer(
             body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         final data = query.data!;
         final profile = data['profile'] as Map<String, dynamic>;
-        final doctorUpdates = (data['doctorUpdates'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-        final unreadCount = (profile['doctorUpdatesUnreadCount'] as num?)?.toInt() ?? 0;
+        final doctorUpdates =
+            (data['doctorUpdates'] as List?)?.cast<Map<String, dynamic>>() ??
+                [];
+        final unreadCount =
+            (profile['doctorUpdatesUnreadCount'] as num?)?.toInt() ?? 0;
 
-        if (!_autoReadInProgress && unreadCount > 0 && doctorUpdates.isNotEmpty) {
+        if (!_autoReadInProgress &&
+            unreadCount > 0 &&
+            doctorUpdates.isNotEmpty) {
           _autoReadInProgress = true;
+          final queryClient = QueryClientProvider.of(context);
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             try {
               final unreadUpdates = doctorUpdates.where((event) {
@@ -86,10 +95,14 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
               }).toList();
 
               for (final event in unreadUpdates) {
-                await AppDependencies.patientRepository.markDoctorUpdateAsRead(event['id'].toString());
+                await AppDependencies.patientRepository
+                    .markDoctorUpdateAsRead(event['id'].toString());
               }
 
               if (mounted) {
+                queryClient.invalidateQueries(
+                  PatientQueryKeys.doctorUpdatesUnread(),
+                );
                 await query.refetch();
               }
             } catch (_) {
@@ -100,10 +113,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
           });
         }
 
-        return PatientScaffold(
-          pageTitle: 'My Profile',
-          currentNavIndex: _currentNavIndex,
-          onNavChanged: (index) => _handleNav(index),
+        return _buildPageContainer(
           bodyDecoration: const BoxDecoration(
             color: Color(0xFFF9FAFB),
           ),
@@ -125,7 +135,6 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                     updates: doctorUpdates,
                     unreadCount: unreadCount,
                   ),
-
                 ],
               ),
             ),
@@ -135,14 +144,45 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     );
   }
 
+  Widget _buildPageContainer({
+    required Widget body,
+    Decoration? bodyDecoration,
+  }) {
+    if (widget.embedInShell) {
+      return body;
+    }
+
+    return PatientScaffold(
+      pageTitle: 'My Profile',
+      currentNavIndex: _currentNavIndex,
+      onNavChanged: _handleNav,
+      bodyDecoration: bodyDecoration,
+      body: body,
+    );
+  }
+
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;
+    if (widget.embedInShell) {
+      widget.onTabChanged?.call(index);
+      return;
+    }
     switch (index) {
-      case 0: Navigator.of(context).pushReplacementNamed(AppRoutes.patient); break;
-      case 1: Navigator.of(context).pushReplacementNamed(AppRoutes.patientUpdateINR); break;
-      case 2: Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage); break;
-      case 3: Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports); break;
-      case 4: break;
+      case 0:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patient);
+        break;
+      case 1:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patientUpdateINR);
+        break;
+      case 2:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage);
+        break;
+      case 3:
+        Navigator.of(context)
+            .pushReplacementNamed(AppRoutes.patientHealthReports);
+        break;
+      case 4:
+        break;
     }
   }
 }
@@ -170,7 +210,8 @@ class _DoctorUpdatesCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.notifications_active_outlined, size: 20, color: Color(0xFF2563EB)),
+              const Icon(Icons.notifications_active_outlined,
+                  size: 20, color: Color(0xFF2563EB)),
               const SizedBox(width: 8),
               const Text(
                 'Doctor Updates',
@@ -179,14 +220,18 @@ class _DoctorUpdatesCard extends StatelessWidget {
               const Spacer(),
               if (unreadCount > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     '$unreadCount new',
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
             ],
@@ -204,7 +249,9 @@ class _DoctorUpdatesCard extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: event['isRead'] == true ? const Color(0xFFF9FAFB) : const Color(0xFFEEF2FF),
+                      color: event['isRead'] == true
+                          ? const Color(0xFFF9FAFB)
+                          : const Color(0xFFEEF2FF),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -217,12 +264,14 @@ class _DoctorUpdatesCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           event['message']?.toString() ?? '',
-                          style: const TextStyle(color: Color(0xFF374151), fontSize: 13),
+                          style: const TextStyle(
+                              color: Color(0xFF374151), fontSize: 13),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           event['createdAt']?.toString() ?? '',
-                          style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                          style: const TextStyle(
+                              color: Color(0xFF9CA3AF), fontSize: 12),
                         ),
                       ],
                     ),

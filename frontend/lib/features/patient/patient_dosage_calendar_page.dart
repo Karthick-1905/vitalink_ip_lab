@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/patient_query_keys.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:intl/intl.dart';
 
@@ -9,7 +10,8 @@ class PatientDosageCalendarPage extends StatefulWidget {
   const PatientDosageCalendarPage({super.key});
 
   @override
-  State<PatientDosageCalendarPage> createState() => _PatientDosageCalendarPageState();
+  State<PatientDosageCalendarPage> createState() =>
+      _PatientDosageCalendarPageState();
 }
 
 class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
@@ -41,9 +43,10 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
   Widget build(BuildContext context) {
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
-        queryKey: ['patient', 'dosage_calendar', _loadedMonths],
+        queryKey: PatientQueryKeys.dosageCalendar(_loadedMonths),
         queryFn: () async {
-          return await AppDependencies.patientRepository.getDosageCalendar(months: _loadedMonths);
+          return await AppDependencies.patientRepository
+              .getDosageCalendar(months: _loadedMonths);
         },
       ),
       builder: (context, query) {
@@ -65,7 +68,8 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                  Icon(Icons.error_outline,
+                      size: 64, color: Colors.red.shade300),
                   const SizedBox(height: 16),
                   Text('Error: ${query.error}'),
                   const SizedBox(height: 16),
@@ -164,7 +168,7 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
 
   Widget _buildMonthHeader() {
     final monthYear = DateFormat('MMMM yyyy').format(_currentMonth);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
@@ -196,7 +200,7 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
 
   Widget _buildDayLabels() {
     const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -219,8 +223,10 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
   }
 
   Widget _buildCalendarGrid(Map<String, Map<String, dynamic>> dataMap) {
-    final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final daysInMonth =
+        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    final firstDayOfMonth =
+        DateTime(_currentMonth.year, _currentMonth.month, 1);
     final startingWeekday = firstDayOfMonth.weekday % 7; // 0 = Sunday
 
     final totalCells = ((daysInMonth + startingWeekday) / 7).ceil() * 7;
@@ -237,12 +243,13 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
       itemCount: totalCells,
       itemBuilder: (context, index) {
         final dayNumber = index - startingWeekday + 1;
-        
+
         if (dayNumber < 1 || dayNumber > daysInMonth) {
           return const SizedBox.shrink();
         }
 
-        final date = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
+        final date =
+            DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
         final dateStr = _formatDate(date);
         final dayData = dataMap[dateStr];
 
@@ -266,11 +273,11 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
     Color? backgroundColor;
     Color? textColor;
     Color? borderColor;
-    
+
     if (dayData != null) {
       final status = dayData['status'] as String;
       final dosage = dayData['dosage'] as double;
-      
+
       switch (status) {
         case 'taken':
           backgroundColor = _getDosageColor(dosage);
@@ -296,13 +303,17 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
     }
 
     return InkWell(
-      onTap: dayData != null ? () => _showDateDetails(dayData, _formatDate(date)) : null,
+      onTap: dayData != null
+          ? () => _showDateDetails(dayData, _formatDate(date))
+          : null,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
-          border: borderColor != null ? Border.all(color: borderColor, width: 2) : null,
+          border: borderColor != null
+              ? Border.all(color: borderColor, width: 2)
+              : null,
         ),
         child: Center(
           child: Text(
@@ -381,7 +392,7 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
     final status = entry['status'] as String;
     final dosage = entry['dosage'] as double;
     final dayOfWeek = entry['day_of_week'] as String;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -414,9 +425,11 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
             const SizedBox(height: 12),
             _buildDetailRow('Day', dayOfWeek.toUpperCase(), Icons.event),
             const SizedBox(height: 12),
-            _buildDetailRow('Dosage', '${dosage.toStringAsFixed(1)} mg', Icons.local_pharmacy),
+            _buildDetailRow('Dosage', '${dosage.toStringAsFixed(1)} mg',
+                Icons.local_pharmacy),
             const SizedBox(height: 12),
-            _buildDetailRow('Status', status.toUpperCase(), _getStatusIcon(status)),
+            _buildDetailRow(
+                'Status', status.toUpperCase(), _getStatusIcon(status)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -430,7 +443,8 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
               ),
               child: Row(
                 children: [
-                  Icon(_getStatusIcon(status), color: _getStatusColor(status), size: 20),
+                  Icon(_getStatusIcon(status),
+                      color: _getStatusColor(status), size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -542,7 +556,8 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage);
         break;
       case 3:
-        Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports);
+        Navigator.of(context)
+            .pushReplacementNamed(AppRoutes.patientHealthReports);
         break;
       case 4:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile);

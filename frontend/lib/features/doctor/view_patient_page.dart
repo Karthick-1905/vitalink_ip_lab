@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/doctor_query_keys.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/features/doctor/data/doctor_repository.dart';
 import 'package:frontend/features/doctor/models/patient_detail_model.dart';
@@ -229,7 +230,7 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
   Widget build(BuildContext context) {
     return UseQuery<PatientDetailModel>(
       options: QueryOptions<PatientDetailModel>(
-        queryKey: ['doctor', 'patient', widget.opNumber],
+        queryKey: DoctorQueryKeys.patientDetail(widget.opNumber),
         queryFn: () => widget.repository.getPatientDetail(widget.opNumber),
       ),
       builder: (context, patientQuery) {
@@ -1197,7 +1198,7 @@ class _InrReportsCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: UseQuery<List<dynamic>>(
                 options: QueryOptions<List<dynamic>>(
-                  queryKey: ['doctor', 'patient', opNumber, 'reports'],
+                  queryKey: DoctorQueryKeys.patientReports(opNumber),
                   queryFn: () => repository.getPatientReports(opNumber),
                 ),
                 builder: (context, query) {

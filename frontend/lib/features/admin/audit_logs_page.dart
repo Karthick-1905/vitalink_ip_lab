@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/admin_query_keys.dart';
 import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/audit_log_model.dart';
@@ -27,16 +28,14 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
   Widget build(BuildContext context) {
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
-        queryKey: [
-          'admin',
-          'audit-logs',
-          _page,
-          _actionFilter ?? '',
-          _successFilter ?? '',
-          _startDate ?? '',
-          _endDate ?? '',
-          _refreshKey,
-        ],
+        queryKey: AdminQueryKeys.auditLogs(
+          page: _page,
+          actionFilter: _actionFilter ?? '',
+          successFilter: _successFilter ?? '',
+          startDate: _startDate ?? '',
+          endDate: _endDate ?? '',
+          refreshKey: _refreshKey,
+        ),
         queryFn: () => _repo.getAuditLogs(
           page: _page,
           action: _actionFilter,

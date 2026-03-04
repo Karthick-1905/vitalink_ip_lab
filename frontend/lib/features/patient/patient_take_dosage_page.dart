@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/patient_query_keys.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 
 class PatientTakeDosagePage extends StatefulWidget {
-  const PatientTakeDosagePage({super.key});
+  final bool embedInShell;
+  final ValueChanged<int>? onTabChanged;
+
+  const PatientTakeDosagePage({
+    super.key,
+    this.embedInShell = false,
+    this.onTabChanged,
+  });
 
   @override
   State<PatientTakeDosagePage> createState() => _PatientTakeDosagePageState();
@@ -20,26 +28,20 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
   Widget build(BuildContext context) {
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
-        queryKey: const ['patient', 'missed_doses'],
+        queryKey: PatientQueryKeys.missedDoses(),
         queryFn: () async {
           return await AppDependencies.patientRepository.getMissedDoses();
         },
       ),
       builder: (context, query) {
         if (query.isLoading) {
-          return PatientScaffold(
-            pageTitle: 'Dosage Management',
-            currentNavIndex: 2,
-            onNavChanged: (index) => _handleNav(index),
+          return _buildPageContainer(
             body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (query.isError) {
-          return PatientScaffold(
-            pageTitle: 'Dosage Management',
-            currentNavIndex: 2,
-            onNavChanged: (index) => _handleNav(index),
+          return _buildPageContainer(
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -57,10 +59,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
         }
 
         if (!query.hasData) {
-          return PatientScaffold(
-            pageTitle: 'Dosage Management',
-            currentNavIndex: 2,
-            onNavChanged: (index) => _handleNav(index),
+          return _buildPageContainer(
             body: const Center(child: CircularProgressIndicator()),
           );
         }
@@ -71,7 +70,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
 
         return UseMutation<void, Map<String, dynamic>>(
           options: MutationOptions<void, Map<String, dynamic>>(
-            mutationFn: (variables) => AppDependencies.patientRepository.markDoseAsTaken(
+            mutationFn: (variables) =>
+                AppDependencies.patientRepository.markDoseAsTaken(
               date: variables['date'],
               dose: variables['dose'],
             ),
@@ -84,8 +84,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
               );
               // Invalidate queries to refetch updated data
               final queryClient = QueryClientProvider.of(context);
-              queryClient.invalidateQueries(['patient', 'home_data']);
-              queryClient.invalidateQueries(['patient', 'records_full']);
+              queryClient.invalidateQueries(PatientQueryKeys.homeData());
+              queryClient.invalidateQueries(PatientQueryKeys.recordsFull());
               query.refetch();
             },
             onError: (error, variables) {
@@ -98,9 +98,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
             },
           ),
           builder: (context, mutation) {
-            return PatientScaffold(
-              pageTitle: 'Dosage Management',
-              currentNavIndex: _currentNavIndex,
+            return _buildPageContainer(
               bodyDecoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -108,7 +106,6 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                   colors: [Color(0xFFC8B5E1), Color(0xFFF8C7D7)],
                 ),
               ),
-              onNavChanged: (index) => _handleNav(index),
               body: RefreshIndicator(
                 onRefresh: () async => query.refetch(),
                 child: SingleChildScrollView(
@@ -226,6 +223,23 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildPageContainer({
+    required Widget body,
+    Decoration? bodyDecoration,
+  }) {
+    if (widget.embedInShell) {
+      return body;
+    }
+
+    return PatientScaffold(
+      pageTitle: 'Dosage Management',
+      currentNavIndex: _currentNavIndex,
+      bodyDecoration: bodyDecoration,
+      onNavChanged: _handleNav,
+      body: body,
     );
   }
 
@@ -472,6 +486,10 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
 
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;
+    if (widget.embedInShell) {
+      widget.onTabChanged?.call(index);
+      return;
+    }
     switch (index) {
       case 0:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patient);

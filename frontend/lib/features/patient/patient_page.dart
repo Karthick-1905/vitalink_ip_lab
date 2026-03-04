@@ -2,11 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/patient_query_keys.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 
 class PatientPage extends StatefulWidget {
-  const PatientPage({super.key});
+  final bool embedInShell;
+  final ValueChanged<int>? onTabChanged;
+
+  const PatientPage({
+    super.key,
+    this.embedInShell = false,
+    this.onTabChanged,
+  });
 
   @override
   State<PatientPage> createState() => _PatientPageState();
@@ -19,13 +27,17 @@ class _PatientPageState extends State<PatientPage> {
   Widget build(BuildContext context) {
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
-        queryKey: const ['patient', 'home_data'],
+        queryKey: PatientQueryKeys.homeData(),
         queryFn: () async {
           final profile = await AppDependencies.patientRepository.getProfile();
-          final history = await AppDependencies.patientRepository.getINRHistory();
-          final prescriptions = await AppDependencies.patientRepository.getPrescriptions();
-          final latestINRData = await AppDependencies.patientRepository.getLatestINRData();
-          final missedDoses = await AppDependencies.patientRepository.getMissedDoses();
+          final history =
+              await AppDependencies.patientRepository.getINRHistory();
+          final prescriptions =
+              await AppDependencies.patientRepository.getPrescriptions();
+          final latestINRData =
+              await AppDependencies.patientRepository.getLatestINRData();
+          final missedDoses =
+              await AppDependencies.patientRepository.getMissedDoses();
 
           return {
             'profile': profile,
@@ -39,19 +51,13 @@ class _PatientPageState extends State<PatientPage> {
       ),
       builder: (context, query) {
         if (query.isLoading) {
-          return PatientScaffold(
-            pageTitle: 'Dashboard',
-            currentNavIndex: _currentNavIndex,
-            onNavChanged: _handleNav,
+          return _buildPageContainer(
             body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (query.isError) {
-          return PatientScaffold(
-            pageTitle: 'Dashboard',
-            currentNavIndex: _currentNavIndex,
-            onNavChanged: _handleNav,
+          return _buildPageContainer(
             body: Center(child: Text('Error: ${query.error}')),
           );
         }
@@ -62,10 +68,7 @@ class _PatientPageState extends State<PatientPage> {
         final latestINRDate = data['latestINRDate']?.toString() ?? 'N/A';
         final history = data['history'] as List;
 
-        return PatientScaffold(
-          pageTitle: 'Dashboard',
-          currentNavIndex: _currentNavIndex,
-          onNavChanged: _handleNav,
+        return _buildPageContainer(
           bodyDecoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -174,7 +177,8 @@ class _PatientPageState extends State<PatientPage> {
                   const SizedBox(height: 17),
 
                   // 2. Instructions (Kept Separate as per request)
-                  if (profile['instructions'] is List && (profile['instructions'] as List).isNotEmpty)
+                  if (profile['instructions'] is List &&
+                      (profile['instructions'] as List).isNotEmpty)
                     ...List.generate(
                       (profile['instructions'] as List).length,
                       (index) {
@@ -185,7 +189,8 @@ class _PatientPageState extends State<PatientPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       'Instruction',
@@ -197,13 +202,15 @@ class _PatientPageState extends State<PatientPage> {
                                     ),
                                     Text(
                                       profile['therapyStartDate'] ?? '',
-                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.grey),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  profile['instructions'][index]?.toString() ?? '',
+                                  profile['instructions'][index]?.toString() ??
+                                      '',
                                   style: const TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w800,
@@ -222,7 +229,10 @@ class _PatientPageState extends State<PatientPage> {
                       child: _buildSectionCard(
                         child: const Text(
                           'No special instructions recorded.',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey),
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey),
                         ),
                       ),
                     ),
@@ -230,10 +240,19 @@ class _PatientPageState extends State<PatientPage> {
                   // 3. Therapy Details Card
                   _buildSectionCard(
                     child: _buildSummaryTable([
-                      {'label': 'Assigned Doctor', 'value': profile['doctorName'] ?? 'Dr. Rajesh Kumar'},
+                      {
+                        'label': 'Assigned Doctor',
+                        'value': profile['doctorName'] ?? 'Dr. Rajesh Kumar'
+                      },
                       {'label': 'Relief Doctor', 'value': 'N/A'},
-                      {'label': 'Primary Caregiver', 'value': profile['caregiver'] ?? 'N/A'},
-                      {'label': 'Assigned Therapy', 'value': profile['therapyDrug'] ?? 'Heparin'},
+                      {
+                        'label': 'Primary Caregiver',
+                        'value': profile['caregiver'] ?? 'N/A'
+                      },
+                      {
+                        'label': 'Assigned Therapy',
+                        'value': profile['therapyDrug'] ?? 'Heparin'
+                      },
                     ]),
                   ),
                   const SizedBox(height: 17),
@@ -292,10 +311,14 @@ class _PatientPageState extends State<PatientPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        _buildHealthNote('Side Effects', profile['sideEffects'] ?? 'None Reported'),
-                        _buildHealthNote('Lifestyle', profile['lifestyleChanges'] ?? 'Stable'),
-                        _buildHealthNote('Other Meds', profile['otherMedication'] ?? 'None'),
-                        _buildHealthNote('Illness', profile['prolongedIllness'] ?? 'None'),
+                        _buildHealthNote('Side Effects',
+                            profile['sideEffects'] ?? 'None Reported'),
+                        _buildHealthNote('Lifestyle',
+                            profile['lifestyleChanges'] ?? 'Stable'),
+                        _buildHealthNote(
+                            'Other Meds', profile['otherMedication'] ?? 'None'),
+                        _buildHealthNote(
+                            'Illness', profile['prolongedIllness'] ?? 'None'),
                       ],
                     ),
                   ),
@@ -304,9 +327,18 @@ class _PatientPageState extends State<PatientPage> {
                   // 10. Emergency Contact Card
                   _buildSectionCard(
                     child: _buildSummaryTable([
-                      {'label': 'Patient Phone', 'value': profile['phone'] ?? '+917448757584'},
-                      {'label': 'Emergency Kin', 'value': profile['kinName'] ?? 'N/A'},
-                      {'label': 'Kin Contact', 'value': profile['kinPhone'] ?? 'N/A'},
+                      {
+                        'label': 'Patient Phone',
+                        'value': profile['phone'] ?? '+917448757584'
+                      },
+                      {
+                        'label': 'Emergency Kin',
+                        'value': profile['kinName'] ?? 'N/A'
+                      },
+                      {
+                        'label': 'Kin Contact',
+                        'value': profile['kinPhone'] ?? 'N/A'
+                      },
                     ]),
                   ),
                   const SizedBox(height: 17),
@@ -316,6 +348,23 @@ class _PatientPageState extends State<PatientPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPageContainer({
+    required Widget body,
+    Decoration? bodyDecoration,
+  }) {
+    if (widget.embedInShell) {
+      return body;
+    }
+
+    return PatientScaffold(
+      pageTitle: 'Dashboard',
+      currentNavIndex: _currentNavIndex,
+      onNavChanged: _handleNav,
+      bodyDecoration: bodyDecoration,
+      body: body,
     );
   }
 
@@ -343,7 +392,8 @@ class _PatientPageState extends State<PatientPage> {
       return Container(
         height: 160,
         alignment: Alignment.center,
-        child: const Text('Historical data pending...', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+        child: const Text('Historical data pending...',
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
       );
     }
 
@@ -357,7 +407,8 @@ class _PatientPageState extends State<PatientPage> {
         LineChartData(
           gridData: FlGridData(
             show: true,
-            getDrawingHorizontalLine: (value) => FlLine(color: const Color(0xFFEDF2F7), strokeWidth: 1),
+            getDrawingHorizontalLine: (value) =>
+                FlLine(color: const Color(0xFFEDF2F7), strokeWidth: 1),
             drawVerticalLine: false,
           ),
           titlesData: FlTitlesData(
@@ -373,7 +424,10 @@ class _PatientPageState extends State<PatientPage> {
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
                         date.split('-')[0],
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w900),
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF718096),
+                            fontWeight: FontWeight.w900),
                       ),
                     );
                   }
@@ -387,12 +441,17 @@ class _PatientPageState extends State<PatientPage> {
                 reservedSize: 40,
                 getTitlesWidget: (val, meta) => Text(
                   val.toStringAsFixed(1),
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF718096), fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF718096),
+                      fontWeight: FontWeight.w900),
                 ),
               ),
             ),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           borderData: FlBorderData(show: false),
           lineBarsData: [
@@ -403,7 +462,8 @@ class _PatientPageState extends State<PatientPage> {
               barWidth: 5,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                getDotPainter: (spot, percent, barData, index) =>
+                    FlDotCirclePainter(
                   radius: 6,
                   color: Colors.white,
                   strokeWidth: 4,
@@ -413,7 +473,10 @@ class _PatientPageState extends State<PatientPage> {
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
-                  colors: [const Color(0xFF6366F1).withValues(alpha: 0.3), const Color(0xFF6366F1).withValues(alpha: 0.0)],
+                  colors: [
+                    const Color(0xFF6366F1).withValues(alpha: 0.3),
+                    const Color(0xFF6366F1).withValues(alpha: 0.0)
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -425,7 +488,8 @@ class _PatientPageState extends State<PatientPage> {
     );
   }
 
-  Widget _buildRowItem({required String label, required String value, TextStyle? valueStyle}) {
+  Widget _buildRowItem(
+      {required String label, required String value, TextStyle? valueStyle}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -440,7 +504,11 @@ class _PatientPageState extends State<PatientPage> {
         ),
         Text(
           value,
-          style: valueStyle ?? const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF2D3748)),
+          style: valueStyle ??
+              const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF2D3748)),
         ),
       ],
     );
@@ -458,31 +526,45 @@ class _PatientPageState extends State<PatientPage> {
           final isLast = item == items.last;
           return Container(
             decoration: BoxDecoration(
-              border: Border(bottom: isLast ? BorderSide.none : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+              border: Border(
+                  bottom: isLast
+                      ? BorderSide.none
+                      : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
             ),
             child: Row(
               children: [
                 Expanded(
                   flex: 4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 16),
                     decoration: const BoxDecoration(
                       color: Color(0xFFF8FAFC),
-                      border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+                      border: Border(
+                          right:
+                              BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
                     ),
                     child: Text(
                       item['label']!.toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF64748B), letterSpacing: 0.8),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          letterSpacing: 0.8),
                     ),
                   ),
                 ),
                 Expanded(
                   flex: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 16),
                     child: Text(
                       item['value']!,
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          color: Color(0xFF1E293B)),
                     ),
                   ),
                 ),
@@ -496,7 +578,15 @@ class _PatientPageState extends State<PatientPage> {
 
   Widget _buildPrescriptionTable(Map<String, dynamic> dosage) {
     final days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    final dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    final dayKeys = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday'
+    ];
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -508,7 +598,8 @@ class _PatientPageState extends State<PatientPage> {
           Container(
             decoration: const BoxDecoration(
               color: Color(0xFFF1F5F9),
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+              border: Border(
+                  bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
             ),
             child: Row(
               children: [
@@ -516,15 +607,26 @@ class _PatientPageState extends State<PatientPage> {
                   flex: 4,
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1.5))),
-                    child: const Text('DAY', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF475569))),
+                    decoration: const BoxDecoration(
+                        border: Border(
+                            right: BorderSide(
+                                color: Color(0xFFE2E8F0), width: 1.5))),
+                    child: const Text('DAY',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: Color(0xFF475569))),
                   ),
                 ),
                 Expanded(
                   flex: 6,
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    child: const Text('DOSE (MG)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF475569))),
+                    child: const Text('DOSE (MG)',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: Color(0xFF475569))),
                   ),
                 ),
               ],
@@ -535,10 +637,16 @@ class _PatientPageState extends State<PatientPage> {
             final dayKey = dayKeys[index];
             final isLast = day == 'SUN';
             final doseValue = dosage[dayKey];
-            final dose = (doseValue is num) ? doseValue : (doseValue is String ? double.tryParse(doseValue) ?? 0 : 0);
+            final dose = (doseValue is num)
+                ? doseValue
+                : (doseValue is String ? double.tryParse(doseValue) ?? 0 : 0);
             return Container(
               decoration: BoxDecoration(
-                border: Border(bottom: isLast ? BorderSide.none : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+                border: Border(
+                    bottom: isLast
+                        ? BorderSide.none
+                        : const BorderSide(
+                            color: Color(0xFFE2E8F0), width: 1.5)),
               ),
               child: Row(
                 children: [
@@ -546,15 +654,26 @@ class _PatientPageState extends State<PatientPage> {
                     flex: 4,
                     child: Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1.5))),
-                      child: Text(day, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF1E293B))),
+                      decoration: const BoxDecoration(
+                          border: Border(
+                              right: BorderSide(
+                                  color: Color(0xFFE2E8F0), width: 1.5))),
+                      child: Text(day,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              color: Color(0xFF1E293B))),
                     ),
                   ),
                   Expanded(
                     flex: 6,
                     child: Container(
                       padding: const EdgeInsets.all(16),
-                      child: Text(dose.toString(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF4F46E5))),
+                      child: Text(dose.toString(),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              color: Color(0xFF4F46E5))),
                     ),
                   ),
                 ],
@@ -602,12 +721,27 @@ class _PatientPageState extends State<PatientPage> {
 
   void _handleNav(int index) {
     if (index == _currentNavIndex) return;
+    if (widget.embedInShell) {
+      widget.onTabChanged?.call(index);
+      return;
+    }
+
     switch (index) {
-      case 0: break;
-      case 1: Navigator.of(context).pushReplacementNamed(AppRoutes.patientUpdateINR); break;
-      case 2: Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage); break;
-      case 3: Navigator.of(context).pushReplacementNamed(AppRoutes.patientHealthReports); break;
-      case 4: Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile); break;
+      case 0:
+        break;
+      case 1:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patientUpdateINR);
+        break;
+      case 2:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage);
+        break;
+      case 3:
+        Navigator.of(context)
+            .pushReplacementNamed(AppRoutes.patientHealthReports);
+        break;
+      case 4:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile);
+        break;
     }
   }
 }

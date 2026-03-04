@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/doctor_query_keys.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/features/doctor/data/doctor_repository.dart';
 import 'package:styled_widget/styled_widget.dart';
@@ -180,8 +181,9 @@ class _AddPatientFormState extends State<AddPatientForm> {
       options: MutationOptions<void, Map<String, dynamic>>(
         mutationFn: _repo.addPatient,
         onSuccess: (data, variables) {
-          QueryClientProvider.of(context)
-              .invalidateQueries(const ['doctor', 'patients']);
+          QueryClientProvider.of(context).invalidateQueries(
+            DoctorQueryKeys.patients(),
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Patient added successfully')),
           );

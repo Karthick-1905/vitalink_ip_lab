@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/patient_query_keys.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 
 class PatientRecordsPage extends StatefulWidget {
@@ -19,10 +20,11 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
   Widget build(BuildContext context) {
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
-        queryKey: const ['patient', 'records_full'],
+        queryKey: PatientQueryKeys.recordsFull(),
         queryFn: () async {
           final profile = await AppDependencies.patientRepository.getProfile();
-          final history = await AppDependencies.patientRepository.getINRHistory();
+          final history =
+              await AppDependencies.patientRepository.getINRHistory();
           return {
             'profile': profile,
             'history': history,
@@ -379,7 +381,8 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
             final type = log['type'] ?? 'OTHER';
             final severity = log['severity'] ?? 'Normal';
             final isResolved = log['is_resolved'] ?? true;
-            final dateStr = AppDependencies.patientRepository.formatDate(log['date']);
+            final dateStr =
+                AppDependencies.patientRepository.formatDate(log['date']);
 
             return Card(
               elevation: 1,
@@ -746,11 +749,15 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                         );
 
                         final queryClient = QueryClientProvider.of(context);
-                        queryClient
-                            .invalidateQueries(['patient', 'records_full']);
-                        queryClient
-                            .invalidateQueries(['patient', 'profile_full']);
-                        queryClient.invalidateQueries(['patient', 'home_data']);
+                        queryClient.invalidateQueries(
+                          PatientQueryKeys.recordsFull(),
+                        );
+                        queryClient.invalidateQueries(
+                          PatientQueryKeys.profileFull(),
+                        );
+                        queryClient.invalidateQueries(
+                          PatientQueryKeys.homeData(),
+                        );
                         await onDataChanged();
                       } catch (error) {
                         if (!mounted) return;

@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/auth/session_bootstrap_page.dart';
 import 'package:frontend/core/auth/session_route_guard.dart';
 import 'package:frontend/features/login/login_page.dart';
-import 'package:frontend/features/patient/patient_page.dart';
+import 'package:frontend/features/patient/patient_dashboard_shell_page.dart';
 import 'package:frontend/features/patient/patient_records_page.dart';
-import 'package:frontend/features/patient/patient_profile_page.dart';
-import 'package:frontend/features/patient/patient_update_inr_page.dart';
-import 'package:frontend/features/patient/patient_take_dosage_page.dart';
 import 'package:frontend/features/patient/patient_dosage_calendar_page.dart';
-import 'package:frontend/features/patient/patient_health_reports_page.dart';
 import 'package:frontend/features/doctor/doctor_dashboard_page.dart';
 import 'package:frontend/features/doctor/add_patient_page.dart';
 import 'package:frontend/features/onboarding/onboarding_page.dart';
@@ -38,48 +34,48 @@ class AppRouter {
     AppRoutes.sessionBootstrap: (_) => const SessionBootstrapPage(),
     AppRoutes.login: (_) => const LoginPage(),
     AppRoutes.onboarding: (_) => const SessionRouteGuard(
-      access: RouteAccess.patientOrDoctor,
-      child: OnboardingPage(),
-    ),
+          access: RouteAccess.patientOrDoctor,
+          child: OnboardingPage(),
+        ),
     AppRoutes.patient: (_) => const SessionRouteGuard(
-      access: RouteAccess.patient,
-      child: PatientPage(),
-    ),
+          access: RouteAccess.patient,
+          child: PatientDashboardShellPage(initialTabIndex: 0),
+        ),
     AppRoutes.patientUpdateINR: (_) => const SessionRouteGuard(
-      access: RouteAccess.patient,
-      child: PatientUpdateINRPage(),
-    ),
+          access: RouteAccess.patient,
+          child: PatientDashboardShellPage(initialTabIndex: 1),
+        ),
     AppRoutes.patientTakeDosage: (_) => const SessionRouteGuard(
-      access: RouteAccess.patient,
-      child: PatientTakeDosagePage(),
-    ),
+          access: RouteAccess.patient,
+          child: PatientDashboardShellPage(initialTabIndex: 2),
+        ),
     AppRoutes.patientDosageCalendar: (_) => const SessionRouteGuard(
-      access: RouteAccess.patient,
-      child: PatientDosageCalendarPage(),
-    ),
+          access: RouteAccess.patient,
+          child: PatientDosageCalendarPage(),
+        ),
     AppRoutes.patientHealthReports: (_) => const SessionRouteGuard(
-      access: RouteAccess.patient,
-      child: PatientHealthReportsPage(),
-    ),
+          access: RouteAccess.patient,
+          child: PatientDashboardShellPage(initialTabIndex: 3),
+        ),
     AppRoutes.patientRecords: (_) => const SessionRouteGuard(
-      access: RouteAccess.patient,
-      child: PatientRecordsPage(),
-    ),
+          access: RouteAccess.patient,
+          child: PatientRecordsPage(),
+        ),
     AppRoutes.patientProfile: (_) => const SessionRouteGuard(
-      access: RouteAccess.patient,
-      child: PatientProfilePage(),
-    ),
+          access: RouteAccess.patient,
+          child: PatientDashboardShellPage(initialTabIndex: 4),
+        ),
     AppRoutes.doctorDashboard: (_) => const SessionRouteGuard(
-      access: RouteAccess.doctor,
-      child: DoctorDashboardPage(),
-    ),
+          access: RouteAccess.doctor,
+          child: DoctorDashboardPage(),
+        ),
     AppRoutes.doctorAddPatient: (_) => const SessionRouteGuard(
-      access: RouteAccess.doctor,
-      child: AddPatientPage(),
-    ),
+          access: RouteAccess.doctor,
+          child: AddPatientPage(),
+        ),
     AppRoutes.adminDashboard: (_) => const SessionRouteGuard(
-      access: RouteAccess.admin,
-      child: AdminDashboardPage(),
-    ),
+          access: RouteAccess.admin,
+          child: AdminDashboardPage(),
+        ),
   };
 }

@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/patient_query_keys.dart';
 import 'package:frontend/core/widgets/common/file_preview_modal.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 
 class PatientUpdateINRPage extends StatefulWidget {
-  const PatientUpdateINRPage({super.key});
+  final bool embedInShell;
+  final ValueChanged<int>? onTabChanged;
+
+  const PatientUpdateINRPage({
+    super.key,
+    this.embedInShell = false,
+    this.onTabChanged,
+  });
 
   @override
   State<PatientUpdateINRPage> createState() => _PatientUpdateINRPageState();
@@ -84,7 +92,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
   Widget build(BuildContext context) {
     return UseMutation<void, Map<String, dynamic>>(
       options: MutationOptions<void, Map<String, dynamic>>(
-        mutationFn: (variables) => AppDependencies.patientRepository.submitINRReport(
+        mutationFn: (variables) =>
+            AppDependencies.patientRepository.submitINRReport(
           inrValue: variables['inr_value'],
           testDate: variables['test_date'],
           fileBytes: variables['file_bytes'],
@@ -98,12 +107,16 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
           );
           // Invalidate queries to refetch updated data
           final queryClient = QueryClientProvider.of(context);
-          queryClient.invalidateQueries(['patient', 'home_data']);
-          queryClient.invalidateQueries(['patient', 'records_full']);
-          queryClient.invalidateQueries(['patient', 'profile_full']);
+          queryClient.invalidateQueries(PatientQueryKeys.homeData());
+          queryClient.invalidateQueries(PatientQueryKeys.recordsFull());
+          queryClient.invalidateQueries(PatientQueryKeys.profileFull());
 
-          Navigator.of(context)
-              .pushReplacementNamed(AppRoutes.patientHealthReports);
+          if (widget.embedInShell) {
+            widget.onTabChanged?.call(3);
+          } else {
+            Navigator.of(context)
+                .pushReplacementNamed(AppRoutes.patientHealthReports);
+          }
         },
         onError: (error, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -114,31 +127,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
         },
       ),
       builder: (context, mutation) {
-        return PatientScaffold(
-          pageTitle: 'Update INR',
-          currentNavIndex: _currentNavIndex,
-          onNavChanged: (index) {
-            if (index == _currentNavIndex) return;
-            switch (index) {
-              case 0:
-                Navigator.of(context).pushReplacementNamed(AppRoutes.patient);
-                break;
-              case 1:
-                break;
-              case 2:
-                Navigator.of(context)
-                    .pushReplacementNamed(AppRoutes.patientTakeDosage);
-                break;
-              case 3:
-                Navigator.of(context)
-                    .pushReplacementNamed(AppRoutes.patientHealthReports);
-                break;
-              case 4:
-                Navigator.of(context)
-                    .pushReplacementNamed(AppRoutes.patientProfile);
-                break;
-            }
-          },
+        return _buildPageContainer(
           bodyDecoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -289,10 +278,52 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
     );
   }
 
+  Widget _buildPageContainer({
+    required Widget body,
+    Decoration? bodyDecoration,
+  }) {
+    if (widget.embedInShell) {
+      return body;
+    }
+
+    return PatientScaffold(
+      pageTitle: 'Update INR',
+      currentNavIndex: _currentNavIndex,
+      onNavChanged: _handleNav,
+      bodyDecoration: bodyDecoration,
+      body: body,
+    );
+  }
+
+  void _handleNav(int index) {
+    if (index == _currentNavIndex) return;
+    if (widget.embedInShell) {
+      widget.onTabChanged?.call(index);
+      return;
+    }
+    switch (index) {
+      case 0:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patient);
+        break;
+      case 1:
+        break;
+      case 2:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage);
+        break;
+      case 3:
+        Navigator.of(context)
+            .pushReplacementNamed(AppRoutes.patientHealthReports);
+        break;
+      case 4:
+        Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile);
+        break;
+    }
+  }
+
   Widget _buildReportsHistory() {
     return UseQuery<List<Map<String, dynamic>>>(
       options: QueryOptions(
-        queryKey: ['patient', 'inr_history'],
+        queryKey: PatientQueryKeys.inrHistory(),
         queryFn: () => AppDependencies.patientRepository.getINRHistory(),
       ),
       builder: (context, query) {

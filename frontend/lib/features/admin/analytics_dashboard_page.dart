@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/admin_query_keys.dart';
 import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/admin_stats_model.dart';
@@ -52,7 +53,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
 
     final body = UseQuery<_AnalyticsDashboardAggregate>(
       options: QueryOptions<_AnalyticsDashboardAggregate>(
-        queryKey: ['admin', 'analytics', 'dashboard', _selectedPeriod],
+        queryKey: AdminQueryKeys.analyticsDashboard(_selectedPeriod),
         queryFn: _fetchDashboardAggregate,
       ),
       builder: (context, aggregateQuery) {

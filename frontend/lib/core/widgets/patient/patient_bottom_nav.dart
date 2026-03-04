@@ -4,11 +4,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 class PatientBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
+  final int unreadDoctorUpdatesCount;
 
   const PatientBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.unreadDoctorUpdatesCount = 0,
   });
 
   @override
@@ -16,10 +18,10 @@ class PatientBottomNavBar extends StatelessWidget {
     final theme = Theme.of(context);
     final navTheme = theme.bottomNavigationBarTheme;
     final activeColor = navTheme.selectedItemColor ?? theme.colorScheme.primary;
-    final inactiveColor =
-        navTheme.unselectedItemColor ??
+    final inactiveColor = navTheme.unselectedItemColor ??
         theme.colorScheme.onSurface.withValues(alpha: 0.55);
-    final navBackgroundColor = navTheme.backgroundColor ?? theme.colorScheme.surface;
+    final navBackgroundColor =
+        navTheme.backgroundColor ?? theme.colorScheme.surface;
 
     return SafeArea(
       top: false,
@@ -83,6 +85,7 @@ class PatientBottomNavBar extends StatelessWidget {
                   label: 'Profile',
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
+                  badgeCount: unreadDoctorUpdatesCount,
                 ),
               ],
             ),
@@ -97,16 +100,49 @@ class PatientBottomNavBar extends StatelessWidget {
     required String label,
     required Color activeColor,
     required Color inactiveColor,
+    int badgeCount = 0,
   }) {
+    final showBadge = badgeCount > 0;
+
+    Widget iconWithBadge(Color color) {
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          SvgPicture.string(
+            iconSvg,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          ),
+          if (showBadge)
+            Positioned(
+              right: -8,
+              top: -6,
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                child: Text(
+                  badgeCount > 99 ? '99+' : '$badgeCount',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     return BottomNavigationBarItem(
-      icon: SvgPicture.string(
-        iconSvg,
-        colorFilter: ColorFilter.mode(inactiveColor, BlendMode.srcIn),
-      ),
-      activeIcon: SvgPicture.string(
-        iconSvg,
-        colorFilter: ColorFilter.mode(activeColor, BlendMode.srcIn),
-      ),
+      icon: iconWithBadge(inactiveColor),
+      activeIcon: iconWithBadge(activeColor),
       label: label,
     );
   }

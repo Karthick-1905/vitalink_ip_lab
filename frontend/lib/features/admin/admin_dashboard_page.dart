@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/query/admin_query_keys.dart';
 import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/core/widgets/admin/admin_dialogs.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
@@ -55,7 +56,7 @@ class _DashboardTab extends StatelessWidget {
 
     return UseQuery<AdminStatsModel>(
       options: QueryOptions<AdminStatsModel>(
-        queryKey: const ['admin', 'stats'],
+        queryKey: AdminQueryKeys.stats(),
         queryFn: repo.getAdminStats,
       ),
       builder: (context, query) {
