@@ -8,6 +8,10 @@ const ddmmyyyy = z.string('Date should be a string')
         return new Date(year, month - 1, day)
     })
 
+const parseableDateString = z.string('Date should be a string')
+    .refine((val) => !Number.isNaN(Date.parse(val)), 'Date must be a valid date string')
+    .transform((val) => new Date(val))
+
 export const reportSchema = z.object({
     body: z.object({
         inr_value: z.string('INR value should be a string').nonempty("Inr Value Should not be empty"),
@@ -55,7 +59,8 @@ export const updateProfileSchema = z.object({
         medical_config: z.object({
             therapy_start_date: z.union([
                 z.date(),
-                ddmmyyyy
+                ddmmyyyy,
+                parseableDateString
             ]).refine(
                 (date) => date <= new Date(),
                 { message: "Therapy start date cannot be in the future" }

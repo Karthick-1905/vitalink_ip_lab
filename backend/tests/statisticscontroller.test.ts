@@ -52,7 +52,8 @@ describe('Statistics Routes', () => {
             password: 'Doctor@123',
             user_type: 'DOCTOR',
             profile_id: doctorOneProfile._id,
-            is_active: true
+            is_active: true,
+            createdAt: new Date('2026-02-20T10:00:00.000Z')
         });
 
         const doctorTwoProfile = await DoctorProfile.create({
@@ -66,7 +67,8 @@ describe('Statistics Routes', () => {
             password: 'Doctor@123',
             user_type: 'DOCTOR',
             profile_id: doctorTwoProfile._id,
-            is_active: true
+            is_active: true,
+            createdAt: new Date('2026-02-21T10:00:00.000Z')
         });
 
         const patientProfiles = await PatientProfile.create([
@@ -111,35 +113,40 @@ describe('Statistics Routes', () => {
                 password: 'Patient@111',
                 user_type: 'PATIENT',
                 profile_id: patientProfiles[0]._id,
-                is_active: true
+                is_active: true,
+                createdAt: new Date('2026-02-20T11:00:00.000Z')
             },
             {
                 login_id: 'stats_patient_2',
                 password: 'Patient@111',
                 user_type: 'PATIENT',
                 profile_id: patientProfiles[1]._id,
-                is_active: true
+                is_active: true,
+                createdAt: new Date('2026-02-21T11:00:00.000Z')
             },
             {
                 login_id: 'stats_patient_3',
                 password: 'Patient@111',
                 user_type: 'PATIENT',
                 profile_id: patientProfiles[2]._id,
-                is_active: true
+                is_active: true,
+                createdAt: new Date('2026-02-21T12:00:00.000Z')
             },
             {
                 login_id: 'stats_patient_4',
                 password: 'Patient@111',
                 user_type: 'PATIENT',
                 profile_id: patientProfiles[3]._id,
-                is_active: true
+                is_active: true,
+                createdAt: new Date('2026-02-22T10:00:00.000Z')
             },
             {
                 login_id: 'stats_patient_5',
                 password: 'Patient@111',
                 user_type: 'PATIENT',
                 profile_id: patientProfiles[4]._id,
-                is_active: false
+                is_active: false,
+                createdAt: new Date('2026-02-22T11:00:00.000Z')
             }
         ]);
 

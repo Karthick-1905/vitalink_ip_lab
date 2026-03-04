@@ -13,7 +13,7 @@ export const loginController = asyncHandler(async (req: Request<{}, {}, LoginInp
 
   const matchedUsers = await User.find({ login_id: normalizedLoginId }).limit(2)
   if (matchedUsers.length === 0) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials')
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User Doesn't exist")
   }
   if (matchedUsers.length > 1) {
     throw new ApiError(StatusCodes.CONFLICT, 'Multiple accounts found for this login ID. Please contact support.')

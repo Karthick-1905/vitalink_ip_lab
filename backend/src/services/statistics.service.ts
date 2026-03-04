@@ -154,6 +154,9 @@ export async function getPeriodStatistics(
 ) {
   const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   const end = endDate ? new Date(endDate) : new Date()
+  
+  // Set end date to end of day (23:59:59.999)
+  end.setHours(23, 59, 59, 999)
 
   const [newDoctors, newPatients, auditActions] = await Promise.all([
     User.countDocuments({
