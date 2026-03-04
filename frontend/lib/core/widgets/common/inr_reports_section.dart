@@ -8,6 +8,7 @@ class InrReportsSection extends StatelessWidget {
   final bool isLoading;
   final String? error;
   final VoidCallback? onRefresh;
+  final bool enableReportViewAction;
 
   const InrReportsSection({
     super.key,
@@ -15,6 +16,7 @@ class InrReportsSection extends StatelessWidget {
     this.isLoading = false,
     this.error,
     this.onRefresh,
+    this.enableReportViewAction = false,
   });
 
   @override
@@ -41,7 +43,8 @@ class InrReportsSection extends StatelessWidget {
       children: reports.map((report) {
         return PremiumReportCard(
           report: report,
-          showActions: false, // Actions only shown on DoctorReportsPage
+          showActions: false, // Full actions only shown on DoctorReportsPage
+          showViewAction: enableReportViewAction,
         );
       }).toList(),
     );

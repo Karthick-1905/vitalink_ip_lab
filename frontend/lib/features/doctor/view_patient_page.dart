@@ -379,7 +379,7 @@ class _PatientHeaderCard extends StatelessWidget {
                   children: [
                     _InfoChip(
                       icon: Icons.badge_outlined,
-                      label: patient.opNumber ?? 'N/A',
+                      label: 'OP #${patient.opNumber ?? 'N/A'}',
                       color: const Color(0xFF6366F1),
                     ),
                   ],
@@ -1207,6 +1207,7 @@ class _InrReportsCard extends StatelessWidget {
                     isLoading: query.isLoading,
                     error: query.isError ? query.error.toString() : null,
                     onRefresh: () => query.refetch(),
+                    enableReportViewAction: true,
                   );
                 },
               ),

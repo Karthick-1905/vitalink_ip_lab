@@ -96,17 +96,37 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      _selectedPatientName ?? 'Select patient to view reports',
-                      style: GoogleFonts.outfit(
-                        fontSize: 15.5,
-                        fontWeight:
-                            hasSelection ? FontWeight.w600 : FontWeight.w500,
-                        color: hasSelection
-                            ? const Color(0xFF1F2937)
-                            : const Color(0xFF6B7280),
-                      ),
-                    ),
+                    child: hasSelection
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedPatientName!,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1F2937),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'OP #${_selectedPatientOp ?? 'N/A'}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            'Select patient to view reports',
+                            style: GoogleFonts.outfit(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
                   ),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
@@ -211,8 +231,10 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                     size: 64, color: Colors.grey.withValues(alpha: 0.3)),
                 const SizedBox(height: 16),
                 Text(
-                  'No reports found for $_selectedPatientName',
+                  'No reports found for ${_selectedPatientName ?? 'selected patient'}'
+                  ' (OP #${_selectedPatientOp ?? 'N/A'})',
                   style: GoogleFonts.outfit(color: Colors.grey),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -497,7 +519,7 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                     ),
                   ),
                   title: Text(
-                    p.name,
+                    canSelect ? '${p.name}  ·  OP #$patientOp' : p.name,
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.w600,
                       color: canSelect
@@ -506,7 +528,7 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                     ),
                   ),
                   subtitle: Text(
-                    canSelect ? 'OP: $patientOp' : 'OP/Login ID unavailable',
+                    canSelect ? 'Tap to select' : 'OP/Login ID unavailable',
                     style: GoogleFonts.outfit(fontSize: 12),
                   ),
                   onTap: canSelect

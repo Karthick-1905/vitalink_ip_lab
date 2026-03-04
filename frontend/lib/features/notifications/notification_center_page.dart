@@ -18,9 +18,13 @@ class NotificationCenterPage extends StatefulWidget {
 
 class _NotificationCenterPageState extends State<NotificationCenterPage> {
   bool _markAllLoading = false;
+  bool _showUnreadOnly = false;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
         queryKey: widget.forDoctor
@@ -39,51 +43,87 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             (data['notifications'] as List?)?.cast<Map<String, dynamic>>() ??
                 <Map<String, dynamic>>[];
         final unreadCount = (data['unreadCount'] as num?)?.toInt() ?? 0;
+        final filteredNotifications = _showUnreadOnly
+            ? notifications.where((item) => item['isRead'] != true).toList()
+            : notifications;
 
         return Scaffold(
+          backgroundColor: scheme.surface,
           appBar: AppBar(
-            title: const Text('Notifications'),
+            title: const Text('Notification Center'),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: (!_markAllLoading && unreadCount > 0)
                     ? () => _markAllAsRead(query.refetch)
                     : null,
-                child: _markAllLoading
+                icon: _markAllLoading
                     ? const SizedBox(
                         width: 14,
                         height: 14,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
+                    : const Icon(Icons.done_all_rounded, size: 18),
+                label: _markAllLoading
+                    ? const Text('Updating')
                     : const Text('Mark all read'),
               ),
+              const SizedBox(width: 8),
             ],
           ),
           body: query.isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const _LoadingState()
               : query.isError
                   ? _ErrorState(
                       message: query.error.toString(),
                       onRetry: () => query.refetch(),
                     )
                   : notifications.isEmpty
-                      ? const _EmptyState()
+                      ? const _EmptyState(isFiltered: false)
                       : RefreshIndicator(
                           onRefresh: () async => query.refetch(),
-                          child: ListView.separated(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: notifications.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final item = notifications[index];
-                              return _NotificationTile(
-                                item: item,
-                                onTap: () => _markSingleAsReadIfNeeded(
-                                  item,
-                                  query.refetch,
+                          child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverToBoxAdapter(
+                                child: _NotificationSummaryCard(
+                                  totalCount: notifications.length,
+                                  unreadCount: unreadCount,
+                                  showUnreadOnly: _showUnreadOnly,
+                                  onToggleFilter: (value) {
+                                    setState(() => _showUnreadOnly = value);
+                                  },
                                 ),
-                              );
-                            },
+                              ),
+                              if (filteredNotifications.isEmpty)
+                                const SliverFillRemaining(
+                                  hasScrollBody: false,
+                                  child: _EmptyState(isFiltered: true),
+                                )
+                              else
+                                SliverPadding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    6,
+                                    16,
+                                    20,
+                                  ),
+                                  sliver: SliverList.separated(
+                                    itemCount: filteredNotifications.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      final item = filteredNotifications[index];
+                                      return _NotificationTile(
+                                        item: item,
+                                        onTap: () => _markSingleAsReadIfNeeded(
+                                          item,
+                                          query.refetch,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
         );
@@ -149,40 +189,104 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final isRead = item['isRead'] == true;
     final priority = item['priority']?.toString() ?? 'MEDIUM';
+    final priorityVisual = _priorityVisual(priority, scheme);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(20),
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isRead ? Colors.white : const Color(0xFFF3F4FF),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          gradient: LinearGradient(
+            colors: isRead
+                ? [
+                    scheme.surfaceContainerLowest,
+                    scheme.surfaceContainerLow,
+                  ]
+                : [
+                    priorityVisual.color.withValues(alpha: 0.14),
+                    scheme.surfaceContainerLowest,
+                  ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isRead
+                ? scheme.outlineVariant.withValues(alpha: 0.6)
+                : priorityVisual.color.withValues(alpha: 0.45),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: priorityVisual.color.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    priorityVisual.icon,
+                    size: 18,
+                    color: priorityVisual.color,
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    item['title']?.toString() ?? 'Notification',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['title']?.toString() ?? 'Notification',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatTimeAgo(item['createdAt']),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (!isRead)
                   Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2563EB),
-                      shape: BoxShape.circle,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'NEW',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
               ],
@@ -190,18 +294,26 @@ class _NotificationTile extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               item['message']?.toString() ?? '',
-              style: const TextStyle(color: Color(0xFF374151)),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.35,
+                color: scheme.onSurface.withValues(alpha: 0.85),
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               children: [
                 _PriorityChip(priority: priority),
                 const Spacer(),
+                Icon(
+                  isRead ? Icons.drafts_outlined : Icons.markunread_outlined,
+                  size: 15,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
                 Text(
-                  item['createdAt']?.toString() ?? '',
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
-                    fontSize: 12,
+                  isRead ? 'Read' : 'Unread',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -219,40 +331,262 @@ class _PriorityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (priority) {
-      'URGENT' => const Color(0xFFDC2626),
-      'HIGH' => const Color(0xFFEA580C),
-      'LOW' => const Color(0xFF059669),
-      _ => const Color(0xFF2563EB),
-    };
+    final visual = _priorityVisual(priority, Theme.of(context).colorScheme);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: visual.color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
         priority,
         style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+          color: visual.color,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
         ),
       ),
     );
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+class _NotificationSummaryCard extends StatelessWidget {
+  const _NotificationSummaryCard({
+    required this.totalCount,
+    required this.unreadCount,
+    required this.showUnreadOnly,
+    required this.onToggleFilter,
+  });
+
+  final int totalCount;
+  final int unreadCount;
+  final bool showUnreadOnly;
+  final ValueChanged<bool> onToggleFilter;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'No notifications yet.',
-        style: TextStyle(color: Color(0xFF6B7280)),
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              scheme.primaryContainer.withValues(alpha: 0.9),
+              scheme.tertiaryContainer.withValues(alpha: 0.75),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.primary.withValues(alpha: 0.15),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Inbox',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: scheme.onPrimaryContainer,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _StatBadge(
+                  label: 'Unread',
+                  value: unreadCount.toString(),
+                ),
+                const SizedBox(width: 8),
+                _StatBadge(
+                  label: 'Total',
+                  value: totalCount.toString(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _FilterPill(
+                    label: 'All',
+                    selected: !showUnreadOnly,
+                    onTap: () => onToggleFilter(false),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _FilterPill(
+                    label: 'Unread',
+                    selected: showUnreadOnly,
+                    onTap: () => onToggleFilter(true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  const _StatBadge({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: RichText(
+        text: TextSpan(
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: scheme.onSurface,
+          ),
+          children: [
+            TextSpan(
+              text: value,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            TextSpan(
+              text: ' $label',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? scheme.onPrimaryContainer
+              : scheme.surface.withValues(alpha: 0.75),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: selected ? scheme.primaryContainer : scheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: CircularProgressIndicator());
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.isFiltered});
+
+  final bool isFiltered;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final title = isFiltered ? 'No unread notifications' : 'All caught up';
+    final subtitle = isFiltered
+        ? 'Switch to "All" to review older updates.'
+        : 'You will see new updates from your care team here.';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isFiltered
+                    ? Icons.mark_email_read_rounded
+                    : Icons.notifications,
+                color: scheme.primary,
+                size: 34,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -269,18 +603,118 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            message,
-            textAlign: TextAlign.center,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: scheme.errorContainer.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: scheme.error.withValues(alpha: 0.5),
+            ),
           ),
-          const SizedBox(height: 10),
-          FilledButton(onPressed: onRetry, child: const Text('Retry')),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                color: scheme.error,
+                size: 30,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Could not load notifications',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+class _PriorityVisual {
+  const _PriorityVisual({
+    required this.color,
+    required this.icon,
+  });
+
+  final Color color;
+  final IconData icon;
+}
+
+_PriorityVisual _priorityVisual(String priority, ColorScheme scheme) {
+  return switch (priority) {
+    'URGENT' => _PriorityVisual(
+        color: scheme.error,
+        icon: Icons.notification_important_rounded,
+      ),
+    'HIGH' => _PriorityVisual(
+        color: const Color(0xFFE36A1E),
+        icon: Icons.priority_high_rounded,
+      ),
+    'LOW' => _PriorityVisual(
+        color: const Color(0xFF1F8D66),
+        icon: Icons.task_alt_rounded,
+      ),
+    _ => _PriorityVisual(
+        color: scheme.primary,
+        icon: Icons.notifications_active_rounded,
+      ),
+  };
+}
+
+String _formatTimeAgo(dynamic raw) {
+  final timestamp = raw?.toString();
+  if (timestamp == null || timestamp.isEmpty) return 'Unknown time';
+
+  final createdAt = DateTime.tryParse(timestamp)?.toLocal();
+  if (createdAt == null) return timestamp;
+
+  final now = DateTime.now();
+  final diff = now.difference(createdAt);
+
+  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+  if (diff.inDays < 1) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final month = months[createdAt.month - 1];
+  return '$month ${createdAt.day}, ${createdAt.year}';
 }

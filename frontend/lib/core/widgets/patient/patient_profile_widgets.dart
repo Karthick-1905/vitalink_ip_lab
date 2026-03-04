@@ -70,6 +70,29 @@ class PatientProfileContent extends StatelessWidget {
                       color: Colors.black87,
                     ),
                   ),
+                  if ((profile['opNumber']?.toString().trim().isNotEmpty ??
+                      false)) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(999),
+                        border:
+                            Border.all(color: const Color(0xFFC7D2FE), width: 1),
+                      ),
+                      child: Text(
+                        'OP #${profile['opNumber']}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF4338CA),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

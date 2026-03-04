@@ -404,7 +404,29 @@ class _PatientListTile extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
           ),
         ),
-        title: Text(name, style: theme.textTheme.titleMedium),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(name, style: theme.textTheme.titleMedium),
+            ),
+            if (opNum.isNotEmpty)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'OP #$opNum',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
         subtitle: Text(
           '${age != null ? "Age: $age" : ""}${gender.isNotEmpty ? " | $gender" : ""}',
           style: theme.textTheme.bodySmall?.copyWith(

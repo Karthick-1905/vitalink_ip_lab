@@ -100,7 +100,9 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
     return patients
         .where((p) =>
             p.name.toLowerCase().contains(query) ||
-            (p.opNumber ?? '').toLowerCase().contains(query))
+            (p.opNumber ?? '').toLowerCase().contains(query) ||
+            (p.condition ?? '').toLowerCase().contains(query) ||
+            (p.accountStatus ?? '').toLowerCase().contains(query))
         .toList();
   }
 
@@ -396,6 +398,7 @@ class _TableView extends StatelessWidget {
           DataColumn(label: Text('OP #')),
           DataColumn(label: Text('Age')),
           DataColumn(label: Text('Gender')),
+          DataColumn(label: Text('Condition')),
           DataColumn(label: Text('Action')),
         ],
         rows: patients
@@ -408,6 +411,9 @@ class _TableView extends StatelessWidget {
                   DataCell(Text(entry.value.opNumber ?? '-')),
                   DataCell(Text(entry.value.age?.toString() ?? '-')),
                   DataCell(Text(entry.value.gender ?? '-')),
+                  DataCell(
+                    Text(entry.value.condition ?? entry.value.accountStatus ?? '-'),
+                  ),
                   DataCell(
                     TextButton(
                       onPressed: entry.value.opNumber != null
@@ -510,6 +516,10 @@ class _PatientCard extends StatelessWidget {
             style: const TextStyle(color: Colors.black54, fontSize: 12)),
         Text('Age: ${patient.age ?? '-'}, Gender: ${patient.gender ?? '-'}',
             style: const TextStyle(color: Colors.black54, fontSize: 12)),
+        Text(
+          'Condition: ${patient.condition ?? patient.accountStatus ?? 'Not specified'}',
+          style: const TextStyle(color: Colors.black54, fontSize: 12),
+        ),
         const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerRight,

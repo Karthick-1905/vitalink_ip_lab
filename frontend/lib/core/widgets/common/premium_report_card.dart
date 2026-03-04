@@ -8,6 +8,8 @@ class PremiumReportCard extends StatelessWidget {
   final VoidCallback? onUpdatePressed;
   final VoidCallback? onViewFilePressed;
   final bool showActions;
+  final bool showViewAction;
+  final bool showUpdateAction;
 
   const PremiumReportCard({
     super.key,
@@ -15,6 +17,8 @@ class PremiumReportCard extends StatelessWidget {
     this.onUpdatePressed,
     this.onViewFilePressed,
     this.showActions = false,
+    this.showViewAction = false,
+    this.showUpdateAction = false,
   });
 
   String _formatDate(dynamic date, {bool includeTime = false}) {
@@ -86,6 +90,10 @@ class PremiumReportCard extends StatelessWidget {
         : (inr != null && inr >= 2.0 && inr <= 3.0 
             ? const Color(0xFF10B981) 
             : const Color(0xFFF59E0B));
+
+    final shouldShowViewAction = showActions || showViewAction;
+    final shouldShowUpdateAction = showActions || showUpdateAction;
+    final hasViewFileAction = shouldShowViewAction && report['file_url'] != null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -223,31 +231,33 @@ class PremiumReportCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (showActions) ...[
+                  if (hasViewFileAction || shouldShowUpdateAction) ...[
                     const SizedBox(height: 24),
                     Row(
                       children: [
-                        if (report['file_url'] != null) ...[
+                        if (hasViewFileAction) ...[
                           Expanded(
                             child: _ActionButton(
                               icon: Icons.picture_as_pdf_outlined,
                               label: 'VIEW PDF',
                               color: const Color(0xFF1E1E5E),
-                              onPressed: () => _launchURL(context, report['file_url']),
+                              onPressed: onViewFilePressed ??
+                                  () => _launchURL(context, report['file_url']),
                               isPrimary: false,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          if (shouldShowUpdateAction) const SizedBox(width: 12),
                         ],
-                        Expanded(
-                          child: _ActionButton(
-                            icon: Icons.edit_note_rounded,
-                            label: 'INTERVENE',
-                            color: const Color(0xFF6366F1),
-                            onPressed: onUpdatePressed ?? () {},
-                            isPrimary: true,
+                        if (shouldShowUpdateAction)
+                          Expanded(
+                            child: _ActionButton(
+                              icon: Icons.edit_note_rounded,
+                              label: 'INTERVENE',
+                              color: const Color(0xFF6366F1),
+                              onPressed: onUpdatePressed ?? () {},
+                              isPrimary: true,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ],
