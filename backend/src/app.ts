@@ -17,16 +17,6 @@ const dbStates: Record<number, string> = {
   2: 'connecting',
   3: 'disconnecting',
 };
-const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, '');
-const corsOrigins = (process.env.CORS_ORIGINS ?? '')
-  .split(',')
-  .map(normalizeOrigin)
-  .filter(Boolean);
-const corsAllowlist = new Set(corsOrigins);
-
-if (corsAllowlist.size === 0) {
-  logger.warn('CORS_ORIGINS is empty, requests with an Origin header will be blocked');
-}
 
 morgan.token('request-id', (req: Request) => (req as any).requestId ?? '-');
 morgan.token('safe-url', (req: Request) => {
@@ -66,7 +56,7 @@ app.use(morgan(':method :safe-url :status :res[content-length] - :response-time 
 app.use(helmet());
 
 app.use(cors({
-  origin: "*",
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 204,

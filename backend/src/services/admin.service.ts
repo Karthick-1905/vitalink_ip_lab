@@ -5,6 +5,14 @@ import { UserType } from '@alias/validators'
 import { generateTemporaryPassword } from './password.service'
 import mongoose from 'mongoose'
 
+const normalizeSearchValue = (value: unknown): string => {
+  if (typeof value === 'string') return value.toLowerCase()
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).toLowerCase()
+  }
+  return ''
+}
+
 async function findDoctorByIdentifier(identifier: string) {
   let doctor = null
   if (mongoose.Types.ObjectId.isValid(identifier)) {
@@ -76,13 +84,14 @@ export async function getAllDoctors(
     const profile = user.profile_id as any
     if (!profile) return false
     if (department) {
-      const departmentMatch = profile.department?.toLowerCase().includes(department.toLowerCase())
+      const departmentMatch = normalizeSearchValue(profile.department)
+        .includes(normalizeSearchValue(department))
       if (!departmentMatch) return false
     }
     if (search) {
-      const s = search.toLowerCase()
-      const nameMatch = profile.name?.toLowerCase().includes(s)
-      const loginMatch = user.login_id?.toLowerCase().includes(s)
+      const s = normalizeSearchValue(search)
+      const nameMatch = normalizeSearchValue(profile.name).includes(s)
+      const loginMatch = normalizeSearchValue(user.login_id).includes(s)
       if (!nameMatch && !loginMatch) return false
     }
     return true
@@ -281,9 +290,9 @@ export async function getAllPatients(
     if (assignedDoctorId && String(profile.assigned_doctor_id) !== assignedDoctorId) return false
     if (filters.account_status && profile.account_status !== filters.account_status) return false
     if (filters.search) {
-      const s = filters.search.toLowerCase()
-      const nameMatch = profile.demographics?.name?.toLowerCase().includes(s)
-      const loginMatch = user.login_id?.toLowerCase().includes(s)
+      const s = normalizeSearchValue(filters.search)
+      const nameMatch = normalizeSearchValue(profile.demographics?.name).includes(s)
+      const loginMatch = normalizeSearchValue(user.login_id).includes(s)
       if (!nameMatch && !loginMatch) return false
     }
     return true
