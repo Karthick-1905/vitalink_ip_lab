@@ -56,7 +56,7 @@ class _SessionBootstrapPageState extends State<SessionBootstrapPage> {
   }
 
   Future<void> _cleanupSession() async {
-    await _storage.clearAll();
+    await _storage.clearAuthData();
     await QueryCache.instance.clear();
   }
 

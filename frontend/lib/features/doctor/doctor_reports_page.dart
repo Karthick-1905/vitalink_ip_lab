@@ -253,13 +253,6 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                 showActions: true,
                 onUpdatePressed: () =>
                     _updateDialog(context, _repository, report),
-                onViewFilePressed: () {
-                  // TODO: Implement url_launcher
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Opening secure file viewer...')),
-                  );
-                },
               );
             },
           ),

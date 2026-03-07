@@ -198,7 +198,7 @@ class _AdminNavigationRail extends StatelessWidget {
       context: context,
       builder: (_) => LogoutDialog(
         onLogout: () async {
-          await AppDependencies.secureStorage.clearAll();
+          await AppDependencies.secureStorage.clearAuthData();
           await QueryCache.instance.clear();
           if (context.mounted) {
             Navigator.of(

@@ -38,13 +38,13 @@ class PatientRepository {
         ? medicalConfig['target_inr'] as Map<String, dynamic>
         : <String, dynamic>{};
 
-    String doctorName = 'Dr. Rajesh Kumar';
+    String doctorName = 'Unassigned';
     String doctorPhone = 'N/A';
     final doctorUser = profile['assigned_doctor_id'];
     if (doctorUser is Map<String, dynamic>) {
       final doctorProfile = doctorUser['profile_id'];
       if (doctorProfile is Map<String, dynamic>) {
-        doctorName = doctorProfile['name']?.toString() ?? 'Dr. Rajesh Kumar';
+        doctorName = doctorProfile['name']?.toString() ?? 'Unassigned';
         doctorPhone = doctorProfile['contact_number']?.toString() ?? 'N/A';
       }
     }

@@ -69,13 +69,13 @@ class PatientService {
             : {};
 
         // Handle doctor information safely
-        String doctorName = 'Dr. Rajesh Kumar';
+        String doctorName = 'Unassigned';
         String doctorPhone = 'N/A';
         final doctorUser = profile['assigned_doctor_id'];
         if (doctorUser is Map) {
           final doctorProfile = doctorUser['profile_id'];
           if (doctorProfile is Map) {
-            doctorName = doctorProfile['name'] ?? 'Dr. Rajesh Kumar';
+            doctorName = doctorProfile['name'] ?? 'Unassigned';
             doctorPhone = doctorProfile['contact_number'] ?? 'N/A';
           }
         }

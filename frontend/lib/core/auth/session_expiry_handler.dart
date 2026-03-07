@@ -14,7 +14,7 @@ class SessionExpiryHandler {
   }
 
   static Future<void> _run() async {
-    await _storage.clearAll();
+    await _storage.clearAuthData();
     await QueryCache.instance.clear();
 
     final navigator = AppRouter.navigatorKey.currentState;

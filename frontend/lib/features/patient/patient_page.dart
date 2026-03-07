@@ -300,7 +300,7 @@ class _PatientPageState extends State<PatientPage> {
                     child: _buildSummaryTable([
                       {
                         'label': 'Assigned Doctor',
-                        'value': profile['doctorName'] ?? 'Dr. Rajesh Kumar'
+                        'value': profile['doctorName'] ?? 'Unassigned'
                       },
                       {'label': 'Relief Doctor', 'value': 'N/A'},
                       {

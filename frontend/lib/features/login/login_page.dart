@@ -16,16 +16,14 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final AuthRepository _authRepository = AppDependencies.authRepository;
-
-  bool _obscurePassword = true;
-
-  // Colors from the reference image
   static const Color _primaryPurple = Color(0xFF6B5FB5);
   static const Color _lightPurple = Color(0xFF9B8FD9);
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final AuthRepository _authRepository = AppDependencies.authRepository;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -376,32 +374,10 @@ class _LoginPageState extends State<LoginPage> {
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Text(
-                                    'Forgot your password? ',
+                                    'Forgot your password? Contact your administrator to reset it.',
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      // TODO: Implement password reset
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Password reset coming soon',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Text(
-                                      'Reset Password',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: _primaryPurple,
-                                      ),
                                     ),
                                   ),
                                 ],

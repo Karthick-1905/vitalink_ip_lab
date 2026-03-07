@@ -29,7 +29,6 @@ const config: Config = {
         }
     },
     reporters: ["default"],
-    forceExit: true,
     clearMocks: true,
 };
 

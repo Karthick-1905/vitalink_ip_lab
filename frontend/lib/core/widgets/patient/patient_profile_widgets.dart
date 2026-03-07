@@ -489,7 +489,7 @@ class PatientActionButtons extends StatelessWidget {
 
   Future<void> _performLogout(BuildContext context) async {
     final SecureStorage secureStorage = AppDependencies.secureStorage;
-    await secureStorage.clearAll();
+    await secureStorage.clearAuthData();
     await QueryCache.instance.clear();
     if (context.mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil(

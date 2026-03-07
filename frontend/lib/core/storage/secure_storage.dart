@@ -75,12 +75,18 @@ class SecureStorage {
     return value == 'true';
   }
 
-  Future<void> clearAll() async {
+  Future<void> clearAuthData({bool preserveOnboarding = true}) async {
     _cachedToken = null;
     _cachedUser = null;
     await _storage.delete(key: AppStrings.tokenKey);
     await _storage.delete(key: AppStrings.userKey);
-    await _storage.delete(key: AppStrings.onboardingCompletedKey);
+    if (!preserveOnboarding) {
+      await _storage.delete(key: AppStrings.onboardingCompletedKey);
+    }
+  }
+
+  Future<void> clearAll() async {
+    await clearAuthData(preserveOnboarding: false);
   }
 
   String get sessionScope => _buildSessionScope(_cachedToken, _cachedUser);

@@ -368,7 +368,7 @@ class DoctorActionButtons extends StatelessWidget {
     final SecureStorage secureStorage = AppDependencies.secureStorage;
 
     // Clear the stored token and user data
-    await secureStorage.clearAll();
+    await secureStorage.clearAuthData();
     await QueryCache.instance.clear();
 
     // Navigate to login page and clear navigation stack
