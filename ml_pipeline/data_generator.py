@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 
-def generate_warfarin_data(n=2000, random_seed=123):
+def generate_warfarin_data(n=2000, random_seed=12321):
     print(f"Generating realistic warfarin cohort ({n} patients)...")
     np.random.seed(random_seed)
     
