@@ -11,3 +11,4 @@ optuna>=3.0.0
 sdv>=1.14.0
 xlrd>=2.0.1
 openpyxl>=3.1.0
+shap>=0.45.0

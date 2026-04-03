@@ -1,0 +1,75 @@
+{
+  "dataset": "/home/surya/Projects/VitaLink_Karthi/ml_pipeline/data/iwpc_warfarin.xls",
+  "iwpc_workbook": "/home/surya/Downloads/IWPC_dose_calculator.xls",
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42
+  },
+  "best_model": "Our Model (Tuned LightGBM)",
+  "metrics": [
+    {
+      "rank": 1,
+      "model": "Our Model (Tuned LightGBM)",
+      "rmse": 11.903368207401755,
+      "mae": 8.701158645329793,
+      "r2": 0.42093648694266905,
+      "within_20_pct": 41.952983725135624
+    },
+    {
+      "rank": 2,
+      "model": "IWPC Pharmacogenetic Calculator",
+      "rmse": 11.919792167109932,
+      "mae": 8.652591253751266,
+      "r2": 0.41933743080611663,
+      "within_20_pct": 41.68173598553345
+    },
+    {
+      "rank": 3,
+      "model": "Linear Regression",
+      "rmse": 11.923764415425635,
+      "mae": 8.736429679650707,
+      "r2": 0.41895035690339977,
+      "within_20_pct": 41.32007233273056
+    },
+    {
+      "rank": 4,
+      "model": "Neural Network",
+      "rmse": 12.09374065081241,
+      "mae": 8.880950222745694,
+      "r2": 0.40226626542640687,
+      "within_20_pct": 41.500904159132006
+    },
+    {
+      "rank": 5,
+      "model": "XGBoost",
+      "rmse": 12.233214420451208,
+      "mae": 8.82697027267125,
+      "r2": 0.388399768583203,
+      "within_20_pct": 41.41048824593128
+    },
+    {
+      "rank": 6,
+      "model": "Random Forest",
+      "rmse": 13.092818522316499,
+      "mae": 9.532640340993284,
+      "r2": 0.29942802291534176,
+      "within_20_pct": 39.602169981916816
+    },
+    {
+      "rank": 7,
+      "model": "IWPC Clinical Formula",
+      "rmse": 13.839399191293742,
+      "mae": 10.06964680346887,
+      "r2": 0.21725385365461247,
+      "within_20_pct": 35.62386980108499
+    }
+  ],
+  "artifacts": {
+    "metrics_csv": "/home/surya/Projects/VitaLink_Karthi/ml_pipeline/output/iwpc_model_metrics.csv",
+    "comparison_plot": "/home/surya/Projects/VitaLink_Karthi/ml_pipeline/output/iwpc_model_comparison.png",
+    "scatter_plot": "/home/surya/Projects/VitaLink_Karthi/ml_pipeline/output/iwpc_prediction_scatter.png",
+    "shap_bar": "/home/surya/Projects/VitaLink_Karthi/ml_pipeline/output/iwpc_shap_bar.png",
+    "shap_beeswarm": "/home/surya/Projects/VitaLink_Karthi/ml_pipeline/output/iwpc_shap_beeswarm.png",
+    "report": "/home/surya/Projects/VitaLink_Karthi/ml_pipeline/docs/iwpc_model_comparison_report.md"
+  }
+}
