@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warfarin Program Slides</title>
+  <style>
+    :root {
+      --paper: #f3ecdf;
+      --ink: #1f1b16;
+      --muted: #5c564f;
+      --edge: rgba(31, 27, 22, 0.14);
+      --panel: rgba(255, 251, 245, 0.92);
+      --accent: #9b4d2e;
+      --accent-2: #3f5a4e;
+      --accent-3: #b38a3c;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background:
+        radial-gradient(circle at top left, rgba(179,138,60,0.18), transparent 30%),
+        linear-gradient(180deg, #f6efe5 0%, #eee5d6 100%);
+      color: var(--ink);
+      font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+    }
+    .page {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 0;
+      page-break-after: always;
+    }
+    .slide {
+      width: 13.333in;
+      height: 7.5in;
+      background: linear-gradient(180deg, rgba(255,251,245,0.88), rgba(247,240,230,0.92));
+      border: 1px solid var(--edge);
+      box-shadow: 0 24px 60px rgba(56, 40, 20, 0.10);
+      padding: 0.42in 0.5in 0.36in 0.5in;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 0.18in;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border: 1px solid rgba(31,27,22,0.10);
+      pointer-events: none;
+    }
+    .header {
+      z-index: 1;
+    }
+    .eyebrow {
+      font: 600 10pt/1.2 "Trebuchet MS", "Gill Sans", sans-serif;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.08in;
+    }
+    .title {
+      font-size: 23pt;
+      line-height: 1.06;
+      font-weight: 700;
+      max-width: 11.6in;
+    }
+    .body {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: stretch;
+      gap: 0.16in;
+      z-index: 1;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font: 10pt/1.2 "Trebuchet MS", "Gill Sans", sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      z-index: 1;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--edge);
+      border-radius: 16px;
+      box-shadow: 0 12px 28px rgba(56, 40, 20, 0.06);
+      padding: 0.18in;
+      min-height: 0;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 0.18in;
+      height: 100%;
+    }
+    .lead {
+      font-size: 15pt;
+      line-height: 1.55;
+      max-width: 7.6in;
+      margin: 0 0 0.2in 0;
+      color: var(--muted);
+    }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.14in;
+    }
+    .pillar {
+      background: rgba(255, 248, 238, 0.96);
+      border: 1px solid var(--edge);
+      border-radius: 14px;
+      padding: 0.16in;
+      min-height: 2.2in;
+    }
+    .pillar span {
+      font: 600 9pt/1 "Trebuchet MS", sans-serif;
+      letter-spacing: 0.18em;
+      color: var(--accent);
+    }
+    .pillar h3 {
+      margin: 0.12in 0 0.08in 0;
+      font-size: 15pt;
+    }
+    .pillar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11.5pt;
+      line-height: 1.45;
+    }
+    .hero-metrics {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.14in;
+    }
+    .metric-kicker {
+      font: 600 10pt/1.2 "Trebuchet MS", sans-serif;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .metric-headline {
+      font-size: 26pt;
+      line-height: 1.02;
+      color: var(--accent-2);
+      font-weight: 700;
+    }
+    .metric-stat {
+      border-top: 1px solid var(--edge);
+      padding-top: 0.11in;
+    }
+    .metric-stat span {
+      display: block;
+      font: 600 9pt/1.2 "Trebuchet MS", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+    .metric-stat strong {
+      display: block;
+      margin-top: 0.03in;
+      font-size: 19pt;
+      color: var(--accent-2);
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 3.7in 1fr;
+      gap: 0.18in;
+      height: 100%;
+      min-height: 0;
+    }
+    .stack {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 0.18in;
+      min-height: 0;
+    }
+    .summary-title {
+      font: 600 10pt/1.2 "Trebuchet MS", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      margin-bottom: 0.08in;
+    }
+    .summary-big {
+      font-size: 21pt;
+      line-height: 1.04;
+      color: var(--accent-2);
+      font-weight: 700;
+      margin-bottom: 0.12in;
+    }
+    .summary-panel p, .small-note {
+      margin: 0 0 0.1in 0;
+      font-size: 11.5pt;
+      line-height: 1.48;
+      color: var(--muted);
+    }
+    .feature-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.05in;
+    }
+    .feature-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.12in;
+      padding: 0.08in 0;
+      border-bottom: 1px solid var(--edge);
+      font-size: 11pt;
+    }
+    .feature-row strong {
+      color: var(--accent-2);
+    }
+    .table-panel {
+      overflow: hidden;
+      display: flex;
+      align-items: stretch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      table-layout: fixed;
+    }
+    th, td {
+      padding: 0.07in 0.08in;
+      border-bottom: 1px solid var(--edge);
+      text-align: left;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    th {
+      background: rgba(179, 138, 60, 0.12);
+      font: 600 8.5pt/1.2 "Trebuchet MS", sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .viz-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.18in;
+      height: 100%;
+      min-height: 0;
+    }
+    .three-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.18in;
+      height: 100%;
+      min-height: 0;
+    }
+    .image-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .image-panel img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .tall {
+      height: 100%;
+    }
+    .recommend-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.18in;
+      margin-bottom: 0.18in;
+    }
+    .rec-panel h3 {
+      margin: 0 0 0.08in 0;
+      font-size: 15pt;
+      color: var(--accent-2);
+    }
+    .rec-panel p {
+      margin: 0;
+      font-size: 11.5pt;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .artifact-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.12in;
+      align-items: start;
+    }
+    .artifact-strip div {
+      border-top: 1px solid var(--edge);
+      padding-top: 0.1in;
+    }
+    .artifact-strip span {
+      display: block;
+      font: 600 8.5pt/1.2 "Trebuchet MS", sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .artifact-strip strong {
+      display: block;
+      margin-top: 0.05in;
+      font-size: 10.5pt;
+      line-height: 1.35;
+      color: var(--ink);
+      word-break: break-word;
+    }
+    @page {
+      size: 13.333in 7.5in;
+      margin: 0;
+    }
+    @media print {
+      html, body {
+        background: none;
+      }
+      .page {
+        padding: 0;
+      }
+      .slide {
+        box-shadow: none;
+        border: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Warfarin Modeling Program</div>
+          <div class="title">Dose prediction, time-to-stability prediction, and continual model updates</div>
+        </div>
+        <div class="body">
+            <div class="hero-grid">
+              <div class="hero-copy">
+                <p class="lead">This deck consolidates the full workstream: benchmarking dose prediction against the IWPC calculator, building a time-to-stability model, and evaluating continual retraining on new shifted data.</p>
+                <div class="pillar-grid">
+                  <div class="pillar"><span>01</span><h3>Dosage Prediction</h3><p>Best model edges the IWPC pharmacogenetic calculator on RMSE while keeping clinically plausible drivers.</p></div>
+                  <div class="pillar"><span>02</span><h3>Time to Stability</h3><p>Current synthetic target behaves nearly linearly, so simpler models remain competitive.</p></div>
+                  <div class="pillar"><span>03</span><h3>Continual Updates</h3><p>Retraining on shifted incoming batches materially recovers performance on future cohorts.</p></div>
+                </div>
+              </div>
+              <div class="hero-metrics panel">
+                <div class="metric-kicker">Best dose model</div>
+                <div class="metric-headline">Our Model (Tuned LightGBM)</div>
+                <div class="metric-stat"><span>RMSE</span><strong>11.90</strong></div>
+                <div class="metric-stat"><span>Stability RMSE</span><strong>4.19 days</strong></div>
+                <div class="metric-stat"><span>Dose adaptation</span><strong>18.0 → 6.3</strong></div>
+              </div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Combined summary for all three requested tasks</span>
+          <span>01</span>
+        </div>
+      </div>
+    </section>
+    
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Dose Prediction</div>
+          <div class="title">Dose benchmarking against IWPC and baseline machine-learning models</div>
+        </div>
+        <div class="body">
+            <div class="two-col">
+              <div class="stack">
+                <div class="panel summary-panel">
+                  <div class="summary-title">Top finding</div>
+                  <div class="summary-big">Our Model (Tuned LightGBM)</div>
+                  <p>RMSE <strong>11.90</strong> mg/week, MAE <strong>8.70</strong>, R² <strong>0.421</strong>.</p>
+                  <p>IWPC PGx comparator: RMSE <strong>11.92</strong>, MAE <strong>8.65</strong>.</p>
+                </div>
+                <div class="panel feature-panel">
+                  <div class="summary-title">Top SHAP features</div>
+                  
+            <div class="feature-row">
+              <span>VKORC1 A/A</span>
+              <strong>4.292</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>VKORC1 G/G</span>
+              <strong>3.202</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>Weight kg</span>
+              <strong>3.053</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>Age Decades</span>
+              <strong>3.011</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>CYP2C9 *1/*1</span>
+              <strong>1.855</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>Height cm</span>
+              <strong>1.021</strong>
+            </div>
+            
+                </div>
+              </div>
+              <div class="panel table-panel">
+                <table><thead><tr><th>rank</th><th>model</th><th>rmse</th><th>mae</th><th>r2</th><th>within 20 pct</th></tr></thead><tbody><tr><td>1</td><td>Our Model (Tuned LightGBM)</td><td>11.9034</td><td>8.7012</td><td>0.4209</td><td>41.9530</td></tr><tr><td>2</td><td>IWPC Pharmacogenetic Calculator</td><td>11.9198</td><td>8.6526</td><td>0.4193</td><td>41.6817</td></tr><tr><td>3</td><td>Linear Regression</td><td>11.9238</td><td>8.7364</td><td>0.4190</td><td>41.3201</td></tr><tr><td>4</td><td>Neural Network</td><td>12.0937</td><td>8.8810</td><td>0.4023</td><td>41.5009</td></tr><tr><td>5</td><td>XGBoost</td><td>12.2332</td><td>8.8270</td><td>0.3884</td><td>41.4105</td></tr><tr><td>6</td><td>Random Forest</td><td>13.0928</td><td>9.5326</td><td>0.2994</td><td>39.6022</td></tr><tr><td>7</td><td>IWPC Clinical Formula</td><td>13.8394</td><td>10.0696</td><td>0.2173</td><td>35.6239</td></tr></tbody></table>
+              </div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Dose prediction on the IWPC cohort</span>
+          <span>02</span>
+        </div>
+      </div>
+    </section>
+    
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Dose Visuals</div>
+          <div class="title">Leaderboard and fit diagnostics stay tightly clustered at the top</div>
+        </div>
+        <div class="body">
+            <div class="viz-grid">
+              <div class="panel image-panel tall">
+                <img src="../output/iwpc_model_comparison.png" alt="Dose model comparison" />
+              </div>
+              <div class="panel image-panel tall">
+                <img src="../output/iwpc_prediction_scatter.png" alt="Dose prediction scatter" />
+              </div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Dose comparison and patient-level fit</span>
+          <span>03</span>
+        </div>
+      </div>
+    </section>
+    
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Time to Stability</div>
+          <div class="title">The synthetic stability target is comparatively linear</div>
+        </div>
+        <div class="body">
+            <div class="two-col">
+              <div class="stack">
+                <div class="panel summary-panel">
+                  <div class="summary-title">Best model</div>
+                  <div class="summary-big">Linear Regression</div>
+                  <p>RMSE <strong>4.19</strong> days, MAE <strong>3.32</strong>, within 7 days <strong>89.6%</strong>.</p>
+                  <p>The top four models are separated by only about 0.06 RMSE days, so there is no strong case for extra complexity on this synthetic target.</p>
+                </div>
+                <div class="panel feature-panel">
+                  <div class="summary-title">Top SHAP features</div>
+                  
+            <div class="feature-row">
+              <span>CYP2C9 *1/*1</span>
+              <strong>0.872</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>VKORC1 GG</span>
+              <strong>0.544</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>Renal Function</span>
+              <strong>0.373</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>Height</span>
+              <strong>0.310</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>VKORC1 AA</span>
+              <strong>0.271</strong>
+            </div>
+            
+            <div class="feature-row">
+              <span>VKORC1 GA</span>
+              <strong>0.200</strong>
+            </div>
+            
+                </div>
+              </div>
+              <div class="panel table-panel">
+                <table><thead><tr><th>rank</th><th>model</th><th>rmse</th><th>mae</th><th>r2</th><th>within 7 days pct</th></tr></thead><tbody><tr><td>1</td><td>Linear Regression</td><td>4.1890</td><td>3.3222</td><td>0.1317</td><td>89.6000</td></tr><tr><td>2</td><td>Neural Network</td><td>4.1973</td><td>3.3245</td><td>0.1283</td><td>90.0000</td></tr><tr><td>3</td><td>XGBoost</td><td>4.2381</td><td>3.3537</td><td>0.1112</td><td>90.2000</td></tr><tr><td>4</td><td>LightGBM</td><td>4.2452</td><td>3.3213</td><td>0.1083</td><td>90.6000</td></tr><tr><td>5</td><td>Random Forest</td><td>4.2930</td><td>3.3777</td><td>0.0881</td><td>89.2000</td></tr></tbody></table>
+              </div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Time-to-stability comparison on the synthetic cohort</span>
+          <span>04</span>
+        </div>
+      </div>
+    </section>
+    
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Stability Visuals</div>
+          <div class="title">Scatter fit and SHAP views support a simpler operational model</div>
+        </div>
+        <div class="body">
+            <div class="three-grid">
+              <div class="panel image-panel">
+                <img src="../output/stability_model_comparison.png" alt="Stability comparison" />
+              </div>
+              <div class="panel image-panel">
+                <img src="../output/stability_prediction_scatter.png" alt="Stability scatter" />
+              </div>
+              <div class="panel image-panel">
+                <img src="../output/stability_shap_bar.png" alt="Stability shap bar" />
+              </div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Stability leaderboard, fit, and explainability</span>
+          <span>05</span>
+        </div>
+      </div>
+    </section>
+    
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Continual Updates</div>
+          <div class="title">Sequential retraining on shifted incoming cohorts materially restores performance</div>
+        </div>
+        <div class="body">
+            <div class="two-col">
+              <div class="panel summary-panel">
+                <div class="summary-title">Dose adaptation</div>
+                <p>RMSE: <strong>17.96</strong> → <strong>6.29</strong></p>
+                <p>Within 20%: <strong>22.3%</strong> → <strong>85.7%</strong></p>
+                <div class="summary-title" style="margin-top:18px;">Stability adaptation</div>
+                <p>RMSE: <strong>11.47</strong> → <strong>6.06</strong></p>
+                <p>Within 7 days: <strong>39.0%</strong> → <strong>75.5%</strong></p>
+                <p class="small-note">Experiment design: historical training cohort plus three shifted incoming batches, all measured on one fixed shifted future test cohort.</p>
+              </div>
+              <div class="panel table-panel">
+                <table><thead><tr><th>round</th><th>train size</th><th>dose rmse</th><th>dose within 20 pct</th><th>stability rmse</th><th>stability within 7 days pct</th></tr></thead><tbody><tr><td>Initial</td><td>2500</td><td>17.9595</td><td>22.3333</td><td>11.4675</td><td>39.0000</td></tr><tr><td>Update 1</td><td>2800</td><td>7.8012</td><td>74.1667</td><td>6.2159</td><td>74.3333</td></tr><tr><td>Update 2</td><td>3100</td><td>6.8023</td><td>81.6667</td><td>6.1223</td><td>75.3333</td></tr><tr><td>Update 3</td><td>3400</td><td>6.2852</td><td>85.6667</td><td>6.0645</td><td>75.5000</td></tr></tbody></table>
+              </div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Continual-update experiment on shifted incoming data</span>
+          <span>06</span>
+        </div>
+      </div>
+    </section>
+    
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Update Visuals</div>
+          <div class="title">The first update batch delivers the largest recovery, with smaller gains after that</div>
+        </div>
+        <div class="body">
+            <div class="three-grid">
+              <div class="panel image-panel">
+                <img src="../output/continual_update_performance.png" alt="Continual performance" />
+              </div>
+              <div class="panel image-panel">
+                <img src="../output/continual_update_shift.png" alt="Continual shift" />
+              </div>
+              <div class="panel image-panel">
+                <img src="../output/continual_update_scatter.png" alt="Continual scatter" />
+              </div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Performance recovery, cohort shift, and pre/post fit</span>
+          <span>07</span>
+        </div>
+      </div>
+    </section>
+    
+    <section class="page">
+      <div class="slide">
+        <div class="header">
+          <div class="eyebrow">Recommendations</div>
+          <div class="title">What to use, what to keep simple, and what to operationalize</div>
+        </div>
+        <div class="body">
+            <div class="recommend-grid">
+              <div class="panel rec-panel">
+                <h3>Deploy for Dose</h3>
+                <p>Use the tuned LightGBM dose model when the objective is best predictive accuracy against IWPC-style baselines.</p>
+              </div>
+              <div class="panel rec-panel">
+                <h3>Keep Stability Simple</h3>
+                <p>Use the linear stability model unless a richer real-world target is available; current synthetic behavior does not justify a more complex learner.</p>
+              </div>
+              <div class="panel rec-panel">
+                <h3>Operational Retraining</h3>
+                <p>Schedule cumulative retraining when incoming patients diverge from the original cohort. The simulated shift study shows large accuracy recovery after updates.</p>
+              </div>
+            </div>
+            <div class="artifact-strip panel">
+              <div><span>Master report</span><strong>docs/warfarin_full_program_report.md</strong></div>
+              <div><span>HTML deck</span><strong>docs/warfarin_program_slides.html</strong></div>
+              <div><span>PDF deck</span><strong>docs/warfarin_program_slides.pdf</strong></div>
+              <div><span>PPT deck</span><strong>docs/warfarin_program_slides.pptx</strong></div>
+            </div>
+            </div>
+        <div class="footer">
+          <span>Final recommendations and artifact map</span>
+          <span>08</span>
+        </div>
+      </div>
+    </section>
+    
+</body>
+</html>
