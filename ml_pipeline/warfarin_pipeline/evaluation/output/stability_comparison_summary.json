@@ -1,0 +1,59 @@
+{
+  "dataset": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/data/warfarin_cohort.csv",
+  "split": {
+    "test_size": 0.2,
+    "random_state": 42
+  },
+  "best_model": "Linear Regression",
+  "metrics": [
+    {
+      "rank": 1,
+      "model": "Linear Regression",
+      "r2": 0.13171912244357342,
+      "rmse": 4.1890177497031,
+      "mae": 3.322220568324802,
+      "within_7_days_pct": 89.60000000000001
+    },
+    {
+      "rank": 2,
+      "model": "Neural Network",
+      "r2": 0.12830255770665444,
+      "rmse": 4.19725125993242,
+      "mae": 3.3245124232673025,
+      "within_7_days_pct": 90.0
+    },
+    {
+      "rank": 3,
+      "model": "XGBoost",
+      "r2": 0.11123224632894158,
+      "rmse": 4.238149056476981,
+      "mae": 3.353721324920654,
+      "within_7_days_pct": 90.2
+    },
+    {
+      "rank": 4,
+      "model": "LightGBM",
+      "r2": 0.10825915328515512,
+      "rmse": 4.245231835603604,
+      "mae": 3.3212918759994032,
+      "within_7_days_pct": 90.60000000000001
+    },
+    {
+      "rank": 5,
+      "model": "Random Forest",
+      "r2": 0.08806881582784198,
+      "rmse": 4.293022017064541,
+      "mae": 3.377742941530691,
+      "within_7_days_pct": 89.2
+    }
+  ],
+  "artifacts": {
+    "metrics_csv": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/stability_model_metrics.csv",
+    "summary_json": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/stability_comparison_summary.json",
+    "leaderboard_plot": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/stability_model_comparison.png",
+    "scatter_plot": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/stability_prediction_scatter.png",
+    "shap_bar": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/stability_shap_bar.png",
+    "shap_beeswarm": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/stability_shap_beeswarm.png",
+    "report": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/docs/time_to_stability_report.md"
+  }
+}

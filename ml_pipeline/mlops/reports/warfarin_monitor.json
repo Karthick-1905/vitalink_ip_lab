@@ -1,0 +1,84 @@
+{
+  "status": "ok",
+  "rows_reference": 2500,
+  "rows_current": 2500,
+  "max_psi": 0.0,
+  "max_missing_rate": 0.0,
+  "feature_reports": {
+    "Age": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    },
+    "Weight": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    },
+    "Height": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    },
+    "BMI": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    },
+    "Gender": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": null
+    },
+    "CYP2C9": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": null
+    },
+    "VKORC1": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": null
+    },
+    "CYP4F2": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": null
+    },
+    "Amiodarone": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": null
+    },
+    "Aspirin": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": null
+    },
+    "Smoker": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": null
+    },
+    "Target_INR": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    },
+    "Renal_Function": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    },
+    "WarfarinDose": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    },
+    "Days_To_Stable": {
+      "missing_rate": 0.0,
+      "psi": 0.0,
+      "ks_pvalue": 1.0
+    }
+  }
+}

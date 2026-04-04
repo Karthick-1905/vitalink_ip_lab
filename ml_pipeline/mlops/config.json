@@ -1,0 +1,36 @@
+{
+  "global": {
+    "reports_dir": "mlops/reports",
+    "logs_dir": "mlops/logs",
+    "state_file": "mlops/state.json",
+    "poll_interval_minutes": 30
+  },
+  "models": {
+    "warfarin": {
+      "reference_data": "warfarin_pipeline/data/warfarin_cohort.csv",
+      "current_data": "warfarin_pipeline/data/warfarin_cohort.csv",
+      "prepare_commands": [
+        ["python", "warfarin_pipeline/data_generator.py"]
+      ],
+      "retrain_commands": [
+        ["python", "warfarin_pipeline/retrain.py"]
+      ],
+      "min_retrain_interval_hours": 168,
+      "min_new_rows": 200,
+      "drift_threshold_psi": 0.2,
+      "max_missing_rate": 0.15
+    },
+    "acitrom": {
+      "reference_data": "acitrom_pipeline/data/reference_episodes.csv",
+      "current_data": "acitrom_pipeline/data/episodes.csv",
+      "prepare_commands": [],
+      "retrain_commands": [
+        ["python", "acitrom_pipeline/train_acitrom_models.py"]
+      ],
+      "min_retrain_interval_hours": 168,
+      "min_new_rows": 50,
+      "drift_threshold_psi": 0.2,
+      "max_missing_rate": 0.2
+    }
+  }
+}

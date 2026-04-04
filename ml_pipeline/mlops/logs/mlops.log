@@ -1,0 +1,15 @@
+2026-04-05 00:19:41,090 | INFO | mlops.orchestrator | Running command: python warfarin_pipeline/data_generator.py
+2026-04-05 00:20:42,667 | INFO | mlops.orchestrator | Generating realistic warfarin cohort (2500 patients)...
+Using CTGAN with source data: https://raw.githubusercontent.com/ankmathur96/warfarin-bandits/master/data/warfarin.csv
+--------------------------------------------------
+DATA GENERATION SUMMARY
+--------------------------------------------------
+Total Patients: 2500
+Mean Dose: 28.7 mg/week (SD: 12.5)
+Range: 3.0 - 90.0 mg/week
+Mean Days To Stable: 25.4 days
+--------------------------------------------------
+Saved dataset to warfarin_pipeline/data/warfarin_cohort.csv
+2026-04-05 00:20:42,695 | INFO | mlops.orchestrator | Monitoring report written: /home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/mlops/reports/warfarin_monitor.json
+2026-04-05 00:20:42,699 | INFO | mlops.orchestrator | Retraining triggered for warfarin
+2026-04-05 00:20:42,699 | INFO | mlops.orchestrator | Running command: python warfarin_pipeline/retrain.py

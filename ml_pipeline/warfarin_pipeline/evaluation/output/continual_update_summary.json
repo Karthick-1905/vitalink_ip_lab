@@ -1,0 +1,82 @@
+{
+  "historical_dataset": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/data/warfarin_cohort.csv",
+  "incoming_batches": 3,
+  "future_test_size": 600,
+  "update_strategy": "cumulative batch retraining on shifted incoming cohorts",
+  "rounds": [
+    {
+      "round": "Initial",
+      "train_size": 2500,
+      "dose": {
+        "rmse": 13.572640015278395,
+        "mae": 9.845791356722515,
+        "r2": 0.08526332463425967,
+        "within_20_pct": 41.833333333333336
+      },
+      "stability": {
+        "rmse": 7.5761101355765765,
+        "mae": 5.986107641855876,
+        "r2": -0.5164668538531019,
+        "within_7_days_pct": 66.33333333333333
+      }
+    },
+    {
+      "round": "Update 1",
+      "train_size": 2800,
+      "dose": {
+        "rmse": 13.491929138183798,
+        "mae": 9.651817894299827,
+        "r2": 0.09611009923941893,
+        "within_20_pct": 42.16666666666667
+      },
+      "stability": {
+        "rmse": 5.91195158407428,
+        "mae": 4.720377235412598,
+        "r2": 0.07657399507010232,
+        "within_7_days_pct": 76.0
+      }
+    },
+    {
+      "round": "Update 2",
+      "train_size": 3100,
+      "dose": {
+        "rmse": 13.587249301352335,
+        "mae": 9.7366391805013,
+        "r2": 0.0832930606436848,
+        "within_20_pct": 40.0
+      },
+      "stability": {
+        "rmse": 5.7556321004199935,
+        "mae": 4.618917427062988,
+        "r2": 0.12476149553166727,
+        "within_7_days_pct": 77.83333333333333
+      }
+    },
+    {
+      "round": "Update 3",
+      "train_size": 3400,
+      "dose": {
+        "rmse": 13.158133732924073,
+        "mae": 9.359132281621298,
+        "r2": 0.14028199342320125,
+        "within_20_pct": 43.166666666666664
+      },
+      "stability": {
+        "rmse": 5.685189003508826,
+        "mae": 4.537621523539225,
+        "r2": 0.14605445359243652,
+        "within_7_days_pct": 78.16666666666666
+      }
+    }
+  ],
+  "artifacts": {
+    "metrics_csv": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/continual_update_metrics.csv",
+    "summary_json": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/continual_update_summary.json",
+    "performance_plot": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/continual_update_performance.png",
+    "shift_plot": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/continual_update_shift.png",
+    "scatter_plot": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/output/continual_update_scatter.png",
+    "report": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/docs/continual_update_report.md",
+    "dose_model": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/models/continual_dose_model_final.joblib",
+    "stability_model": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/evaluation/models/continual_stability_model_final.joblib"
+  }
+}
