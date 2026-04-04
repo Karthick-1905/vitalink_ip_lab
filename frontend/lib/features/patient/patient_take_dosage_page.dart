@@ -279,47 +279,58 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
         ),
         if (totalPages > 1) ...[
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: safeCurrentPage > 1
-                    ? () => setState(() => _currentPage = safeCurrentPage - 1)
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF87CEEB),
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: safeCurrentPage > 1
+                      ? () => setState(() => _currentPage = safeCurrentPage - 1)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF87CEEB),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                  ),
+                  child: const Text('Previous'),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Page $safeCurrentPage of $safeTotalPages',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                child: const Text('Previous'),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Page $safeCurrentPage of $safeTotalPages',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: safeCurrentPage < safeTotalPages
-                    ? () => setState(() => _currentPage = safeCurrentPage + 1)
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0084FF),
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: safeCurrentPage < safeTotalPages
+                      ? () => setState(() => _currentPage = safeCurrentPage + 1)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0084FF),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                   ),
+                  child: const Text('Next'),
                 ),
-                child: const Text('Next'),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ],

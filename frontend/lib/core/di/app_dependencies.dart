@@ -5,6 +5,7 @@ import 'package:frontend/features/login/data/auth_repository.dart';
 import 'package:frontend/features/doctor/data/doctor_repository.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/patient/data/patient_repository.dart';
+import 'package:frontend/features/payment/data/payment_repository.dart';
 
 /// Simple service locator for app-wide singletons. Replace with a proper DI
 /// solution (Provider/riverpod/get_it) if the project grows.
@@ -24,6 +25,10 @@ class AppDependencies {
     apiClient: apiClient,
   );
   static final PatientRepository patientRepository = PatientRepository(
+    apiClient: apiClient,
+    secureStorage: secureStorage,
+  );
+  static final PaymentRepository paymentRepository = PaymentRepository(
     apiClient: apiClient,
     secureStorage: secureStorage,
   );

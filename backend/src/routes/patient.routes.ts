@@ -20,6 +20,7 @@ import {
 	markAllDoctorUpdatesAsRead,
 	streamNotifications,
 } from '@alias/controllers/patient.controller'
+import { createPaymentOrder, getTokenBalance, getTokenTransactions } from '@alias/controllers/payment.controller'
 import {
 	reportSchema,
 	takeDosageSchema,
@@ -30,6 +31,7 @@ import {
 	markNotificationReadSchema,
 	markDoctorUpdateReadSchema,
 } from '@alias/validators/patient.validator'
+import { createPaymentOrderSchema } from '@alias/validators/payment.validator'
 import { ApiError } from '@alias/utils'
 import { StatusCodes } from 'http-status-codes'
 
@@ -104,6 +106,9 @@ router.get('/missed-doses', authenticate, AllowPatient, missedDoses)
 router.get('/dosage-calendar', authenticate, AllowPatient, getDosageCalendar)
 router.post('/dosage', authenticate, AllowPatient, validate(takeDosageSchema), takeDosage)
 router.post('/health-logs', authenticate, AllowPatient, validate(updateHealthLogSchema), updateHealthLogs)
+router.get('/tokens/balance', authenticate, AllowPatient, getTokenBalance)
+router.get('/tokens/transactions', authenticate, AllowPatient, getTokenTransactions)
+router.post('/payments/order', authenticate, AllowPatient, validate(createPaymentOrderSchema), createPaymentOrder)
 router.get('/notifications/stream', streamNotifications)
 router.get('/notifications', authenticate, AllowPatient, validate(notificationsQuerySchema), getNotifications)
 router.patch('/notifications/read-all', authenticate, AllowPatient, markAllNotificationsAsRead)

@@ -10,6 +10,10 @@ import 'package:frontend/features/doctor/add_patient_page.dart';
 import 'package:frontend/features/notifications/notification_center_page.dart';
 import 'package:frontend/features/onboarding/onboarding_page.dart';
 import 'package:frontend/features/admin/admin_dashboard_page.dart';
+import 'package:frontend/features/payment/patient_token_balance_page.dart';
+import 'package:frontend/features/payment/patient_transaction_history_page.dart';
+import 'package:frontend/features/payment/patient_payment_success_page.dart';
+import 'package:frontend/features/payment/patient_payment_failure_page.dart';
 
 class AppRoutes {
   static const String sessionBootstrap = '/session-bootstrap';
@@ -22,6 +26,10 @@ class AppRoutes {
   static const String patientTakeDosage = '/patient-take-dosage';
   static const String patientDosageCalendar = '/patient-dosage-calendar';
   static const String patientHealthReports = '/patient-health-reports';
+  static const String patientTokenBalance = '/patient-token-balance';
+  static const String patientTransactionHistory = '/patient-transaction-history';
+  static const String patientPaymentSuccess = '/patient-payment-success';
+  static const String patientPaymentFailure = '/patient-payment-failure';
   static const String patientNotifications = '/patient-notifications';
   static const String doctorDashboard = '/doctor-dashboard';
   static const String doctorAddPatient = '/doctor-add-patient';
@@ -61,6 +69,27 @@ class AppRouter {
     AppRoutes.patientHealthReports: (_) => const SessionRouteGuard(
           access: RouteAccess.patient,
           child: PatientDashboardShellPage(initialTabIndex: 3),
+        ),
+    AppRoutes.patientTokenBalance: (_) => const SessionRouteGuard(
+          access: RouteAccess.patient,
+          child: PatientTokenBalancePage(),
+        ),
+    AppRoutes.patientTransactionHistory: (_) => const SessionRouteGuard(
+          access: RouteAccess.patient,
+          child: PatientTransactionHistoryPage(),
+        ),
+    AppRoutes.patientPaymentSuccess: (_) => SessionRouteGuard(
+          access: RouteAccess.patient,
+          child: PatientPaymentSuccessPage(
+            orderId: 'ORD12345',
+            amount: '₹199.00',
+          ),
+        ),
+    AppRoutes.patientPaymentFailure: (_) => const SessionRouteGuard(
+          access: RouteAccess.patient,
+          child: PatientPaymentFailurePage(
+            errorMessage: 'Payment declined by bank',
+          ),
         ),
     AppRoutes.patientRecords: (_) => const SessionRouteGuard(
           access: RouteAccess.patient,

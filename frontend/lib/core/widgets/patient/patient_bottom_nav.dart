@@ -44,7 +44,7 @@ class PatientBottomNavBar extends StatelessWidget {
             child: BottomNavigationBar(
               currentIndex: currentIndex,
               onTap: onTap,
-              type: BottomNavigationBarType.fixed,
+              type: BottomNavigationBarType.shifting,
               backgroundColor: navBackgroundColor,
               showSelectedLabels: true,
               showUnselectedLabels: true,
@@ -77,6 +77,12 @@ class PatientBottomNavBar extends StatelessWidget {
                 _navItem(
                   iconSvg: _recordsIcon,
                   label: 'Notes',
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                ),
+                _navItem(
+                  iconSvg: _paymentIcon,
+                  label: 'Payment',
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
@@ -171,4 +177,10 @@ const String _recordsIcon =
 const String _profileIcon =
     '''<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.98C6.03 13.99 10 12.9 12 12.9C13.99 12.9 17.97 13.99 18 15.98C16.71 17.92 14.5 19.2 12 19.2Z" fill="#B6B6B6"/>
+</svg>''';
+
+const String _paymentIcon =
+    '''<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M20 8H4C2.9 8 2 8.9 2 10V22C2 23.1 2.9 24 4 24H20C21.1 24 22 23.1 22 22V10C22 8.9 21.1 8 20 8ZM20 22H4V10H20V22ZM11 13H4V10H11V13Z" fill="#B6B6B6"/>
+<path d="M17 17C18.657 17 20 15.657 20 14C20 12.343 18.657 11 17 11C15.343 11 14 12.343 14 14C14 15.657 15.343 17 17 17Z" fill="#B6B6B6"/>
 </svg>''';

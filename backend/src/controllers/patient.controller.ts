@@ -20,6 +20,7 @@ import type {
 } from '@alias/validators/patient.validator'
 import logger from '@alias/utils/logger'
 import { uploadFile, getDownloadUrl } from '@alias/utils/fileUpload'
+import * as tokenService from '@alias/services/token.service'
 
 type DoctorUpdateEvent = {
 	_id: string
@@ -84,6 +85,12 @@ const mapNotificationToAppNotificationItem = (notification: any): AppNotificatio
 	read_at: notification?.read_at ? new Date(notification.read_at) : undefined,
 	data: notification?.data,
 })
+
+const resolveFeatureWeight = async (userId: string, featureKey: tokenService.FeatureKey) => {
+	const weight = await tokenService.getFeatureWeight(featureKey)
+	await tokenService.ensureSufficientBalance(userId, weight)
+	return weight
+}
 
 const getDoctorUpdateNotifications = async (
 	patientUserId: unknown,
@@ -198,6 +205,7 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
 export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput['body']>, res: Response) => {
 	const { user_id } = req.user
 	const patientUser = await getPatientUserOrThrow(user_id)
+	const weight = await resolveFeatureWeight(user_id, 'PATIENT_REPORT_SUBMIT')
 
 	const { inr_value, test_date } = req.body
 	const parsed_inr_value = parseFloat(inr_value)
@@ -249,6 +257,13 @@ export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput
 		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
 	}
 
+	await tokenService.debitForFeature({
+		userId: user_id,
+		featureKey: 'PATIENT_REPORT_SUBMIT',
+		weight,
+		requestId: (req as any).requestId,
+	})
+
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report submitted', { patient }))
 })
 
@@ -294,7 +309,9 @@ export const missedDoses = asyncHandler(async (req: Request<{}, {}, {}>, res: Re
 })
 
 export const takeDosage = asyncHandler(async (req: Request<{}, {}, TakeDosageInput['body']>, res: Response) => {
-	const patientUser = await getPatientUserOrThrow(req.user.user_id)
+	const { user_id } = req.user
+	const patientUser = await getPatientUserOrThrow(user_id)
+	const weight = await resolveFeatureWeight(user_id, 'PATIENT_DOSAGE')
 
 	const { date } = req.body
 	const parsedDate = date instanceof Date ? date : parseDDMMYYYY(date)
@@ -326,6 +343,13 @@ export const takeDosage = asyncHandler(async (req: Request<{}, {}, TakeDosageInp
 		},
 		{ new: true }
 	)
+
+	await tokenService.debitForFeature({
+		userId: user_id,
+		featureKey: 'PATIENT_DOSAGE',
+		weight,
+		requestId: (req as any).requestId,
+	})
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Dosage logged successfully', { patient: updatedPatient }))
 })
@@ -411,6 +435,7 @@ export const getDosageCalendar = asyncHandler(async (req: Request, res: Response
 export const updateProfile = asyncHandler(async (req: Request<{}, {}, UpdateProfileInput['body']>, res: Response) => {
 	const { user_id } = req.user
 	const { demographics, medical_history, medical_config } = req.body
+	const weight = await resolveFeatureWeight(user_id, 'PATIENT_PROFILE_UPDATE')
 
 	const user = await User.findById(user_id)
 	if (!user || user.user_type !== UserType.PATIENT) {
@@ -449,6 +474,13 @@ export const updateProfile = asyncHandler(async (req: Request<{}, {}, UpdateProf
 		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
 	}
 
+	await tokenService.debitForFeature({
+		userId: user_id,
+		featureKey: 'PATIENT_PROFILE_UPDATE',
+		weight,
+		requestId: (req as any).requestId,
+	})
+
 	res.status(StatusCodes.OK).json(
 		new ApiResponse(StatusCodes.OK, 'Profile updated successfully', { profile: updatedProfile })
 	)
@@ -457,6 +489,7 @@ export const updateProfile = asyncHandler(async (req: Request<{}, {}, UpdateProf
 export const updateHealthLogs = asyncHandler(async (req: Request<{}, {}, UpdateHealthLog["body"]>, res: Response) => {
 	const { type, description } = req.body
 	const { user_id } = req.user
+	const weight = await resolveFeatureWeight(user_id, 'PATIENT_HEALTH_LOG')
 
 	const user = await getPatientUserOrThrow(user_id)
 	const patientprofile = await PatientProfile.findByIdAndUpdate(user.profile_id,
@@ -475,6 +508,13 @@ export const updateHealthLogs = asyncHandler(async (req: Request<{}, {}, UpdateH
 	if (!patientprofile) {
 		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient profile not found')
 	}
+
+	await tokenService.debitForFeature({
+		userId: user_id,
+		featureKey: 'PATIENT_HEALTH_LOG',
+		weight,
+		requestId: (req as any).requestId,
+	})
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Health Logs Updated Suucessfully"))
 })

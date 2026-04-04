@@ -168,6 +168,17 @@ export const updateSystemConfigSchema = z.object({
       window_minutes: z.number().int().positive().optional(),
     }).optional(),
     feature_flags: z.record(z.string(), z.boolean()).optional(),
+    token_plans: z.array(z.object({
+      plan_id: z.string().min(1),
+      price_inr: z.number().positive(),
+      tokens: z.number().positive(),
+      is_active: z.boolean().optional(),
+    })).optional(),
+    feature_weights: z.record(z.string(), z.number()).optional(),
+    token_settings: z.object({
+      allow_fractional: z.boolean().optional(),
+      precision: z.number().int().min(0).max(6).optional(),
+    }).optional(),
   }).strict(),
 })
 
@@ -200,5 +211,13 @@ export const resetPasswordSchema = z.object({
   body: z.object({
     target_user_id: z.string().min(1, 'Target user ID is required'),
     new_password: z.string().min(8).optional(),
+  }).strict(),
+})
+
+export const paymentsQuerySchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().positive().optional(),
+    limit: z.coerce.number().int().positive().max(100).optional(),
+    status: z.string().optional(),
   }).strict(),
 })

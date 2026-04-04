@@ -11,6 +11,7 @@ import 'package:frontend/features/patient/patient_page.dart';
 import 'package:frontend/features/patient/patient_profile_page.dart';
 import 'package:frontend/features/patient/patient_take_dosage_page.dart';
 import 'package:frontend/features/patient/patient_update_inr_page.dart';
+import 'package:frontend/features/payment/patient_token_balance_page.dart';
 import 'package:frontend/services/realtime/doctor_update_realtime_service.dart';
 
 bool shouldShowUnreadUpdatesPopup({
@@ -67,12 +68,13 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _currentNavIndex = widget.initialTabIndex.clamp(0, 4);
+    _currentNavIndex = widget.initialTabIndex.clamp(0, 5);
     _tabs = [
       PatientPage(embedInShell: true, onTabChanged: _onNavChanged),
       PatientUpdateINRPage(embedInShell: true, onTabChanged: _onNavChanged),
       PatientTakeDosagePage(embedInShell: true, onTabChanged: _onNavChanged),
       PatientHealthReportsPage(embedInShell: true, onTabChanged: _onNavChanged),
+      PatientTokenBalancePage(embedInShell: true, onTabChanged: _onNavChanged),
       PatientProfilePage(embedInShell: true, onTabChanged: _onNavChanged),
     ];
     _unreadRefreshTimer = Timer.periodic(
@@ -106,7 +108,7 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
   @override
   void didUpdateWidget(covariant PatientDashboardShellPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final newIndex = widget.initialTabIndex.clamp(0, 4);
+    final newIndex = widget.initialTabIndex.clamp(0, 5);
     if (newIndex != _currentNavIndex) {
       setState(() => _currentNavIndex = newIndex);
     }
@@ -327,6 +329,8 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
       case 3:
         return 'Health Reports';
       case 4:
+        return 'Token Wallet';
+      case 5:
         return 'My Profile';
       case 0:
       default:
@@ -335,7 +339,7 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
   }
 
   Decoration _decorationForIndex(int index) {
-    if (index == 4) {
+    if (index == 5) {
       return const BoxDecoration(color: Color(0xFFF9FAFB));
     }
 

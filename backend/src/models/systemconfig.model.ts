@@ -22,6 +22,34 @@ const SystemConfigSchema = new mongoose.Schema({
       beta_features: false,
     },
   },
+  token_plans: {
+    type: [
+      {
+        plan_id: { type: String, required: true },
+        price_inr: { type: Number, required: true },
+        tokens: { type: Number, required: true },
+        is_active: { type: Boolean, default: true },
+      },
+    ],
+    default: [
+      { plan_id: 'basic_49', price_inr: 49, tokens: 100, is_active: true },
+      { plan_id: 'standard_99', price_inr: 99, tokens: 220, is_active: true },
+    ],
+  },
+  feature_weights: {
+    type: Map,
+    of: Number,
+    default: {
+      PATIENT_DOSAGE: 2,
+      PATIENT_HEALTH_LOG: 1,
+      PATIENT_PROFILE_UPDATE: 1,
+      PATIENT_REPORT_SUBMIT: 2,
+    },
+  },
+  token_settings: {
+    allow_fractional: { type: Boolean, default: true },
+    precision: { type: Number, default: 2 },
+  },
   is_active: {
     type: Boolean,
     default: true,

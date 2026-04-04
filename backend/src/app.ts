@@ -62,7 +62,16 @@ app.use(cors({
   optionsSuccessStatus: 204,
 }));
 
-app.use(express.json());
+
+// app.use(cors());
+
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    if ((req as Request).originalUrl?.includes('/api/payments/razorpay/webhook')) {
+      (req as any).rawBody = buf.toString('utf8')
+    }
+  }
+}));
 
 app.get("/", (req, res) => {
   return res.json(new ApiResponse(StatusCodes.OK, "The Api is running"))

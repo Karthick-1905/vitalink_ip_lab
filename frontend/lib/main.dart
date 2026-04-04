@@ -6,7 +6,12 @@ import 'package:frontend/core/di/app_dependencies.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await QueryCache.instance.initialize();
+  try {
+    await QueryCache.instance.initialize();
+  } catch (e) {
+    debugPrint('Failed to initialize QueryCache (path_provider may not be available on web): $e');
+  }
+
   await NetworkPolicy.instance.initialize();
 
   final queryClient = AppDependencies.createQueryClient(

@@ -39,9 +39,12 @@ import AdminProfile from './adminprofile.model'
 import AuditLog from './auditlog.model'
 import SystemConfig from './systemconfig.model'
 import Notification from './notification.model'
+import TokenWallet from './tokenwallet.model'
+import TokenTransaction from './tokentransaction.model'
+import Payment from './payment.model'
 
 
-export { User, DoctorProfile, PatientProfile, AdminProfile, AuditLog, SystemConfig, Notification }
+export { User, DoctorProfile, PatientProfile, AdminProfile, AuditLog, SystemConfig, Notification, TokenWallet, TokenTransaction, Payment }
 
 // Aliases for backward compatibility
 export const Doctor = DoctorProfile

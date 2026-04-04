@@ -7,6 +7,7 @@ import * as notificationService from '@alias/services/notification.service'
 import * as passwordService from '@alias/services/password.service'
 import { User, DoctorProfile, PatientProfile } from '@alias/models'
 import { UserType } from '@alias/validators'
+import * as paymentService from '@alias/services/payment.service'
 
 // ─── Doctor Management ───
 
@@ -123,6 +124,18 @@ export const performBatchOperation = asyncHandler(async (req: Request, res: Resp
 export const getSystemHealth = asyncHandler(async (req: Request, res: Response) => {
   const health = await adminService.getSystemHealth()
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'System health', health))
+})
+
+// ─── Payments ───
+
+export const getPayments = asyncHandler(async (req: Request, res: Response) => {
+  const { page, limit, status } = req.query as any
+  const result = await paymentService.getPayments({
+    page: Number(page),
+    limit: Number(limit),
+    status,
+  })
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Payments retrieved', result))
 })
 
 // ─── Legacy Endpoints ───

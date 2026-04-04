@@ -11,6 +11,9 @@ interface Config {
   accessKeyId: string
   secretAccessKey: string
   bucketName?: string
+  razorpayKeyId: string
+  razorpayKeySecret: string
+  razorpayWebhookSecret: string
 }
 
 const nodeEnv = process.env.NODE_ENV || 'development'
@@ -59,5 +62,8 @@ export const config: Config = {
   accessKeyId: getEnv('ACCESS_KEY_ID', { requiredInProduction: true }),
   secretAccessKey: getEnv('SECRET_ACCESS_KEY', { requiredInProduction: true }),
   bucketName: getEnv('S3_BUCKET_NAME', { requiredInProduction: true }),
+  razorpayKeyId: getEnv('RAZORPAY_KEY_ID', { requiredInProduction: true }),
+  razorpayKeySecret: getEnv('RAZORPAY_KEY_SECRET', { requiredInProduction: true }),
+  razorpayWebhookSecret: getEnv('RAZORPAY_WEBHOOK_SECRET', { requiredInProduction: true }),
 }
 

@@ -58,12 +58,16 @@ class RemainingDoseCard extends StatelessWidget {
         children: [
           Icon(Icons.error_outline, color: Colors.red.shade400, size: 20),
           const SizedBox(width: 8),
-          Text(
-            date,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade800,
+          Expanded(
+            child: Text(
+              date,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
             ),
           ),
         ],

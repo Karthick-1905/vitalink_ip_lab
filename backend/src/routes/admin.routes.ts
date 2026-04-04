@@ -7,13 +7,13 @@ import {
   createPatient, getAllPatients, updatePatient, deactivatePatient,
   reassignPatient, getAuditLogs, getSystemConfig, updateSystemConfig,
   broadcastNotification, performBatchOperation, getSystemHealth,
-  listAllPatients, getPatientById, getDoctorById, resetUserPassword,
+  listAllPatients, getPatientById, getDoctorById, resetUserPassword, getPayments,
 } from '@alias/controllers/admin.controller'
 import {
   createDoctorSchema, updateDoctorSchema, getDoctorsSchema,
   createPatientSchema, updatePatientSchema, getUsersSchema,
   reassignPatientSchema, userIdParamSchema, updateSystemConfigSchema,
-  broadcastNotificationSchema, batchOperationSchema, resetPasswordSchema,
+  broadcastNotificationSchema, batchOperationSchema, resetPasswordSchema, paymentsQuerySchema,
 } from '@alias/validators/admin.validator'
 
 const router = Router()
@@ -56,6 +56,9 @@ router.post('/users/reset-password', validate(resetPasswordSchema), resetUserPas
 
 // ─── System Health ───
 router.get('/system/health', getSystemHealth)
+
+// ─── Payments ───
+router.get('/payments', validate(paymentsQuerySchema), getPayments)
 
 // ─── Legacy Endpoints ───
 router.get('/legacy/patients', listAllPatients)
