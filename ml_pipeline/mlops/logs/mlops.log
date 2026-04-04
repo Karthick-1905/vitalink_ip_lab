@@ -13,3 +13,65 @@ Saved dataset to warfarin_pipeline/data/warfarin_cohort.csv
 2026-04-05 00:20:42,695 | INFO | mlops.orchestrator | Monitoring report written: /home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/mlops/reports/warfarin_monitor.json
 2026-04-05 00:20:42,699 | INFO | mlops.orchestrator | Retraining triggered for warfarin
 2026-04-05 00:20:42,699 | INFO | mlops.orchestrator | Running command: python warfarin_pipeline/retrain.py
+2026-04-05 00:21:54,868 | INFO | mlops.orchestrator | Acquiring new batch of 500 patients for incremental training...
+Generating realistic warfarin cohort (500 patients)...
+Using CTGAN with source data: https://raw.githubusercontent.com/ankmathur96/warfarin-bandits/master/data/warfarin.csv
+Existing model/preprocessor not found. Bootstrapping baseline training for MLOps...
+Loaded 2500 patients for baseline training.
+2. Preprocessing Data...
+Training on 2000 samples, 28 features.
+
+3. Running Optuna hyperparameter tuning (30 trials)...
+
+✓ Found best hyperparameters!
+  max_depth: 6
+  learning_rate: 0.012965653300977752
+  n_estimators: 165
+  min_child_weight: 2
+  gamma: 6.337330387669045e-08
+  subsample: 0.8810150190425059
+  colsample_bytree: 0.5275385093455622
+
+4. Training final XGBoost baseline model...
+
+==================================================
+EVALUATION METRICS (Clinical Baseline)
+==================================================
+R² Score:              0.1690
+RMSE:                  11.87 mg/week
+MAE:                   8.38 mg/week
+Patients within 20%:   46.4%
+==================================================
+
+Top 10 Most Important Features:
+      Feature     Gain
+    VKORC1_AA 0.240629
+    VKORC1_GG 0.214915
+   Smoker_Yes 0.045030
+       Weight 0.041746
+    VKORC1_GA 0.033651
+    Smoker_No 0.032156
+       Height 0.030286
+Gender_Female 0.029460
+  Gender_Male 0.029120
+CYP2C9_*1/*13 0.026819
+
+✓ Saved model to: models/warfarin_model.json
+✓ Saved preprocessor to: models/preprocessor.joblib
+✓ Saved predictions to: data/y_test_baseline.npy, data/y_pred_baseline.npy
+✓ Saved feature importances to: data/feature_importances.csv
+
+--- Pre-retraining Performance on New Data ---
+Old Model R2 on new data: 0.1210
+Old Model RMSE on new data: 13.2969
+
+--- Retraining Model Incrementally ---
+
+--- Post-retraining Performance on New Data ---
+Retrained Model R2 on new data:   0.9557
+Retrained Model RMSE on new data: 2.9857
+Retrained Model MAE on new data:  2.0425
+R2 Improved by:                   0.8347
+
+Updated model saved to /home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/warfarin_pipeline/models/warfarin_model_v2.json
+2026-04-05 00:21:54,868 | INFO | mlops.orchestrator | Cycle summary written: /home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/mlops/reports/last_cycle_summary.json

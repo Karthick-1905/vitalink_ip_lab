@@ -25,7 +25,7 @@
       "current_data": "acitrom_pipeline/data/episodes.csv",
       "prepare_commands": [],
       "retrain_commands": [
-        ["python", "acitrom_pipeline/train_acitrom_models.py"]
+        ["python", "acitrom_pipeline/retrain.py"]
       ],
       "min_retrain_interval_hours": 168,
       "min_new_rows": 50,

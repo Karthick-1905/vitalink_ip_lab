@@ -1,0 +1,114 @@
+{
+  "timestamp": "2026-04-04T18:49:41.090693+00:00",
+  "models": {
+    "warfarin": {
+      "new_rows": 2500,
+      "interval_flag": true,
+      "volume_flag": true,
+      "drift_flag": false,
+      "quality_flag": false,
+      "retrain_triggered": true,
+      "retrain_ok": true,
+      "monitor_report": {
+        "status": "ok",
+        "rows_reference": 2500,
+        "rows_current": 2500,
+        "max_psi": 0.0,
+        "max_missing_rate": 0.0,
+        "feature_reports": {
+          "Age": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          },
+          "Weight": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          },
+          "Height": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          },
+          "BMI": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          },
+          "Gender": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": null
+          },
+          "CYP2C9": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": null
+          },
+          "VKORC1": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": null
+          },
+          "CYP4F2": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": null
+          },
+          "Amiodarone": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": null
+          },
+          "Aspirin": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": null
+          },
+          "Smoker": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": null
+          },
+          "Target_INR": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          },
+          "Renal_Function": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          },
+          "WarfarinDose": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          },
+          "Days_To_Stable": {
+            "missing_rate": 0.0,
+            "psi": 0.0,
+            "ks_pvalue": 1.0
+          }
+        },
+        "report_file": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/mlops/reports/warfarin_monitor.json"
+      }
+    },
+    "acitrom": {
+      "new_rows": 0,
+      "interval_flag": true,
+      "volume_flag": false,
+      "drift_flag": false,
+      "quality_flag": false,
+      "retrain_triggered": false,
+      "retrain_ok": null,
+      "monitor_report": {
+        "status": "missing_data",
+        "max_psi": 0.0,
+        "max_missing_rate": 0.0,
+        "report_file": "/home/karthick_js/Documents/programs/vitalink_ip_lab/ml_pipeline/mlops/reports/acitrom_monitor.json"
+      }
+    }
+  }
+}

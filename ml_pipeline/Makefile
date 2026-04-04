@@ -1,5 +1,5 @@
-PYTHON ?= python
-PIP ?= pip
+PYTHON ?= .venv/bin/python
+PIP ?= .venv/bin/pip
 
 .PHONY: help install generate-data train-baseline train-models tune retrain train-time visualize compare-dose compare-stability evaluate-continual predict mlops-once mlops-loop mlops-force clean
 

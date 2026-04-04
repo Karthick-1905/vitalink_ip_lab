@@ -1,0 +1,9 @@
+{
+  "models": {
+    "warfarin": {
+      "last_retrain_at": "2026-04-04T18:51:54.868440+00:00",
+      "last_row_count": 2500
+    },
+    "acitrom": {}
+  }
+}
