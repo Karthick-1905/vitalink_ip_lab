@@ -9,9 +9,7 @@
     "warfarin": {
       "reference_data": "warfarin_pipeline/data/warfarin_cohort.csv",
       "current_data": "warfarin_pipeline/data/warfarin_cohort.csv",
-      "prepare_commands": [
-        ["python", "warfarin_pipeline/data_generator.py"]
-      ],
+      "prepare_commands": [],
       "retrain_commands": [
         ["python", "warfarin_pipeline/retrain.py"]
       ],

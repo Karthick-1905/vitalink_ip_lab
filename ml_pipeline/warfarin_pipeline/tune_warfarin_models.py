@@ -338,14 +338,8 @@ def main():
         "winner": {"name": winner["name"], "metrics": winner["metrics"]},
     }
 
-    SUMMARY_OUTPUT_PATH.write_text(json.dumps(results, indent=2, sort_keys=True))
-    write_markdown_report(results)
-
     print("6. Final selection...")
     print(f"   Winner: {winner['name']} with {format_metrics(winner['metrics'])}")
-    print(f"   Saved model to {MODEL_OUTPUT_PATH}")
-    print(f"   Wrote summary to {SUMMARY_OUTPUT_PATH}")
-    print(f"   Wrote report to {REPORT_OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
