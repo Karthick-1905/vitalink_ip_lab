@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ApiResponse, asyncHandler } from '@alias/utils'
 import * as paymentService from '@alias/services/payment.service'
 import * as tokenService from '@alias/services/token.service'
+import * as patientTokenService from '@alias/services/patient-token.service'
 import type { CreatePaymentOrderInput } from '@alias/validators/payment.validator'
 
 export const createPaymentOrder = asyncHandler(async (req: Request<{}, {}, CreatePaymentOrderInput['body']>, res: Response) => {
@@ -20,9 +21,13 @@ export const createPaymentOrder = asyncHandler(async (req: Request<{}, {}, Creat
 
 export const getTokenBalance = asyncHandler(async (req: Request, res: Response) => {
   const { user_id } = req.user
-  const balance = await tokenService.getBalance(user_id)
+  const wallet = await tokenService.ensureWallet(user_id)
 
-  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Token balance fetched', { balance }))
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Token balance fetched', {
+    balance: wallet.balance,
+    max_tokens: wallet.max_tokens || 200,
+    currency: wallet.currency,
+  }))
 })
 
 export const getTokenTransactions = asyncHandler(async (req: Request, res: Response) => {
@@ -47,4 +52,10 @@ export const handleRazorpayWebhook = asyncHandler(async (req: Request, res: Resp
   })
 
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Webhook processed', result))
+})
+
+export const getFeatureCosts = asyncHandler(async (req: Request, res: Response) => {
+  const costs = await patientTokenService.getFeatureCostsSummary()
+  
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Feature costs fetched', { costs }))
 })

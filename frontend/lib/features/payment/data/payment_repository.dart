@@ -1,15 +1,11 @@
 import 'package:frontend/core/network/api_client.dart';
-import 'package:frontend/core/storage/secure_storage.dart';
 
 class PaymentRepository {
   PaymentRepository({
     required ApiClient apiClient,
-    SecureStorage? secureStorage,
-  })  : _apiClient = apiClient,
-        _secureStorage = secureStorage ?? SecureStorage();
+  }) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final SecureStorage _secureStorage;
 
   static const String _patientBasePath = '/api/patient';
 
@@ -30,13 +26,16 @@ class PaymentRepository {
   }
 
   /// Get current token balance
-  Future<double> getTokenBalance() async {
+  Future<Map<String, dynamic>> getTokenBalance() async {
     final response = await _apiClient.get('$_patientBasePath/tokens/balance');
-    final balance = response['balance'];
-    if (balance is num) {
-      return balance.toDouble();
+    if (response is! Map<String, dynamic>) {
+      throw Exception('Invalid balance response');
     }
-    throw Exception('Invalid balance response: expected num, got ${balance.runtimeType}');
+    return {
+      'balance': (response['balance'] as num?)?.toDouble() ?? 0.0,
+      'max_tokens': (response['max_tokens'] as num?)?.toInt() ?? 200,
+      'currency': response['currency'] as String? ?? 'INR',
+    };
   }
 
   /// Get paginated transaction history

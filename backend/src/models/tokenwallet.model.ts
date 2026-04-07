@@ -12,13 +12,15 @@ const TokenWalletSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  max_tokens: {
+    type: Number,
+    default: 200,
+  },
   currency: {
     type: String,
     default: 'INR',
   },
 }, { timestamps: true })
-
-TokenWalletSchema.index({ user_id: 1 })
 
 export interface TokenWalletDocument extends mongoose.InferSchemaType<typeof TokenWalletSchema> {}
 

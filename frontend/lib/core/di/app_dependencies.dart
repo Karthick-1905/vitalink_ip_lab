@@ -30,7 +30,6 @@ class AppDependencies {
   );
   static final PaymentRepository paymentRepository = PaymentRepository(
     apiClient: apiClient,
-    secureStorage: secureStorage,
   );
 
   static QueryClient createQueryClient({

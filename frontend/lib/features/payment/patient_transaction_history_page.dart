@@ -21,7 +21,6 @@ class PatientTransactionHistoryPage extends StatefulWidget {
 
 class _PatientTransactionHistoryPageState
     extends State<PatientTransactionHistoryPage> {
-  final int _currentNavIndex = 4;
   int _currentPage = 1;
   final int _itemsPerPage = 10;
 
@@ -194,7 +193,6 @@ class _PatientTransactionHistoryPageState
 
   Widget _buildPaginationControls(Map<String, dynamic> pagination) {
     final total = pagination['total'] as int? ?? 0;
-    final page = pagination['page'] as int? ?? 1;
     final limit = pagination['limit'] as int? ?? 10;
     final totalPages = (total / limit).ceil();
 

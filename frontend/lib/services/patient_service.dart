@@ -1,11 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/core/auth/session_expiry_handler.dart';
 
 class PatientService {
   static const String baseUrl =
-      'https://vitalink-uimf.onrender.com/api/patient';
+      'http://localhost:3000/api/patient';
   static const storage = FlutterSecureStorage();
 
   static String _endpoint(String path) => path;

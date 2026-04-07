@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
-import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/query/payment_query_keys.dart';
 
 class PatientPaymentSuccessPage extends StatelessWidget {

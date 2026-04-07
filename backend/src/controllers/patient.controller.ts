@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { ApiError, ApiResponse, asyncHandler } from '@alias/utils'
 import { StatusCodes } from 'http-status-codes'
-import { Notification, PatientProfile, User } from '@alias/models'
+import { Notification, PatientProfile, User, TokenWallet } from '@alias/models'
 import { NotificationType } from '@alias/models/notification.model'
 import { UserType } from '@alias/validators'
 import { getSystemConfig } from '@alias/services/config.service'
@@ -21,6 +21,7 @@ import type {
 import logger from '@alias/utils/logger'
 import { uploadFile, getDownloadUrl } from '@alias/utils/fileUpload'
 import * as tokenService from '@alias/services/token.service'
+import * as patientTokenService from '@alias/services/patient-token.service'
 
 type DoctorUpdateEvent = {
 	_id: string
@@ -92,6 +93,22 @@ const resolveFeatureWeight = async (userId: string, featureKey: tokenService.Fea
 	return weight
 }
 
+const deductPatientTokens = async (req: Request, metadata?: Record<string, any>) => {
+	const feature = (req as any).tokenFeature
+	const user = (req as any).user
+
+	if (!feature || !user) {
+		return
+	}
+
+	try {
+		await patientTokenService.deductTokensForFeature(user.user_id, feature, metadata)
+	} catch (error) {
+		logger.error('Error deducting tokens:', error)
+		// Don't fail the request, just log the error
+	}
+}
+
 const getDoctorUpdateNotifications = async (
 	patientUserId: unknown,
 	unreadOnly: boolean,
@@ -149,7 +166,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 		throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
 	}
 
-	const [latestDoctorNotification, unreadDoctorUpdates] = await Promise.all([
+	const [latestDoctorNotification, unreadDoctorUpdates, tokenWallet] = await Promise.all([
 		Notification.findOne({
 			user_id: user._id,
 			type: NotificationType.DOCTOR_UPDATE,
@@ -158,7 +175,8 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 			user_id: user._id,
 			type: NotificationType.DOCTOR_UPDATE,
 			is_read: false
-		})
+		}),
+		TokenWallet.findOne({ user_id: user._id })
 	])
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Profile fetched successfully', {
@@ -166,6 +184,10 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 		doctor_updates: {
 			unread_count: unreadDoctorUpdates,
 			latest: latestDoctorNotification ? mapNotificationToDoctorUpdateEvent(latestDoctorNotification) : null,
+		},
+		token_balance: {
+			balance: tokenWallet?.balance ?? 0,
+			currency: tokenWallet?.currency ?? 'INR',
 		}
 	}))
 })
@@ -264,6 +286,13 @@ export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput
 		requestId: (req as any).requestId,
 	})
 
+	// Also deduct tokens using new service
+	await deductPatientTokens(req, {
+		inr_value: parsed_inr_value,
+		test_date: parsedTestDate,
+		has_file: !!fileUrl,
+	})
+
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report submitted', { patient }))
 })
 
@@ -349,6 +378,11 @@ export const takeDosage = asyncHandler(async (req: Request<{}, {}, TakeDosageInp
 		featureKey: 'PATIENT_DOSAGE',
 		weight,
 		requestId: (req as any).requestId,
+	})
+
+	// Also deduct tokens using new service
+	await deductPatientTokens(req, {
+		date: normalizedDate,
 	})
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Dosage logged successfully', { patient: updatedPatient }))
@@ -481,6 +515,13 @@ export const updateProfile = asyncHandler(async (req: Request<{}, {}, UpdateProf
 		requestId: (req as any).requestId,
 	})
 
+	// Also deduct tokens using new service
+	await deductPatientTokens(req, {
+		demographics: !!demographics,
+		medical_history: !!medical_history,
+		medical_config: !!medical_config,
+	})
+
 	res.status(StatusCodes.OK).json(
 		new ApiResponse(StatusCodes.OK, 'Profile updated successfully', { profile: updatedProfile })
 	)
@@ -514,6 +555,11 @@ export const updateHealthLogs = asyncHandler(async (req: Request<{}, {}, UpdateH
 		featureKey: 'PATIENT_HEALTH_LOG',
 		weight,
 		requestId: (req as any).requestId,
+	})
+
+	// Also deduct tokens using new service
+	await deductPatientTokens(req, {
+		type: type,
 	})
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Health Logs Updated Suucessfully"))
@@ -702,6 +748,8 @@ export const streamNotifications = asyncHandler(async (req: Request, res: Respon
 	const patientUser = await resolvePatientStreamUserOrThrow(req)
 	registerUserNotificationStream(String(patientUser._id), res)
 })
+
+
 
 function parseDDMMYYYY(date: string | Date): Date {
 	const regex = /^\d{2}-\d{2}-\d{4}$/

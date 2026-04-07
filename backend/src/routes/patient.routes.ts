@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response, Router } from 'express'
 import multer from 'multer'
 import { authenticate, AllowPatient, validate } from '@alias/middlewares'
+import { checkTokens, deductTokensAfterSuccess } from '@alias/middlewares/checkTokens'
+import { PatientFeature } from '@alias/services/patient-token.service'
 import {
 	getProfile,
 	missedDoses,
@@ -20,7 +22,7 @@ import {
 	markAllDoctorUpdatesAsRead,
 	streamNotifications,
 } from '@alias/controllers/patient.controller'
-import { createPaymentOrder, getTokenBalance, getTokenTransactions } from '@alias/controllers/payment.controller'
+import { createPaymentOrder, getTokenBalance, getTokenTransactions, getFeatureCosts } from '@alias/controllers/payment.controller'
 import {
 	reportSchema,
 	takeDosageSchema,
@@ -99,15 +101,16 @@ const uploadProfilePictureFile = (req: Request, res: Response, next: NextFunctio
 
 const router = Router()
 
-router.route('/profile').get(authenticate, AllowPatient, getProfile).put(authenticate, AllowPatient, validate(updateProfileSchema), updateProfile)
+router.route('/profile').get(authenticate, AllowPatient, getProfile).put(authenticate, AllowPatient, checkTokens(PatientFeature.PROFILE_UPDATE), validate(updateProfileSchema), updateProfile)
 router.get('/reports', authenticate, AllowPatient, getReport)
-router.post('/reports', authenticate, AllowPatient, uploadReportFile, validate(reportSchema), submitReport)
+router.post('/reports', authenticate, AllowPatient, checkTokens(PatientFeature.REPORT_UPLOAD), uploadReportFile, validate(reportSchema), submitReport)
 router.get('/missed-doses', authenticate, AllowPatient, missedDoses)
 router.get('/dosage-calendar', authenticate, AllowPatient, getDosageCalendar)
-router.post('/dosage', authenticate, AllowPatient, validate(takeDosageSchema), takeDosage)
-router.post('/health-logs', authenticate, AllowPatient, validate(updateHealthLogSchema), updateHealthLogs)
+router.post('/dosage', authenticate, AllowPatient, checkTokens(PatientFeature.DOSAGE_LOG), validate(takeDosageSchema), takeDosage)
+router.post('/health-logs', authenticate, AllowPatient, checkTokens(PatientFeature.HEALTH_LOG_UPDATE), validate(updateHealthLogSchema), updateHealthLogs)
 router.get('/tokens/balance', authenticate, AllowPatient, getTokenBalance)
 router.get('/tokens/transactions', authenticate, AllowPatient, getTokenTransactions)
+router.get('/tokens/feature-costs', authenticate, AllowPatient, getFeatureCosts)
 router.post('/payments/order', authenticate, AllowPatient, validate(createPaymentOrderSchema), createPaymentOrder)
 router.get('/notifications/stream', streamNotifications)
 router.get('/notifications', authenticate, AllowPatient, validate(notificationsQuerySchema), getNotifications)

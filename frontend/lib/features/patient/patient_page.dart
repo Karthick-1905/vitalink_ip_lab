@@ -64,11 +64,17 @@ class _PatientPageState extends State<PatientPage> {
           );
         }
 
-        final data = query.data!;
-        final profile = data['profile'] as Map<String, dynamic>;
+        if (!query.hasData) {
+          return _buildPageContainer(
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final data = query.data ?? <String, dynamic>{};
+        final profile = (data['profile'] as Map<String, dynamic>?) ?? <String, dynamic>{};
         final latestINR = (data['latestINR'] as num?)?.toDouble() ?? 0.0;
         final latestINRDate = data['latestINRDate']?.toString() ?? 'N/A';
-        final history = data['history'] as List;
+        final history = (data['history'] as List?) ?? <dynamic>[];
         final latestInrHasData = data['latestINRHasData'] == true;
         final patientCondition = latestInrHasData
             ? ((data['latestINRIsCritical'] == true)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/query/payment_query_keys.dart';
+import 'package:frontend/features/payment/widgets/token_widgets.dart';
 
 class PatientTokenBalancePage extends StatefulWidget {
   final bool embedInShell;
@@ -19,12 +20,11 @@ class PatientTokenBalancePage extends StatefulWidget {
 }
 
 class _PatientTokenBalancePageState extends State<PatientTokenBalancePage> {
-  final int _currentNavIndex = 3;
 
   @override
   Widget build(BuildContext context) {
-    return UseQuery<double>(
-      options: QueryOptions<double>(
+    return UseQuery<Map<String, dynamic>>(
+      options: QueryOptions<Map<String, dynamic>>(
         queryKey: PaymentQueryKeys.tokenBalance(),
         queryFn: () async {
           return await AppDependencies.paymentRepository.getTokenBalance();
@@ -75,13 +75,23 @@ class _PatientTokenBalancePageState extends State<PatientTokenBalancePage> {
                               ],
                             )
                           else
-                            Text(
-                              '${query.data?.toStringAsFixed(2) ?? '0.00'} Tokens',
-                              style: const TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0084FF),
-                              ),
+                            Column(
+                              children: [
+                                Text(
+                                  '${(query.data?['balance'] as num? ?? 0).toInt()} Tokens',
+                                  style: const TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0084FF),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                TokenProgressBarWidget(
+                                  currentTokens: (query.data?['balance'] as num? ?? 0).toInt(),
+                                  maxTokens: (query.data?['max_tokens'] as num? ?? 200).toInt(),
+                                  showPercentage: true,
+                                ),
+                              ],
                             ),
                         ],
                       ),
@@ -99,33 +109,19 @@ class _PatientTokenBalancePageState extends State<PatientTokenBalancePage> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Mock Token Plans
+                  // Token Plans
                   _buildTokenPlanCard(
-                    planId: 'basic_10',
+                    planId: 'plan_100',
                     planName: 'Basic Plan',
-                    tokens: 10,
-                    price: '₹99',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTokenPlanCard(
-                    planId: 'standard_25',
-                    planName: 'Standard Plan',
-                    tokens: 25,
-                    price: '₹199',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTokenPlanCard(
-                    planId: 'premium_50',
-                    planName: 'Premium Plan',
-                    tokens: 50,
-                    price: '₹349',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTokenPlanCard(
-                    planId: 'elite_100',
-                    planName: 'Elite Plan',
                     tokens: 100,
-                    price: '₹599',
+                    price: '₹49',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTokenPlanCard(
+                    planId: 'plan_200',
+                    planName: 'Premium Plan',
+                    tokens: 200,
+                    price: '₹99',
                   ),
                 ],
               ),

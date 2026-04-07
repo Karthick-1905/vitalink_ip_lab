@@ -36,7 +36,7 @@ export const getFeatureWeight = async (featureKey: FeatureKey): Promise<number> 
 export const ensureWallet = async (userId: string) => {
   let wallet = await TokenWallet.findOne({ user_id: userId })
   if (!wallet) {
-    wallet = await TokenWallet.create({ user_id: userId, balance: 0 })
+    wallet = await TokenWallet.create({ user_id: userId, balance: 0, max_tokens: 200 })
   }
   return wallet
 }

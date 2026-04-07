@@ -4,24 +4,34 @@ import { Payment, User } from '@alias/models'
 import { PaymentStatus } from '@alias/models/payment.model'
 import { createRazorpayOrder, verifyRazorpayWebhookSignature } from '@alias/services/razorpay.service'
 import { creditFromPayment, resolvePlan } from '@alias/services/token.service'
+import { creditTokensForPayment } from '@alias/services/patient-token.service'
 import { config } from '@alias/config'
 import * as notificationService from '@alias/services/notification.service'
 import { UserType } from '@alias/validators'
 
 export async function createPaymentOrder(params: { userId: string; planId: string; requestId?: string | null}) {
+  if (!config.razorpayKeyId || !config.razorpayKeySecret) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Razorpay credentials are not configured')
+  }
+
   const plan = await resolvePlan(params.planId)
   const amountInr = Number(plan.price_inr)
   const amountPaise = Math.round(amountInr * 100)
   const receipt = `plan_${plan.plan_id}_${params.userId}_${Date.now()}`
 
-  const order = await createRazorpayOrder({
-    amountPaise,
-    receipt,
-    notes: {
-      plan_id: plan.plan_id,
-      user_id: params.userId,
-    },
-  })
+  let order
+  try {
+    order = await createRazorpayOrder({
+      amountPaise,
+      receipt,
+      notes: {
+        plan_id: plan.plan_id,
+        user_id: params.userId,
+      },
+    })
+  } catch (error: any) {
+    throw new ApiError(StatusCodes.BAD_GATEWAY, 'Failed to create Razorpay order')
+  }
 
   const payment = await Payment.create({
     user_id: params.userId,
@@ -75,6 +85,13 @@ export async function handleRazorpayWebhook(params: { rawBody: string; signature
         amount: payment.tokens_granted,
         paymentId: String(payment._id),
       })
+
+      // Also credit using patient-token service
+      await creditTokensForPayment(
+        String(payment.user_id),
+        payment.tokens_granted,
+        String(payment._id)
+      )
 
       const adminUsers = await User.find({ user_type: UserType.ADMIN, is_active: true }).select('_id')
       const adminIds = adminUsers.map(u => String(u._id))
