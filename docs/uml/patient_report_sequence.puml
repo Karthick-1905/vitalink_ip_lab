@@ -1,0 +1,32 @@
+@startuml
+actor Patient
+participant "Flutter Frontend" as Frontend
+participant "Express API" as API
+participant "Patient Controller" as PatientController
+participant "SystemConfig Service" as ConfigService
+participant "File Upload Service" as UploadService
+database "Filebase" as Filebase
+database "MongoDB" as Mongo
+
+Patient -> Frontend : Submit INR value + optional file
+Frontend -> API : POST /api/patient/reports\nBearer JWT
+API -> PatientController : validate + authenticate
+
+alt file attached
+  PatientController -> UploadService : uploadFile("uploads", file)
+  UploadService -> Filebase : PUT object
+  Filebase --> UploadService : storage key
+  UploadService --> PatientController : file_url key
+end
+
+PatientController -> ConfigService : getSystemConfig()
+ConfigService -> Mongo : read active config
+Mongo --> ConfigService : thresholds
+ConfigService --> PatientController : inr_thresholds
+
+PatientController -> Mongo : append inr_history entry
+Mongo --> PatientController : updated patient profile
+PatientController --> API : ApiResponse
+API --> Frontend : success response
+Frontend --> Patient : report submitted
+@enduml

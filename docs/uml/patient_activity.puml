@@ -1,0 +1,40 @@
+@startuml
+start
+:Open app;
+:Session bootstrap;
+
+if (Authenticated?) then (yes)
+  :Load patient dashboard;
+else (no)
+  :Go to login;
+  stop
+endif
+
+:View profile and unread doctor updates;
+
+fork
+  :Submit INR report;
+  if (File attached?) then (yes)
+    :Upload file through backend;
+  endif
+  :Store INR history entry;
+fork again
+  :Check missed doses;
+  :Open dosage calendar;
+  :Mark dose as taken;
+fork again
+  :Submit health log;
+fork again
+  :Open notification center;
+  :Mark notifications/read doctor updates;
+end fork
+
+:Listen for SSE notifications;
+
+if (New doctor update?) then (yes)
+  :Refresh unread counts;
+  :Show popup if needed;
+endif
+
+stop
+@enduml

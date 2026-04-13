@@ -1,0 +1,81 @@
+@startuml
+skinparam componentStyle rectangle
+
+package "Users" {
+  [Patient]
+  [Doctor]
+  [Admin]
+}
+
+package "Client Layer" {
+  [Flutter Frontend App] as Frontend
+  [Session + Routing Layer] as Session
+  [Patient UI] as PatientUI
+  [Doctor UI] as DoctorUI
+  [Admin UI] as AdminUI
+  [SSE Client] as SSEClient
+}
+
+package "Backend Layer" {
+  [Express API] as API
+  [Auth + JWT] as Auth
+  [Patient APIs] as PatientAPI
+  [Doctor APIs] as DoctorAPI
+  [Admin APIs] as AdminAPI
+  [Statistics APIs] as StatsAPI
+  [Validation + Middleware] as Middleware
+  [Notification/Config Services] as Services
+  [Realtime Notification Service] as Realtime
+}
+
+package "Persistence / External Services" {
+  database "MongoDB" as Mongo
+  database "Filebase S3 Storage" as Filebase
+  [Optional Loki Sink] as Loki
+}
+
+package "Offline / Separate Subsystem" {
+  [ML Pipeline Scripts] as MLPipeline
+  [Training Data + Synthetic Data] as MLData
+  [Models + Reports] as MLArtifacts
+}
+
+[Patient] --> Frontend
+[Doctor] --> Frontend
+[Admin] --> Frontend
+
+Frontend --> Session
+Session --> PatientUI
+Session --> DoctorUI
+Session --> AdminUI
+Frontend --> API : REST /api/*
+Frontend --> SSEClient
+SSEClient --> Realtime : SSE stream
+
+API --> Middleware
+Middleware --> Auth
+Middleware --> PatientAPI
+Middleware --> DoctorAPI
+Middleware --> AdminAPI
+Middleware --> StatsAPI
+
+PatientAPI --> Mongo
+PatientAPI --> Filebase
+DoctorAPI --> Mongo
+DoctorAPI --> Filebase
+AdminAPI --> Mongo
+StatsAPI --> Mongo
+Services --> Mongo
+Services --> Realtime
+API --> Loki : structured logs
+
+Realtime --> Frontend : doctor_update / notification
+
+MLData --> MLPipeline
+MLPipeline --> MLArtifacts
+
+note right of MLPipeline
+Offline research / reporting workflow.
+Not integrated into live request handling.
+end note
+@enduml

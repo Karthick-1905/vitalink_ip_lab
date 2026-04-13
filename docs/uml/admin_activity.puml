@@ -1,0 +1,39 @@
+@startuml
+start
+:Open app;
+:Session bootstrap;
+
+if (Authenticated admin?) then (yes)
+  :Load admin dashboard;
+else (no)
+  :Go to login;
+  stop
+endif
+
+fork
+  :Manage doctors;
+  :Create / update / deactivate doctor;
+fork again
+  :Manage patients;
+  :Create / update / deactivate patient;
+fork again
+  :Reassign patient;
+fork again
+  :Review audit logs;
+fork again
+  :Update system config;
+fork again
+  :Broadcast notifications;
+fork again
+  :Run batch operations;
+fork again
+  :Reset user password;
+fork again
+  :View analytics / statistics;
+fork again
+  :Check system health;
+end fork
+
+:Audit middleware records admin mutations;
+stop
+@enduml

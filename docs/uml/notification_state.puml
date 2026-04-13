@@ -1,0 +1,11 @@
+@startuml
+[*] --> Created
+Created --> Persisted : save in MongoDB
+Persisted --> Streamed : publish SSE event
+Persisted --> Unread : default is_read = false
+Streamed --> Unread
+Unread --> Read : mark read / read-all
+Read --> Expired : TTL / expires_at reached
+Unread --> Expired : TTL / expires_at reached
+Expired --> [*]
+@enduml

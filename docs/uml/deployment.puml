@@ -1,0 +1,41 @@
+@startuml
+skinparam componentStyle rectangle
+
+node "User Browser / Client" as Client
+
+node "Vercel Frontend Hosting" as Vercel {
+  artifact "Flutter Web Build" as WebBuild
+}
+
+node "EC2 Host" as EC2 {
+  node "Nginx Reverse Proxy" as Nginx
+
+  frame "Blue-Green App Slots" {
+    node "vitalink-blue\nNode.js Express" as Blue
+    node "vitalink-green\nNode.js Express" as Green
+  }
+}
+
+database "MongoDB" as Mongo
+database "Filebase S3-Compatible Storage" as Filebase
+cloud "Optional Loki" as Loki
+
+Client --> Vercel : load frontend
+Client --> Nginx : API + SSE traffic
+Vercel --> Nginx : /api/* rewrite
+
+Nginx --> Blue : active upstream
+Nginx --> Green : inactive/rollback target
+
+Blue --> Mongo
+Green --> Mongo
+Blue --> Filebase
+Green --> Filebase
+Blue --> Loki
+Green --> Loki
+
+note bottom of Nginx
+deploy.sh switches upstream between blue and green
+after health checks against /health/ready
+end note
+@enduml

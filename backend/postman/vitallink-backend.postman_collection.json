@@ -1,0 +1,3847 @@
+{
+  "info": {
+    "name": "VitaLink Backend API",
+    "description": "Generated from the `/backend` Express + TypeScript codebase.\n\nCoverage goals:\n- Success path validation for every discovered endpoint\n- Validation and schema error scenarios\n- Authentication and authorization checks\n- Operational edge cases such as duplicate data, invalid IDs, empty result sets, and stream endpoints\n\nTokens:\n- `admin_token` for `/api/admin/*` and `/api/statistics/*`\n- `doctor_token` for `/api/doctors/*`\n- `patient_token` for `/api/patient/*`\n- `auth_token` is a generic convenience variable updated by login requests\n\nImport the companion environment file before running the collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "vitallink-backend-generated"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const requestId = pm.variables.replaceIn(\"{{$guid}}\");",
+          "pm.request.headers.upsert({ key: \"x-request-id\", value: requestId });",
+          "pm.environment.set(\"request_id\", requestId);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Health endpoints generated from source routes.",
+      "item": [
+        {
+          "name": "API Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Basic service reachability probe.\n\nAuth: None\n\nTest scenarios:\n- Success response from server root\n- Base URL misconfiguration",
+            "url": {
+              "raw": "{{base_url}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [],
+              "query": []
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [],
+                  "query": []
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"The Api is running\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Live Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Liveness endpoint that should stay green while the process is up.\n\nAuth: None\n\nTest scenarios:\n- Success response when process is alive",
+            "url": {
+              "raw": "{{base_url}}/health/live",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ],
+              "query": []
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/health/live",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "health",
+                    "live"
+                  ],
+                  "query": []
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"Service is live\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ready Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Readiness endpoint that reflects MongoDB connectivity.\n\nAuth: None\n\nTest scenarios:\n- 200 when database is connected\n- 503 when database is disconnected",
+            "url": {
+              "raw": "{{base_url}}/health/ready",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ],
+              "query": []
+            }
+          },
+          "response": [
+            {
+              "name": "200 Ready",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/health/ready",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "health",
+                    "ready"
+                  ],
+                  "query": []
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"Service is ready\",\n  \"data\": {\n    \"database\": {\n      \"state\": \"connected\"\n    }\n  }\n}"
+            },
+            {
+              "name": "503 Not Ready",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/health/ready",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "health",
+                    "ready"
+                  ],
+                  "query": []
+                }
+              },
+              "status": "Error",
+              "code": 503,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"statusCode\": 503,\n  \"success\": false,\n  \"message\": \"Service is not ready\",\n  \"data\": {\n    \"database\": {\n      \"state\": \"disconnected\"\n    }\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 503\", function () {",
+                  "  pm.expect([200, 503]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Readiness payload includes database state\", function () {",
+                  "  pm.expect(json?.data?.database?.state).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Auth endpoints generated from source routes.",
+      "item": [
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Admin login. Saves `admin_token` and updates generic `auth_token`.\n\nAuth: None\nBody: `login_id`, `password`\n\nTest scenarios:\n- Valid login returns JWT token\n- Unknown login ID returns 400\n- Wrong password returns 401\n- Inactive account returns 403\n- Missing fields return validation error",
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login_id\": \"{{admin_login_id}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ],
+                  "query": []
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"statusCode\": 200,\n  \"success\": true,\n  \"message\": \"User logged in successfully\",\n  \"data\": {\n    \"token\": \"jwt-token\",\n    \"user\": {\n      \"login_id\": \"admin001\",\n      \"user_type\": \"ADMIN\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ],
+                  "query": []
+                }
+              },
+              "status": "Error",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"statusCode\": 401,\n  \"success\": false,\n  \"message\": \"Invalid credentials\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}",
+                  "if ((pm.response.headers.get(\"Content-Type\") || \"\").includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  if (json?.data?.token) {",
+                  "    pm.environment.set(\"admin_token\", json.data.token);",
+                  "    pm.environment.set(\"auth_token\", json.data.token);",
+                  "  }",
+                  "}",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Admin token is captured\", function () {",
+                  "  pm.expect(json?.data?.token).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Doctor login. Saves `doctor_token` and updates generic `auth_token`.\n\nAuth: None\nBody: `login_id`, `password`\n\nTest scenarios:\n- Valid doctor login\n- Credential failures\n- Inactive account",
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login_id\": \"{{doctor_login_id}}\",\n  \"password\": \"{{doctor_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}",
+                  "if ((pm.response.headers.get(\"Content-Type\") || \"\").includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  if (json?.data?.token) {",
+                  "    pm.environment.set(\"doctor_token\", json.data.token);",
+                  "    pm.environment.set(\"auth_token\", json.data.token);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Patient login. Saves `patient_token` and updates generic `auth_token`.\n\nAuth: None\nBody: `login_id`, `password`\n\nTest scenarios:\n- Valid patient login\n- Credential failures\n- Inactive account",
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login_id\": \"{{patient_login_id}}\",\n  \"password\": \"{{patient_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}",
+                  "if ((pm.response.headers.get(\"Content-Type\") || \"\").includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  if (json?.data?.token) {",
+                  "    pm.environment.set(\"patient_token\", json.data.token);",
+                  "    pm.environment.set(\"auth_token\", json.data.token);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "description": "Stateless logout acknowledgement.\n\nAuth: Bearer token\n\nTest scenarios:\n- Success with valid token\n- 401 without token\n- 401 with invalid token",
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ],
+              "query": []
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "logout"
+                  ],
+                  "query": []
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logout successful. Please clear the token from client-side.\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "description": "Fetches the authenticated user and populated profile data.\n\nAuth: Bearer token\n\nTest scenarios:\n- Success with valid token\n- 401 without token\n- 401 with invalid token\n- 404 when JWT user no longer exists",
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "description": "Authenticated password rotation endpoint.\n\nAuth: Bearer token\nBody: `current_password`, `new_password`\n\nTest scenarios:\n- Success with strong new password\n- 401 when current password is wrong\n- 400 for weak password\n- 400 when new password matches current password\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{patient_password}}\",\n  \"new_password\": \"NewStrong@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin endpoints generated from source routes.",
+      "item": [
+        {
+          "name": "Create Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Create a doctor account and profile.\n\nAuth: Admin bearer token\nBody: `login_id`, `password`, `name`, optional doctor profile fields\n\nTest scenarios:\n- 201 for valid doctor creation\n- 409 for duplicate login ID\n- 400 for weak password or invalid URL fields\n- 401 without token\n- 403 for non-admin token",
+            "url": {
+              "raw": "{{base_url}}/api/admin/doctors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "doctors"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login_id\": \"doctor_admin_03\",\n  \"password\": \"Doctor@456\",\n  \"name\": \"Dr. Newly Added\",\n  \"department\": \"Oncology\",\n  \"contact_number\": \"9000000003\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Doctors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Paginated doctor listing with filters.\n\nAuth: Admin bearer token\nQuery: `page`, `limit`, `department`, `is_active`, `search`\n\nTest scenarios:\n- 200 paginated success\n- 400 for invalid pagination inputs\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/doctors?page=1&limit=10&department=Cardiology&is_active=true&search=john",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "doctors"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "department",
+                  "value": "Cardiology",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "john",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Doctor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Update doctor profile or account state.\n\nAuth: Admin bearer token\nBody: Optional profile and state fields\n\nTest scenarios:\n- 200 success update\n- 404 when doctor is missing\n- 400 for invalid payload shape\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/doctors/{{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "doctors",
+                "{{doctor_id}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"department\": \"Nephrology\",\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate Doctor",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Soft-deactivate a doctor account.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success deactivation\n- 404 when doctor is missing\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/doctors/{{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "doctors",
+                "{{doctor_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Create a patient and assign a doctor.\n\nAuth: Admin bearer token\nBody: Patient account, demographics, doctor assignment, optional medical config\n\nTest scenarios:\n- 201 success create\n- 400 when assigned doctor is invalid\n- 409 for duplicate login ID\n- 400 for invalid gender/INR schema\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "patients"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login_id\": \"PAT_ADMIN_NEW\",\n  \"password\": \"Patient@456\",\n  \"assigned_doctor_id\": \"{{doctor_login_id}}\",\n  \"demographics\": {\n    \"name\": \"Admin Onboarded Patient\",\n    \"age\": 43,\n    \"gender\": \"Female\",\n    \"phone\": \"9222222222\",\n    \"next_of_kin\": {\n      \"name\": \"Relative\",\n      \"relation\": \"Sister\",\n      \"phone\": \"9333333333\"\n    }\n  },\n  \"medical_config\": {\n    \"therapy_drug\": \"Warfarin\",\n    \"therapy_start_date\": \"2025-06-20\",\n    \"target_inr\": {\n      \"min\": 2,\n      \"max\": 3\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Paginated patient listing with assignment and status filters.\n\nAuth: Admin bearer token\nQuery: `page`, `limit`, `assigned_doctor_id`, `account_status`, `search`\n\nTest scenarios:\n- 200 paginated success\n- 400 for invalid pagination input\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/patients?page=1&limit=10&assigned_doctor_id={{doctor_id}}&account_status=Active&search=patient",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "assigned_doctor_id",
+                  "value": "{{doctor_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "account_status",
+                  "value": "Active",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "patient",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Patient",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Update patient account or profile fields.\n\nAuth: Admin bearer token\nBody: Optional demographics, medical config, assignment, status, active flag, password\n\nTest scenarios:\n- 200 success update\n- 404 when patient is missing\n- 400 for invalid status or schema\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "patients",
+                "{{patient_id}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_status\": \"Active\",\n  \"demographics\": {\n    \"phone\": \"9444444444\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate Patient",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Soft-deactivate a patient account.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success deactivation\n- 404 when patient is missing\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/patients/{{patient_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "patients",
+                "{{patient_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reassign Patient",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Reassign patient ownership to a new doctor.\n\nAuth: Admin bearer token\nBody: `new_doctor_id`\n\nTest scenarios:\n- 200 success reassignment\n- 404 when patient OP number is unknown\n- 400 when target doctor is invalid\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/reassign/{{patient_op_num}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reassign",
+                "{{patient_op_num}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_doctor_id\": \"{{secondary_doctor_login_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Audit log search and pagination.\n\nAuth: Admin bearer token\nQuery: `page`, `limit`, `user_id`, `action`, `start_date`, `end_date`, `success`\n\nTest scenarios:\n- 200 paginated success\n- Invalid date filters handled by service\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/audit-logs?page=1&limit=20&user_id={{patient_id}}&action=USER_CREATE&start_date={{start_date}}&end_date={{end_date}}&success=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "user_id",
+                  "value": "{{patient_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "USER_CREATE",
+                  "disabled": true
+                },
+                {
+                  "key": "start_date",
+                  "value": "{{start_date}}",
+                  "disabled": true
+                },
+                {
+                  "key": "end_date",
+                  "value": "{{end_date}}",
+                  "disabled": true
+                },
+                {
+                  "key": "success",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get System Config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Fetch mutable system config document.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "config"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update System Config",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Patch system config. Body is strict Zod schema.\n\nAuth: Admin bearer token\nBody: `inr_thresholds`, `session_timeout_minutes`, `rate_limit`, `feature_flags`\n\nTest scenarios:\n- 200 success update\n- 400 for unexpected fields\n- 400 for non-positive numbers\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "config"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inr_thresholds\": {\n    \"critical_low\": 1.5,\n    \"critical_high\": 4\n  },\n  \"session_timeout_minutes\": 60,\n  \"rate_limit\": {\n    \"max_requests\": 100,\n    \"window_minutes\": 15\n  },\n  \"feature_flags\": {\n    \"doctor_updates\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Broadcast Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Broadcast notifications to users or segments.\n\nAuth: Admin bearer token\nBody: `title`, `message`, `target`, optional `user_ids`, `priority`\n\nTest scenarios:\n- 200 success broadcast\n- 400 when target is SPECIFIC but user_ids missing\n- 400 for invalid target or priority\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/notifications/broadcast",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "notifications",
+                "broadcast"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Maintenance\",\n  \"message\": \"Scheduled maintenance tonight at 11 PM.\",\n  \"target\": \"ALL\",\n  \"priority\": \"HIGH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Batch User Operation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Bulk activate, deactivate, or reset password.\n\nAuth: Admin bearer token\nBody: `operation`, `user_ids[]`\n\nTest scenarios:\n- 200 success for valid operation\n- 400 for empty user_ids\n- 400 for unsupported operation\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/batch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "batch"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"deactivate\",\n  \"user_ids\": [\n    \"{{patient_id}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset User Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Admin password reset with optional explicit replacement password.\n\nAuth: Admin bearer token\nBody: `target_user_id`, optional `new_password`\n\nTest scenarios:\n- 200 success reset\n- 404 for unknown user\n- 400 for invalid body\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "reset-password"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_user_id\": \"{{patient_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "System Health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Administrative system health snapshot.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success with health metrics\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/system/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "system",
+                "health"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Legacy List Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Legacy patient listing endpoint.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/legacy/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "legacy",
+                "patients"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Legacy Get Patient By OP",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Legacy patient lookup by OP/login ID.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 when patient exists\n- 404 when patient is missing\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/legacy/patient/{{patient_op_num}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "legacy",
+                "patient",
+                "{{patient_op_num}}"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 404\", function () {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Legacy Get Doctor By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Legacy doctor lookup by Mongo user ID.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 when doctor exists\n- 404 when doctor is missing\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/admin/legacy/doctor/{{doctor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "legacy",
+                "doctor",
+                "{{doctor_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 404\", function () {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "description": "Doctors endpoints generated from source routes.",
+      "item": [
+        {
+          "name": "Stream Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "description": "Server-sent events stream for doctor notifications. Uses token query param or Authorization header.\n\nAuth: Doctor token via `token` query param or Authorization header\nQuery: `token`\n\nTest scenarios:\n- Stream connects with valid token\n- 401 without token\n- 401 with invalid or expired token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/notifications/stream?token={{doctor_token}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "notifications",
+                "stream"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{doctor_token}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": []
+        },
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Paginated doctor notifications.\n\nAuth: Doctor bearer token\nQuery: `page`, `limit`, `is_read`\n\nTest scenarios:\n- 200 success\n- 400 for invalid ObjectId filters not applicable here\n- 400 for invalid pagination strings\n- 401 without token\n- 400 when non-doctor token is used",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/notifications?page=1&limit=20&is_read=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "is_read",
+                  "value": "false",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Marks all doctor notifications as read.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 400 when non-doctor token is used",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/notifications/read-all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "notifications",
+                "read-all"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Marks one doctor notification as read.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 when notification exists\n- 404 for unknown notification\n- 400 for invalid ObjectId\n- 401 without token\n- 400 when non-doctor token is used",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/notifications/{{notification_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 404\", function () {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Assigned Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Lists patients assigned to the authenticated doctor.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 with patients\n- 200 with empty array\n- 401 without token\n- 400 when non-doctor token is used",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Patient",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Fetch one patient by OP/login ID.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 when patient exists and belongs to doctor\n- 404 when patient is missing\n- 403 for unauthorized doctor-patient access\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 403, or 404\", function () {",
+                  "  pm.expect([200, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Doctor-side patient creation with default temporary password equal to contact number.\n\nAuth: Doctor bearer token\nBody: Patient demographics, OP number, dosage schedule, optional history and therapy config\n\nTest scenarios:\n- 201 success create\n- 409 for duplicate OP number\n- 400 for invalid gender/date/contact lengths\n- 401 without token\n- 400 when non-doctor token is used",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Patient\",\n  \"op_num\": \"PAT002\",\n  \"age\": 50,\n  \"gender\": \"Female\",\n  \"contact_no\": \"8888888888\",\n  \"target_inr_min\": 2.5,\n  \"target_inr_max\": 3.5,\n  \"therapy\": \"Warfarin\",\n  \"therapy_start_date\": \"2024-01-15\",\n  \"prescription\": {\n    \"monday\": 4,\n    \"tuesday\": 4,\n    \"wednesday\": 4,\n    \"thursday\": 4,\n    \"friday\": 4,\n    \"saturday\": 4,\n    \"sunday\": 4\n  },\n  \"medical_history\": [\n    {\n      \"diagnosis\": \"Atrial Fibrillation\",\n      \"duration_value\": 2,\n      \"duration_unit\": \"Years\"\n    }\n  ],\n  \"kin_name\": \"Family Contact\",\n  \"kin_relation\": \"Sibling\",\n  \"kin_contact_number\": \"7777777777\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reassign Patient",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Doctor-triggered reassignment to another doctor login ID.\n\nAuth: Doctor bearer token\nBody: `new_doctor_id`\n\nTest scenarios:\n- 200 success\n- 400 when target doctor is missing\n- 403 when patient is not owned by doctor\n- 404 for unknown patient\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}/reassign",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}",
+                "reassign"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_doctor_id\": \"{{secondary_doctor_login_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 400, 403, or 404\", function () {",
+                  "  pm.expect([200, 400, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Patient Dosage",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Replace weekly dosage schedule.\n\nAuth: Doctor bearer token\nBody: `prescription` daily number map\n\nTest scenarios:\n- 200 success\n- 400 for malformed schedule\n- 403 when patient ownership is wrong\n- 404 when patient is missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}/dosage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}",
+                "dosage"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescription\": {\n    \"monday\": 5,\n    \"tuesday\": 5,\n    \"wednesday\": 5,\n    \"thursday\": 5,\n    \"friday\": 5,\n    \"saturday\": 0,\n    \"sunday\": 0\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 403, or 404\", function () {",
+                  "  pm.expect([200, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Patient Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "List patient INR reports with presigned file URLs when present.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 success\n- 403 when doctor does not own patient\n- 404 when patient is missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}/reports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}",
+                "reports"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 403, or 404\", function () {",
+                  "  pm.expect([200, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Patient Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Fetch one patient report by embedded report ObjectId.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 success\n- 400 for invalid report_id\n- 403 when doctor does not own patient\n- 404 when report or patient is missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}/reports/{{report_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}",
+                "reports",
+                "{{report_id}}"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 400, 403, or 404\", function () {",
+                  "  pm.expect([200, 400, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Patient Report",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Update report notes or critical flag.\n\nAuth: Doctor bearer token\nBody: Optional `is_critical`, `notes`\n\nTest scenarios:\n- 200 success\n- 400 for invalid payload or report_id\n- 403 unauthorized patient access\n- 404 report missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}/reports/{{report_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}",
+                "reports",
+                "{{report_id}}"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_critical\": true,\n  \"notes\": \"Please repeat INR test in 48 hours.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 400, 403, or 404\", function () {",
+                  "  pm.expect([200, 400, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Next Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Set next review date for the patient.\n\nAuth: Doctor bearer token\nBody: `date` in DD-MM-YYYY format\n\nTest scenarios:\n- 200 success\n- 400 for invalid date format\n- 403 unauthorized patient access\n- 404 patient missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}/config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}",
+                "config"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"25-12-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 400, 403, or 404\", function () {",
+                  "  pm.expect([200, 400, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Instructions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Set patient care instructions.\n\nAuth: Doctor bearer token\nBody: `instructions[]`\n\nTest scenarios:\n- 200 success\n- 400 when instructions is not an array of strings\n- 403 unauthorized patient access\n- 404 patient missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/patients/{{patient_op_num}}/instructions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "patients",
+                "{{patient_op_num}}",
+                "instructions"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instructions\": [\n    \"Take medicine after breakfast\",\n    \"Return for review next week\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200, 400, 403, or 404\", function () {",
+                  "  pm.expect([200, 400, 403, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Fetch doctor profile with optional presigned profile image URL and patient count.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 success\n- 404 when doctor record is missing\n- 401 without token\n- 400 when non-doctor token is used",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "profile"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Update doctor profile fields.\n\nAuth: Doctor bearer token\nBody: Optional `name`, `department`, `contact_number`\n\nTest scenarios:\n- 200 success\n- 400 for invalid contact number length or extra fields\n- 404 when doctor record is missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "profile"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Updated Name\",\n  \"department\": \"Cardiology\",\n  \"contact_number\": \"1234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Doctors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "List all doctor users with populated profiles.\n\nAuth: Doctor bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 400 when non-doctor token is used",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/doctors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "doctors"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "description": "Upload doctor profile image.\n\nAuth: Doctor bearer token\nHeaders: Multipart form-data\nBody: `file`\n\nTest scenarios:\n- 200 success\n- 400 when file is missing\n- 400 when file type is invalid\n- 400 when file exceeds 5 MB\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/doctors/profile-pic",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "profile-pic"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/absolute/path/to/doctor-profile.jpg",
+                  "description": "PNG, JPEG, JPG, or WEBP. Max 5 MB."
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "Patient",
+      "description": "Patient endpoints generated from source routes.",
+      "item": [
+        {
+          "name": "Stream Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "description": "Server-sent events stream for patient notifications.\n\nAuth: Patient token via `token` query param or Authorization header\nQuery: `token`\n\nTest scenarios:\n- Stream connects with valid token\n- 401 without token\n- 401 with invalid or expired token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/notifications/stream?token={{patient_token}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "notifications",
+                "stream"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{patient_token}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": []
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Fetch patient profile with assigned doctor details and doctor update summary.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 404 if patient no longer exists\n- 400 when non-patient token is used",
+            "url": {
+              "raw": "{{base_url}}/api/patient/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "profile"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Update patient profile, history, and therapy start date.\n\nAuth: Patient bearer token\nBody: Optional demographics, medical history, medical_config.therapy_start_date\n\nTest scenarios:\n- 200 success\n- 400 for invalid gender or future therapy start date\n- 400 for unexpected fields due to strict schema\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "profile"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"demographics\": {\n    \"phone\": \"9876543210\",\n    \"next_of_kin\": {\n      \"relation\": \"Spouse\"\n    }\n  },\n  \"medical_history\": [\n    {\n      \"diagnosis\": \"Atrial Fibrillation\",\n      \"duration_value\": 2,\n      \"duration_unit\": \"Years\"\n    }\n  ],\n  \"medical_config\": {\n    \"therapy_start_date\": \"2024-01-01\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Fetch INR history, health logs, weekly dosage, and medical config.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 404 when patient profile is missing",
+            "url": {
+              "raw": "{{base_url}}/api/patient/reports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "reports"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Submit INR test result with optional upload.\n\nAuth: Patient bearer token\nHeaders: Multipart form-data\nBody: `inr_value`, `test_date`, optional `file`\n\nTest scenarios:\n- 200 success\n- 400 for non-numeric INR\n- 400 for invalid date format\n- 400 for invalid file type\n- 400 for file > 10 MB\n- 507/insufficient storage when upload backend fails\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/reports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "reports"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "inr_value",
+                  "type": "text",
+                  "value": "2.8"
+                },
+                {
+                  "key": "test_date",
+                  "type": "text",
+                  "value": "20-02-2026"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/absolute/path/to/patient-report.pdf",
+                  "description": "Optional PDF, PNG, JPEG, or JPG. Max 10 MB."
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": []
+        },
+        {
+          "name": "Get Missed Doses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Calculate missed doses from therapy start date, dosage schedule, and taken dose history.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 400 when therapy start or schedule is missing\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/missed-doses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "missed-doses"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 400\", function () {",
+                  "  pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Dosage Calendar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Dose calendar with taken, missed, and scheduled dates.\n\nAuth: Patient bearer token\nQuery: `months` between 1 and 6, optional `start_date` in DD-MM-YYYY\n\nTest scenarios:\n- 200 success\n- 400 for invalid start_date format\n- 400 when schedule is missing\n- 401 without token\n- Edge: months clamped between 1 and 6",
+            "url": {
+              "raw": "{{base_url}}/api/patient/dosage-calendar?months=3&start_date=01-03-2026",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "dosage-calendar"
+              ],
+              "query": [
+                {
+                  "key": "months",
+                  "value": "3"
+                },
+                {
+                  "key": "start_date",
+                  "value": "01-03-2026",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 400\", function () {",
+                  "  pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log Dosage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Mark one dose date as taken.\n\nAuth: Patient bearer token\nBody: `date` in DD-MM-YYYY\n\nTest scenarios:\n- 200 success\n- 400 for invalid format\n- 400 when same date is logged twice\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/dosage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "dosage"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"15-02-2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 400\", function () {",
+                  "  pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Health Logs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Upsert health log item by type.\n\nAuth: Patient bearer token\nBody: `type`, `description`\n\nTest scenarios:\n- 200 success\n- 400 for invalid enum or missing description\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/health-logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "health-logs"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"BLEEDING\",\n  \"description\": \"Minor gum bleeding after brushing teeth\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Paginated app notifications for the patient.\n\nAuth: Patient bearer token\nQuery: `page`, `limit`, `is_read`\n\nTest scenarios:\n- 200 success\n- 400 for invalid pagination strings\n- 401 without token\n- 400 when non-patient token is used",
+            "url": {
+              "raw": "{{base_url}}/api/patient/notifications?page=1&limit=20&is_read=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "is_read",
+                  "value": "false",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Marks all patient notifications as read.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 400 when non-patient token is used",
+            "url": {
+              "raw": "{{base_url}}/api/patient/notifications/read-all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "notifications",
+                "read-all"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Marks one patient notification as read.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 404 when notification is missing\n- 400 for invalid ObjectId\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/notifications/{{notification_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 404\", function () {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Doctor Updates Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Unread count and latest doctor update notification.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 400 when non-patient token is used",
+            "url": {
+              "raw": "{{base_url}}/api/patient/doctor-updates/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "doctor-updates",
+                "summary"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Doctor Updates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "List doctor update events derived from notification documents.\n\nAuth: Patient bearer token\nQuery: `unread_only`, `limit`\n\nTest scenarios:\n- 200 success\n- 400 for invalid query values\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/doctor-updates?unread_only=false&limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "doctor-updates"
+              ],
+              "query": [
+                {
+                  "key": "unread_only",
+                  "value": "false"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark All Doctor Updates Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Marks all unread doctor updates as read.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/doctor-updates/read-all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "doctor-updates",
+                "read-all"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark Doctor Update Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Marks one doctor update event as read.\n\nAuth: Patient bearer token\n\nTest scenarios:\n- 200 success\n- 404 when doctor update is missing\n- 400 for invalid ObjectId\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/doctor-updates/{{doctor_update_event_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "doctor-updates",
+                "{{doctor_update_event_id}}",
+                "read"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 404\", function () {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patient_token}}"
+              }
+            ],
+            "description": "Upload patient profile image.\n\nAuth: Patient bearer token\nHeaders: Multipart form-data\nBody: `file`\n\nTest scenarios:\n- 200 success\n- 400 when file is missing\n- 400 when file type is invalid\n- 400 when file exceeds 5 MB\n- 401 without token",
+            "url": {
+              "raw": "{{base_url}}/api/patient/profile-pic",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "patient",
+                "profile-pic"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/absolute/path/to/patient-profile.jpg",
+                  "description": "PNG, JPEG, JPG, or WEBP. Max 5 MB."
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "Statistics",
+      "description": "Statistics endpoints generated from source routes.",
+      "item": [
+        {
+          "name": "Admin Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "High-level admin counts for doctors, patients, and audit logs.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 403 for non-admin token",
+            "url": {
+              "raw": "{{base_url}}/api/statistics/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "statistics",
+                "admin"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registration Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Registration trends across doctors and patients.\n\nAuth: Admin bearer token\nQuery: `period` one of 7d, 30d, 90d, 1y\n\nTest scenarios:\n- 200 success\n- 400 for unsupported period\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/statistics/trends?period=7d",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "statistics",
+                "trends"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "7d"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 400\", function () {",
+                  "  pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "INR Compliance Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "INR compliance breakdown for patients.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/statistics/compliance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "statistics",
+                "compliance"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Doctor Workload Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Doctor workload distribution stats.\n\nAuth: Admin bearer token\n\nTest scenarios:\n- 200 success\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/statistics/workload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "statistics",
+                "workload"
+              ],
+              "query": []
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test(\"Response has success flag\", function () {",
+                  "    pm.expect(json).to.have.property(\"success\");",
+                  "  });",
+                  "  pm.test(\"Response message exists\", function () {",
+                  "    pm.expect(json).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Period Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "description": "Statistics filtered by a custom date range.\n\nAuth: Admin bearer token\nQuery: Optional `start_date`, `end_date` parseable date strings\n\nTest scenarios:\n- 200 success\n- 400 when end_date is before start_date\n- 400 for invalid date strings\n- 401 without token\n- 403 for non-admin",
+            "url": {
+              "raw": "{{base_url}}/api/statistics/period?start_date={{start_date}}&end_date={{end_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "statistics",
+                "period"
+              ],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "{{start_date}}"
+                },
+                {
+                  "key": "end_date",
+                  "value": "{{end_date}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200 or 400\", function () {",
+                  "  pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

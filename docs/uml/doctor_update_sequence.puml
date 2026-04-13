@@ -1,0 +1,28 @@
+@startuml
+actor Doctor
+participant "Flutter Frontend" as Frontend
+participant "Express API" as API
+participant "Doctor Controller" as DoctorController
+participant "PatientProfile" as PatientStore
+participant "Doctor Update Notification Service" as NotifyService
+participant "Realtime Notification Service" as Realtime
+database "MongoDB" as Mongo
+participant "Patient SSE Client" as PatientClient
+
+Doctor -> Frontend : Update dosage / report / review / instructions
+Frontend -> API : PUT/PATCH doctor endpoint\nBearer JWT
+API -> DoctorController : authenticate + validate
+DoctorController -> Mongo : load doctor and patient
+DoctorController -> PatientStore : update patient data
+PatientStore -> Mongo : persist PatientProfile changes
+Mongo --> PatientStore : saved
+
+DoctorController -> NotifyService : createDoctorUpdateNotification(...)
+NotifyService -> Mongo : insert Notification(type=DOCTOR_UPDATE)
+Mongo --> NotifyService : created notification
+NotifyService -> Realtime : publishNotificationToUser(...)
+Realtime --> PatientClient : SSE event doctor_update / notification
+
+DoctorController --> API : ApiResponse
+API --> Frontend : success
+@enduml

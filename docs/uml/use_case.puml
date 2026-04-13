@@ -1,0 +1,52 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #f8f8f8
+  BorderColor #333333
+}
+
+actor Patient
+actor Doctor
+actor Admin
+
+rectangle "VitaLink" {
+  usecase "Login" as UC_Login
+
+  usecase "View Patient Dashboard" as UC_PatientDashboard
+  usecase "Submit INR Report" as UC_SubmitINR
+  usecase "Track Dosage" as UC_TrackDosage
+  usecase "View Notifications" as UC_PatientNotifications
+
+  usecase "Manage Assigned Patients" as UC_ManagePatients
+  usecase "Update Patient Treatment" as UC_UpdateTreatment
+  usecase "Review Patient Reports" as UC_ReviewReports
+  usecase "View Notifications" as UC_DoctorNotifications
+
+  usecase "Manage Doctors" as UC_ManageDoctors
+  usecase "Manage Patients" as UC_AdminPatients
+  usecase "View Analytics" as UC_Analytics
+  usecase "Configure System" as UC_Config
+}
+
+Patient --> UC_Login
+Patient --> UC_PatientDashboard
+Patient --> UC_SubmitINR
+Patient --> UC_TrackDosage
+Patient --> UC_PatientNotifications
+
+Doctor --> UC_Login
+Doctor --> UC_ManagePatients
+Doctor --> UC_UpdateTreatment
+Doctor --> UC_ReviewReports
+Doctor --> UC_DoctorNotifications
+
+Admin --> UC_Login
+Admin --> UC_ManageDoctors
+Admin --> UC_AdminPatients
+Admin --> UC_Analytics
+Admin --> UC_Config
+
+UC_UpdateTreatment .> UC_ReviewReports : <<includes>>
+@enduml

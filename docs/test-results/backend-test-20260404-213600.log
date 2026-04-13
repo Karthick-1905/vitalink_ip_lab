@@ -1,0 +1,5 @@
+
+> backend@1.0.0 test
+> jest --runInBand
+
+sh: line 1: jest: command not found

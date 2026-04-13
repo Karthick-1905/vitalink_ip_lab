@@ -1,0 +1,109 @@
+@startuml
+hide methods
+hide stereotypes
+skinparam classAttributeIconSize 0
+
+class User {
+  +_id: ObjectId
+  +login_id: string
+  +password: string
+  +salt: string
+  +user_type: ADMIN|DOCTOR|PATIENT
+  +profile_id: ObjectId
+  +user_type_model: string
+  +is_active: boolean
+  +must_change_password: boolean
+}
+
+class AdminProfile {
+  +permission: FULL_ACCESS|READ_ONLY|LIMITED_ACCESS
+}
+
+class DoctorProfile {
+  +name: string
+  +department: string
+  +contact_number: string
+  +profile_picture_url: string
+}
+
+class PatientProfile {
+  +assigned_doctor_id: ObjectId
+  +demographics
+  +medical_config
+  +medical_history[*]
+  +weekly_dosage
+  +inr_history[*]
+  +health_logs[*]
+  +account_status
+  +profile_picture_url
+}
+
+class Notification {
+  +user_id: ObjectId
+  +type: DOCTOR_UPDATE|SYSTEM_ANNOUNCEMENT|...
+  +priority: LOW|MEDIUM|HIGH|URGENT
+  +title: string
+  +message: string
+  +data: mixed
+  +is_read: boolean
+  +read_at: Date
+  +expires_at: Date
+}
+
+class AuditLog {
+  +user_id: ObjectId
+  +user_type: string
+  +action: string
+  +description: string
+  +resource_type: string
+  +resource_id: string
+  +previous_data: mixed
+  +new_data: mixed
+  +success: boolean
+  +error_message: string
+}
+
+class SystemConfig {
+  +inr_thresholds
+  +session_timeout_minutes: int
+  +rate_limit
+  +feature_flags
+  +is_active: boolean
+}
+
+class InrLog {
+  +test_date: Date
+  +uploaded_at: Date
+  +inr_value: number
+  +is_critical: boolean
+  +file_url: string
+  +notes: string
+}
+
+class HealthLog {
+  +date: Date
+  +type: SIDE_EFFECT|ILLNESS|LIFESTYLE|OTHER_MEDS
+  +description: string
+  +feedback: string
+}
+
+class DosageSchedule {
+  +monday: number
+  +tuesday: number
+  +wednesday: number
+  +thursday: number
+  +friday: number
+  +saturday: number
+  +sunday: number
+}
+
+User "1" --> "1" AdminProfile : profile_id
+User "1" --> "1" DoctorProfile : profile_id
+User "1" --> "1" PatientProfile : profile_id
+PatientProfile "1" --> "0..1" User : assigned_doctor_id
+PatientProfile *-- "0..*" InrLog
+PatientProfile *-- "0..*" HealthLog
+PatientProfile *-- "0..1" DosageSchedule
+Notification --> User : user_id
+AuditLog --> User : user_id
+@enduml

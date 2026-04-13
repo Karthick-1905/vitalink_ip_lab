@@ -1,0 +1,40 @@
+@startuml
+start
+:Open app;
+:Session bootstrap;
+
+if (Authenticated doctor?) then (yes)
+  :Load doctor dashboard;
+else (no)
+  :Go to login;
+  stop
+endif
+
+:Fetch assigned patients;
+
+if (Add patient?) then (yes)
+  :Create patient profile and user via backend;
+endif
+
+:Open patient record;
+
+fork
+  :Update weekly dosage;
+fork again
+  :Update report notes / critical flag;
+fork again
+  :Update next review date;
+fork again
+  :Update care instructions;
+fork again
+  :Reassign patient;
+end fork
+
+:Backend persists patient changes;
+:Backend creates DOCTOR_UPDATE notification;
+:Patient receives SSE notification;
+
+:View own notifications;
+:Mark notifications as read;
+stop
+@enduml
