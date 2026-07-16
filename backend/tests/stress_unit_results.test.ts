@@ -42,6 +42,15 @@ type StressSummary = {
     timeline: StressTimelinePoint[];
 };
 
+type StressRunDetail = {
+    requestNo: number;
+    status: number;
+    durationMs: number;
+    passed: boolean;
+    startedAtEpochMs: number;
+    endedAtEpochMs: number;
+};
+
 type StressAggregate = {
     totalRequests: number;
     successfulRequests: number;
@@ -798,6 +807,7 @@ const buildHtmlReport = (payload: {
     runConfig: { defaultConcurrency: number; defaultRounds: number; scenarioCount: number };
     aggregate: StressAggregate;
     summaries: StressSummary[];
+    endpointRuns: Record<string, StressRunDetail[]>;
 }): string => {
     const serialized = JSON.stringify(payload).replace(/</g, '\\u003c');
 
@@ -839,6 +849,50 @@ const buildHtmlReport = (payload: {
         .content { padding: 0 20px 20px; }
         .panel { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
         .panel h2 { margin: 0 0 12px; font-size: 18px; }
+        .table-row-pass { background: #f0fdf4; }
+        .table-row-fail { background: #fef2f2; }
+
+        .endpoint-list { display: flex; flex-direction: column; gap: 10px; }
+        .endpoint-item { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+        .endpoint-summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            border-left: 5px solid #9ca3af;
+        }
+        .endpoint-summary::-webkit-details-marker { display: none; }
+        .endpoint-item.pass .endpoint-summary { background: #ecfdf3; border-left-color: #16a34a; }
+        .endpoint-item.fail .endpoint-summary { background: #fef2f2; border-left-color: #dc2626; }
+        .endpoint-left { min-width: 0; }
+        .endpoint-main { font-size: 14px; font-weight: 700; color: #111827; }
+        .endpoint-meta { font-size: 12px; color: #4b5563; margin-top: 2px; }
+        .endpoint-right { font-size: 12px; color: #374151; text-align: right; white-space: nowrap; }
+        .endpoint-details { padding: 12px; background: #ffffff; border-top: 1px solid #e5e7eb; }
+        .method { font-weight: 700; margin-right: 8px; }
+        .method.get { color: #16a34a; }
+        .method.post { color: #f59e0b; }
+        .method.put { color: #2563eb; }
+        .method.patch { color: #7c3aed; }
+        .method.delete { color: #dc2626; }
+
+        .checks { margin-top: 0; display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .check { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .check.pass { color: #166534; }
+        .check.fail { color: #991b1b; }
+        .check-badge { font-weight: 700; min-width: 38px; display: inline-block; }
+
+        .runs-wrap { margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+        .runs-title { font-size: 12px; color: #4b5563; margin-bottom: 8px; font-weight: 700; }
+        .runs-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .runs-table th, .runs-table td { border-bottom: 1px solid #e5e7eb; padding: 7px 8px; text-align: left; }
+        .runs-table tr:last-child td { border-bottom: none; }
+        .run-pass { background: #f0fdf4; color: #166534; }
+        .run-fail { background: #fef2f2; color: #991b1b; }
+
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th, td { border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: left; vertical-align: top; }
         th { background: #f9fafb; position: sticky; top: 0; }
@@ -899,12 +953,18 @@ const buildHtmlReport = (payload: {
                 <tbody id="endpointTable"></tbody>
             </table>
         </div>
+
+        <div class="panel">
+            <h2>Endpoint Test Results</h2>
+            <div class="endpoint-list" id="endpointResults"></div>
+        </div>
     </section>
 
     <script>
         const report = ${serialized};
         const aggregate = report.aggregate;
         const summaries = report.summaries.slice();
+        const endpointRuns = report.endpointRuns || {};
 
         document.getElementById('heroMeta').textContent =
             'Generated: ' + new Date(report.generatedAt).toLocaleString() +
@@ -918,6 +978,7 @@ const buildHtmlReport = (payload: {
         const tableBody = document.getElementById('endpointTable');
         summaries.forEach((summary) => {
             const row = document.createElement('tr');
+            row.className = summary.failedRequests === 0 ? 'table-row-pass' : 'table-row-fail';
             row.innerHTML =
                 '<td>' + summary.endpoint + '</td>' +
                 '<td>' + summary.totalRequests + '</td>' +
@@ -928,6 +989,105 @@ const buildHtmlReport = (payload: {
                 '<td>' + summary.p95Ms + '</td>' +
                 '<td>' + summary.throughputRps + '</td>';
             tableBody.appendChild(row);
+        });
+
+        const endpointResults = document.getElementById('endpointResults');
+        const parseMethod = (endpoint) => {
+            const firstSpace = endpoint.indexOf(' ');
+            if (firstSpace <= 0) {
+                return { method: 'GET', route: endpoint };
+            }
+            return {
+                method: endpoint.slice(0, firstSpace).toUpperCase(),
+                route: endpoint.slice(firstSpace + 1),
+            };
+        };
+
+        const checksForSummary = (summary) => {
+            const statusCodeCheck = {
+                pass: summary.failedRequests === 0,
+                text: 'Response has successful status code',
+            };
+            const avgLatencyCheck = {
+                pass: summary.avgMs < 200,
+                text: 'Average response time is less than 200ms',
+            };
+            const p95LatencyCheck = {
+                pass: summary.p95Ms < 300,
+                text: 'P95 response time is less than 300ms',
+            };
+            const throughputCheck = {
+                pass: summary.throughputRps >= 1,
+                text: 'Throughput is at least 1 request/second',
+            };
+
+            return [statusCodeCheck, avgLatencyCheck, p95LatencyCheck, throughputCheck];
+        };
+
+        summaries.forEach((summary) => {
+            const parsed = parseMethod(summary.endpoint);
+            const checks = checksForSummary(summary);
+            const allChecksPass = checks.every((check) => check.pass);
+            const runs = endpointRuns[summary.endpoint] || [];
+
+            const item = document.createElement('details');
+            item.className = 'endpoint-item ' + (allChecksPass ? 'pass' : 'fail');
+
+            const summaryEl = document.createElement('summary');
+            summaryEl.className = 'endpoint-summary';
+
+            const left = document.createElement('div');
+            left.className = 'endpoint-left';
+            left.innerHTML =
+                '<div class="endpoint-main"><span class="method ' + parsed.method.toLowerCase() + '">' + parsed.method + '</span>' + parsed.route + '</div>' +
+                '<div class="endpoint-meta">Total: ' + summary.totalRequests + ' | Success: ' + summary.successfulRequests + ' | Failed: ' + summary.failedRequests + '</div>';
+
+            const right = document.createElement('div');
+            right.className = 'endpoint-right';
+            right.textContent = (allChecksPass ? 'PASS' : 'FAIL') + ' | ' + summary.successRate + '% | Avg ' + summary.avgMs + 'ms';
+
+            summaryEl.appendChild(left);
+            summaryEl.appendChild(right);
+            item.appendChild(summaryEl);
+
+            const detailBody = document.createElement('div');
+            detailBody.className = 'endpoint-details';
+
+            const checksEl = document.createElement('div');
+            checksEl.className = 'checks';
+            checks.forEach((check) => {
+                const checkEl = document.createElement('div');
+                checkEl.className = 'check ' + (check.pass ? 'pass' : 'fail');
+                checkEl.innerHTML = '<span class="check-badge">' + (check.pass ? 'PASS' : 'FAIL') + '</span><span>' + check.text + '</span>';
+                checksEl.appendChild(checkEl);
+            });
+            detailBody.appendChild(checksEl);
+
+            const runsWrap = document.createElement('div');
+            runsWrap.className = 'runs-wrap';
+
+            const runsTable = document.createElement('table');
+            runsTable.className = 'runs-table';
+            runsTable.innerHTML =
+                '<thead><tr><th>Run</th><th>Result</th><th>Status</th><th>Duration (ms)</th><th>Started At</th></tr></thead><tbody></tbody>';
+
+            const runsTbody = runsTable.querySelector('tbody');
+            runs.forEach((run) => {
+                const runRow = document.createElement('tr');
+                runRow.className = run.passed ? 'run-pass' : 'run-fail';
+                runRow.innerHTML =
+                    '<td>#' + run.requestNo + '</td>' +
+                    '<td>' + (run.passed ? 'PASS' : 'FAIL') + '</td>' +
+                    '<td>' + run.status + '</td>' +
+                    '<td>' + run.durationMs + '</td>' +
+                    '<td>' + new Date(run.startedAtEpochMs).toLocaleTimeString() + '</td>';
+                runsTbody.appendChild(runRow);
+            });
+
+            runsWrap.appendChild(runsTable);
+            detailBody.appendChild(runsWrap);
+            item.appendChild(detailBody);
+            endpointResults.appendChild(item);
         });
 
         const topN = (items, compare, size) => items.slice().sort(compare).slice(0, size);
@@ -1253,6 +1413,7 @@ describe('Stress Testing Results from Unit Tests - All Endpoints', () => {
         const scenarios = buildScenarios(defaultConcurrency, defaultRounds);
         const allSamples: StressSample[] = [];
         const groupedSamples = new Map<string, StressSample[]>();
+        const groupedRunDetails = new Map<string, StressRunDetail[]>();
 
         for (const scenario of scenarios) {
             const scenarioSamples: StressSample[] = [];
@@ -1306,6 +1467,17 @@ describe('Stress Testing Results from Unit Tests - All Endpoints', () => {
                         startedAtEpochMs: result.startedAtEpochMs,
                         endedAtEpochMs: result.endedAtEpochMs,
                     });
+
+                    const currentRunDetails = groupedRunDetails.get(result.endpoint) || [];
+                    currentRunDetails.push({
+                        requestNo: currentRunDetails.length + 1,
+                        status: result.status,
+                        durationMs: result.durationMs,
+                        passed: result.pass,
+                        startedAtEpochMs: result.startedAtEpochMs,
+                        endedAtEpochMs: result.endedAtEpochMs,
+                    });
+                    groupedRunDetails.set(result.endpoint, currentRunDetails);
                 });
 
                 if (round < (scenario.rounds || defaultRounds) - 1) {
@@ -1331,6 +1503,7 @@ describe('Stress Testing Results from Unit Tests - All Endpoints', () => {
             },
             aggregate,
             summaries,
+            endpointRuns: Object.fromEntries(groupedRunDetails.entries()),
         };
 
         const outputDir = path.join(process.cwd(), 'tests', 'results');

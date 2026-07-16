@@ -1,16 +1,17 @@
-PYTHON ?= .venv/bin/python
-PIP ?= .venv/bin/pip
+ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+VENV_DIR ?= $(ROOT_DIR).venv
 
-.PHONY: help install train-baseline train-models tune retrain visualize evaluate-continual predict mlops-once mlops-loop mlops-force clean
+PYTHON ?= $(if $(wildcard $(VENV_DIR)/bin/python),$(VENV_DIR)/bin/python,python3)
+PIP ?= $(if $(wildcard $(VENV_DIR)/bin/pip),$(VENV_DIR)/bin/pip,$(PYTHON) -m pip)
+
+.PHONY: help venv install train-models retrain evaluate-continual predict mlops-once mlops-loop mlops-force clean
 
 help:
 	@echo "Available targets:"
+	@echo "  venv            Create local Python virtual environment (.venv)"
 	@echo "  install         Install Python dependencies"
-	@echo "  train-baseline  Train baseline XGBoost model"
 	@echo "  train-models    Train comparison models"
-	@echo "  tune            Run model tuning"
 	@echo "  retrain         Incrementally retrain baseline model"
-	@echo "  visualize       Generate baseline visualization plots"
 	@echo "  evaluate-continual Run dose continual-update evaluation"
 	@echo "  predict         Run a sample prediction"
 	@echo "  mlops-once      Run one shared MLOps cycle (warfarin + acitrom)"
@@ -18,7 +19,10 @@ help:
 	@echo "  mlops-force     Force retraining cycle for all models"
 	@echo "  clean           Remove generated artifacts"
 
-install:
+venv:
+	python3 -m venv .venv
+
+install: venv
 	$(PIP) install -r requirements.txt
 
 train-models:
@@ -27,14 +31,11 @@ train-models:
 retrain:
 	$(PYTHON) warfarin_pipeline/retrain.py
 
-visualize:
-	$(PYTHON) warfarin_pipeline/evaluation/visualize.py
-
 evaluate-continual:
 	$(PYTHON) warfarin_pipeline/evaluation/evaluate_continual_updates.py
 
 predict:
-	$(PYTHON) warfarin_pipeline/predict_dose.py --age 6.5 --height 170 --weight 75 --race White --amiodarone 0 --enzyme_inducer 0 --cyp2c9 "*1/*1" --vkorc1 "GG"
+	$(PYTHON) warfarin_pipeline/predict_dose.py --age 4.5 --height 175 --weight 50 --race White --amiodarone 0 --enzyme_inducer 0 --cyp2c9 "*1/*1" --vkorc1 "GG"
 
 mlops-once:
 	$(PYTHON) mlops/scheduler.py --once

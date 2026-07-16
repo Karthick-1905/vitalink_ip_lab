@@ -1,8 +1,3 @@
-# Acitrom Formula Sources and Implementation Notes
-
-## Purpose
-
-This document records how the cold-start Acitrom prediction formula was built, what came directly from literature, and what was added as engineering safety logic.
 
 ## Primary Literature Sources
 
@@ -74,8 +69,3 @@ Code location:
 - Final output includes daily and weekly dose.
 - Weekly dose = daily dose × 7.
 
-## Scope and Clinical Use Notice
-
-- This implementation is decision support, not autonomous prescribing.
-- Clinician review is mandatory before any prescription action.
-- Population-specific transfer risk exists; local validation is required before clinical rollout.
