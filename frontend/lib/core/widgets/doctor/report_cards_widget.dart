@@ -20,12 +20,25 @@ class ReportCardWithActions extends StatelessWidget {
   String get _reportId => report['_id'] ?? report['id'] ?? '';
   double get _inrValue => (report['inr_value'] as num?)?.toDouble() ?? 0.0;
   bool get _isCritical => report['is_critical'] as bool? ?? false;
-  DateTime get _testDate {
+
+  /// Patient therapeutic band when provided by the caller; otherwise clinical default.
+  double get _targetMin {
+    final raw = report['target_inr_min'] ?? report['target_min'];
+    if (raw is num) return raw.toDouble();
+    return 2.0;
+  }
+
+  double get _targetMax {
+    final raw = report['target_inr_max'] ?? report['target_max'];
+    if (raw is num) return raw.toDouble();
+    return 3.0;
+  }
+
+  DateTime? get _testDate {
     final date = report['test_date'];
-    if (date is String) {
-      return DateTime.tryParse(date) ?? DateTime.now();
-    }
-    return date is DateTime ? date : DateTime.now();
+    if (date is DateTime) return date;
+    if (date is String) return DateTime.tryParse(date);
+    return null;
   }
 
   @override
@@ -96,7 +109,9 @@ class ReportCardWithActions extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      DateFormat('MMM dd').format(_testDate),
+                      _testDate != null
+                          ? DateFormat('MMM dd').format(_testDate!)
+                          : 'Date n/a',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -105,7 +120,9 @@ class ReportCardWithActions extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('yyyy').format(_testDate),
+                      _testDate != null
+                          ? DateFormat('yyyy').format(_testDate!)
+                          : '—',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white.withValues(alpha: 0.8),
@@ -290,31 +307,34 @@ class ReportCardWithActions extends StatelessWidget {
   }
 
   Color _getStatusColor(double inrValue) {
-    if (inrValue < 2.0) return Colors.blue;
-    if (inrValue > 3.0) return Colors.red;
+    if (_isCritical) return Colors.red;
+    if (inrValue < _targetMin) return Colors.blue;
+    if (inrValue > _targetMax) return Colors.red;
     return Colors.green;
   }
 
   IconData _getStatusIcon(double inrValue) {
-    if (inrValue < 2.0) return Icons.arrow_downward;
-    if (inrValue > 3.0) return Icons.arrow_upward;
+    if (_isCritical) return Icons.warning_amber_rounded;
+    if (inrValue < _targetMin) return Icons.arrow_downward;
+    if (inrValue > _targetMax) return Icons.arrow_upward;
     return Icons.check_circle;
   }
 
   String _getStatusText(double inrValue) {
-    if (inrValue < 2.0) return 'LOW';
-    if (inrValue > 3.0) return 'HIGH';
+    if (_isCritical) return 'CRITICAL';
+    if (inrValue < _targetMin) return 'LOW';
+    if (inrValue > _targetMax) return 'HIGH';
     return 'NORMAL';
   }
 
   List<Color> _getGradientColors(double inrValue) {
-    if (inrValue < 2.0) {
-      return [Colors.blue[400]!, Colors.blue[600]!];
-    } else if (inrValue > 3.0) {
+    if (_isCritical || inrValue > _targetMax) {
       return [Colors.red[400]!, Colors.red[600]!];
-    } else {
-      return [Colors.green[400]!, Colors.green[600]!];
     }
+    if (inrValue < _targetMin) {
+      return [Colors.blue[400]!, Colors.blue[600]!];
+    }
+    return [Colors.green[400]!, Colors.green[600]!];
   }
 }
 

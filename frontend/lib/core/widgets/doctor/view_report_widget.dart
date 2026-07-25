@@ -67,10 +67,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
 
         final reportData = snapshot.data!;
         final report = ReportModel.fromJson(reportData);
+        final targetMin = _targetMinFrom(reportData);
+        final targetMax = _targetMaxFrom(reportData);
 
         return _isPreviewMode
-            ? _buildPreviewMode(report)
-            : _buildDetailMode(report);
+            ? _buildPreviewMode(report, targetMin: targetMin, targetMax: targetMax)
+            : _buildDetailMode(report, targetMin: targetMin, targetMax: targetMax);
       },
     );
   }
@@ -151,7 +153,11 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     );
   }
 
-  Widget _buildDetailMode(ReportModel report) {
+  Widget _buildDetailMode(
+    ReportModel report, {
+    double targetMin = 2.0,
+    double targetMax = 3.0,
+  }) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,12 +196,22 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: _getINRGradientColors(report.inrValue),
+                      colors: _getINRGradientColors(
+                        report.inrValue,
+                        isCritical: report.isCritical,
+                        min: targetMin,
+                        max: targetMax,
+                      ),
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: _getINRColor(report.inrValue).withValues(alpha: 0.3),
+                        color: _getINRColor(
+                          report.inrValue,
+                          isCritical: report.isCritical,
+                          min: targetMin,
+                          max: targetMax,
+                        ).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -231,7 +247,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          _getINRStatus(report.inrValue),
+                          _getINRStatus(
+                            report.inrValue,
+                            isCritical: report.isCritical,
+                            min: targetMin,
+                            max: targetMax,
+                          ),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -343,7 +364,11 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     );
   }
 
-  Widget _buildPreviewMode(ReportModel report) {
+  Widget _buildPreviewMode(
+    ReportModel report, {
+    double targetMin = 2.0,
+    double targetMax = 3.0,
+  }) {
     return Column(
       children: [
         // Header
@@ -401,7 +426,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: _getINRGradientColors(report.inrValue),
+                        colors: _getINRGradientColors(
+                          report.inrValue,
+                          isCritical: report.isCritical,
+                          min: targetMin,
+                          max: targetMax,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -443,7 +473,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                         const SizedBox(height: 12),
                         _buildPreviewRow(
                           'Status',
-                          _getINRStatus(report.inrValue),
+                          _getINRStatus(
+                            report.inrValue,
+                            isCritical: report.isCritical,
+                            min: targetMin,
+                            max: targetMax,
+                          ),
                         ),
                         if (report.isCritical) ...[
                           const SizedBox(height: 12),
@@ -589,25 +624,51 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     }
   }
 
-  Color _getINRColor(double inrValue) {
-    if (inrValue < 2.0) return Colors.blue;
-    if (inrValue > 3.0) return Colors.red;
+  double _targetMinFrom(Map<String, dynamic> report) {
+    final raw = report['target_inr_min'] ?? report['target_min'];
+    if (raw is num) return raw.toDouble();
+    final nested = report['medical_config'] is Map
+        ? (report['medical_config'] as Map)['target_inr']
+        : null;
+    if (nested is Map && nested['min'] is num) {
+      return (nested['min'] as num).toDouble();
+    }
+    return 2.0;
+  }
+
+  double _targetMaxFrom(Map<String, dynamic> report) {
+    final raw = report['target_inr_max'] ?? report['target_max'];
+    if (raw is num) return raw.toDouble();
+    final nested = report['medical_config'] is Map
+        ? (report['medical_config'] as Map)['target_inr']
+        : null;
+    if (nested is Map && nested['max'] is num) {
+      return (nested['max'] as num).toDouble();
+    }
+    return 3.0;
+  }
+
+  Color _getINRColor(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+    if (isCritical) return Colors.red;
+    if (inrValue < min) return Colors.blue;
+    if (inrValue > max) return Colors.red;
     return Colors.green;
   }
 
-  List<Color> _getINRGradientColors(double inrValue) {
-    if (inrValue < 2.0) {
-      return [Colors.blue[400]!, Colors.blue[600]!];
-    } else if (inrValue > 3.0) {
+  List<Color> _getINRGradientColors(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+    if (isCritical || inrValue > max) {
       return [Colors.red[400]!, Colors.red[600]!];
-    } else {
-      return [Colors.green[400]!, Colors.green[600]!];
     }
+    if (inrValue < min) {
+      return [Colors.blue[400]!, Colors.blue[600]!];
+    }
+    return [Colors.green[400]!, Colors.green[600]!];
   }
 
-  String _getINRStatus(double inrValue) {
-    if (inrValue < 2.0) return 'LOW';
-    if (inrValue > 3.0) return 'HIGH';
+  String _getINRStatus(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+    if (isCritical) return 'CRITICAL';
+    if (inrValue < min) return 'LOW';
+    if (inrValue > max) return 'HIGH';
     return 'NORMAL';
   }
 }

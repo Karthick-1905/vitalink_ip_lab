@@ -88,10 +88,18 @@ class PremiumReportCard extends StatelessWidget {
     final bool isCritical = report['is_critical'] == true;
     final notes = report['notes']?.toString();
     
-    Color statusColor = isCritical 
-        ? const Color(0xFFEF4444) 
-        : (inr != null && inr >= 2.0 && inr <= 3.0 
-            ? const Color(0xFF10B981) 
+    final targetMin = () {
+      final raw = report['target_inr_min'] ?? report['target_min'];
+      return raw is num ? raw.toDouble() : 2.0;
+    }();
+    final targetMax = () {
+      final raw = report['target_inr_max'] ?? report['target_max'];
+      return raw is num ? raw.toDouble() : 3.0;
+    }();
+    final Color statusColor = isCritical
+        ? const Color(0xFFEF4444)
+        : (inr != null && inr >= targetMin && inr <= targetMax
+            ? const Color(0xFF10B981)
             : const Color(0xFFF59E0B));
 
     final shouldShowViewAction = showActions || showViewAction;

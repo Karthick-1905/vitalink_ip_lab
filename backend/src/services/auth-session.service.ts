@@ -147,8 +147,15 @@ export const findActiveSessionForAccessToken = async ({
   })
 
   if (session) {
+    // Telemetry only — never fail authentication because last_used_at cannot
+    // be persisted (transient write pressure, disk issues, etc.).
     session.last_used_at = new Date()
-    await session.save()
+    void session.save().catch((error) => {
+      logger.warn('auth_session.last_used_at_update_failed', {
+        sessionId: String(session._id),
+        error: error instanceof Error ? error.message : String(error),
+      })
+    })
   }
 
   return session

@@ -69,6 +69,20 @@ export const getRateLimitWindowKey = (windows: Map<string, RateLimitWindow>, ip:
   return key
 }
 
+/**
+ * Atomic INCR + PEXPIRE so concurrent first hits cannot leave a key without TTL.
+ * Returns { count, ttlMs } where ttlMs is the remaining window in milliseconds.
+ */
+const RATE_LIMIT_LUA = `
+local count = redis.call('INCR', KEYS[1])
+local ttl = redis.call('PTTL', KEYS[1])
+if count == 1 or ttl < 0 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+  ttl = tonumber(ARGV[1])
+end
+return { count, ttl }
+`
+
 async function consumeRedisWindow(
   namespace: string,
   key: string,
@@ -80,22 +94,11 @@ async function consumeRedisWindow(
 
   const redisKey = `ratelimit:${namespace}:${key}`
   try {
-    const results = await client
-      .multi()
-      .incr(redisKey)
-      .pttl(redisKey)
-      .exec()
+    const result = await client.eval(RATE_LIMIT_LUA, 1, redisKey, String(windowMs)) as [number, number] | null
+    if (!result || !Array.isArray(result)) return null
 
-    if (!results) return null
-
-    const count = Number(results[0]?.[1] ?? 0)
-    let ttl = Number(results[1]?.[1] ?? -1)
-
-    if (count === 1 || ttl < 0) {
-      await client.pexpire(redisKey, windowMs)
-      ttl = windowMs
-    }
-
+    const count = Number(result[0] ?? 0)
+    const ttl = Number(result[1] ?? windowMs)
     const resetAt = Date.now() + Math.max(ttl, 0)
     return { count, resetAt, limited: count > maxRequests }
   } catch (error) {

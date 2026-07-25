@@ -932,14 +932,41 @@ export const UpdateProfile = asyncHandler(async (req: Request<{}, {}, UpdateProf
 export const getDoctors = asyncHandler(async (req: Request, res: Response) => {
   const doctorUser = await getDoctorUserOrThrow(req.user.user_id, req.authUser)
   const hospitalId = await getDoctorHospitalId(doctorUser)
-  let doctorsQuery = User.find({ user_type: UserType.DOCTOR, is_active: true })
-    .populate('profile_id')
-    // Peer-facing list: explicit allowlist only (exclude lockout/MFA/auth material).
-    .select('_id login_id user_type user_type_model profile_id is_active createdAt updatedAt')
-  const doctors = (await doctorsQuery.lean()).filter((doctor: any) => {
-    const doctorHospitalId = doctor?.profile_id?.hospital_id ? String(doctor.profile_id.hospital_id) : undefined
-    return hospitalId ? doctorHospitalId === hospitalId : String(doctor._id) === String(doctorUser._id)
-  })
+
+  // Peer-facing list: explicit allowlist only (exclude lockout/MFA/auth material).
+  // Filter by hospital at the profile query so multi-tenant lists do not load
+  // every doctor in the deployment into memory.
+  let doctors: any[]
+  if (hospitalId) {
+    const peerProfiles = await DoctorProfile.find({ hospital_id: hospitalId })
+      .select('_id name department contact_number hospital_id profile_picture_url')
+      .lean()
+    const profileIds = peerProfiles.map((profile) => profile._id)
+    const users = await User.find({
+      user_type: UserType.DOCTOR,
+      is_active: true,
+      profile_id: { $in: profileIds },
+    })
+      .select('_id login_id user_type user_type_model profile_id is_active createdAt updatedAt')
+      .lean()
+    const profilesById = new Map(peerProfiles.map((profile) => [String(profile._id), profile]))
+    doctors = users.map((user) => ({
+      ...user,
+      profile_id: profilesById.get(String(user.profile_id)) ?? user.profile_id,
+    }))
+  } else {
+    // Tenantless doctors only see themselves (legacy migration path).
+    const self = await User.findOne({
+      _id: doctorUser._id,
+      user_type: UserType.DOCTOR,
+      is_active: true,
+    })
+      .populate('profile_id')
+      .select('_id login_id user_type user_type_model profile_id is_active createdAt updatedAt')
+      .lean()
+    doctors = self ? [self] : []
+  }
+
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Doctors fetched successfully", { doctors }))
 })
 

@@ -4,6 +4,7 @@ import connectDB from '@alias/config/db'
 import { PatientProfile } from '@alias/models'
 import { getSystemConfig } from '@alias/services/config.service'
 import { getObjectIdString } from '@alias/utils/objectid'
+import { getSafeInrThresholds } from '@alias/utils/inrThresholds'
 
 type CliOptions = {
   dryRun: boolean
@@ -61,20 +62,6 @@ function printUsageAndExit(code: number): never {
   console.log('  --execute    Apply updates to the database')
   console.log('  --limit      Scan only first N patient profiles')
   process.exit(code)
-}
-
-function getSafeInrThresholds(thresholds: { critical_low?: number; critical_high?: number } | undefined) {
-  const defaultThresholds = { criticalLow: 1.5, criticalHigh: 4.5 }
-  const rawLow = thresholds?.critical_low
-  const rawHigh = thresholds?.critical_high
-  const criticalLow = typeof rawLow === 'number' && Number.isFinite(rawLow) ? rawLow : defaultThresholds.criticalLow
-  const criticalHigh = typeof rawHigh === 'number' && Number.isFinite(rawHigh) ? rawHigh : defaultThresholds.criticalHigh
-
-  if (criticalLow >= criticalHigh) {
-    return defaultThresholds
-  }
-
-  return { criticalLow, criticalHigh }
 }
 
 async function main() {
