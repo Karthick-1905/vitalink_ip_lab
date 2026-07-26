@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/core/utils/inr_target_range.dart';
 import 'package:frontend/core/widgets/common/file_preview_modal.dart';
 
 class PremiumReportCard extends StatelessWidget {
@@ -87,20 +88,38 @@ class PremiumReportCard extends StatelessWidget {
     
     final bool isCritical = report['is_critical'] == true;
     final notes = report['notes']?.toString();
-    
-    final targetMin = () {
-      final raw = report['target_inr_min'] ?? report['target_min'];
-      return raw is num ? raw.toDouble() : 2.0;
-    }();
-    final targetMax = () {
-      final raw = report['target_inr_max'] ?? report['target_max'];
-      return raw is num ? raw.toDouble() : 3.0;
-    }();
-    final Color statusColor = isCritical
-        ? const Color(0xFFEF4444)
-        : (inr != null && inr >= targetMin && inr <= targetMax
-            ? const Color(0xFF10B981)
-            : const Color(0xFFF59E0B));
+
+    final reportMap = report is Map ? Map<dynamic, dynamic>.from(report) : null;
+    final targets = InrTargetRange.resolve(reportMap);
+    final targetMin = targets.min;
+    final targetMax = targets.max;
+    final statusLabel = InrTargetRange.statusLabel(
+      inr,
+      isCritical: isCritical,
+      min: targetMin,
+      max: targetMax,
+    );
+    final Color statusColor = switch (statusLabel) {
+      'CRITICAL' => const Color(0xFFEF4444),
+      'LOW' => const Color(0xFF3B82F6),
+      'HIGH' => const Color(0xFFF59E0B),
+      'NORMAL' => const Color(0xFF10B981),
+      _ => const Color(0xFF6B7280),
+    };
+    final statusHeadline = switch (statusLabel) {
+      'CRITICAL' => 'CRITICAL ATTENTION REQUIRED',
+      'LOW' => 'BELOW THERAPEUTIC RANGE',
+      'HIGH' => 'ABOVE THERAPEUTIC RANGE',
+      'NORMAL' => 'STABLE HEALTH REPORT',
+      _ => 'STATUS UNAVAILABLE',
+    };
+    final statusIcon = switch (statusLabel) {
+      'CRITICAL' => Icons.report_problem_rounded,
+      'LOW' => Icons.arrow_downward_rounded,
+      'HIGH' => Icons.arrow_upward_rounded,
+      'NORMAL' => Icons.verified_rounded,
+      _ => Icons.help_outline_rounded,
+    };
 
     final shouldShowViewAction = showActions || showViewAction;
     final shouldShowUpdateAction = showActions || showUpdateAction;
@@ -184,14 +203,14 @@ class PremiumReportCard extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          isCritical ? Icons.report_problem_rounded : Icons.verified_rounded,
+                          statusIcon,
                           color: statusColor,
                           size: 16,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        isCritical ? 'CRITICAL ATTENTION REQUIRED' : 'STABLE HEALTH REPORT',
+                        statusHeadline,
                         style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,

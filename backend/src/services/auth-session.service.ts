@@ -151,9 +151,24 @@ export const findActiveSessionForAccessToken = async ({
     // be persisted (transient write pressure, disk issues, etc.).
     session.last_used_at = new Date()
     void session.save().catch((error) => {
+      // Avoid logging raw session ids or DB error messages (CWE-532).
+      const sessionIdHash = crypto
+        .createHash('sha256')
+        .update(String(session._id))
+        .digest('hex')
+        .slice(0, 12)
+      const mongoCode =
+        error && typeof error === 'object' && 'code' in error
+          ? Number((error as { code?: unknown }).code)
+          : undefined
       logger.warn('auth_session.last_used_at_update_failed', {
-        sessionId: String(session._id),
-        error: error instanceof Error ? error.message : String(error),
+        sessionIdHash,
+        errorClass:
+          typeof mongoCode === 'number' && Number.isFinite(mongoCode)
+            ? `mongo_code_${mongoCode}`
+            : error instanceof Error
+              ? error.name || 'Error'
+              : 'UnknownError',
       })
     })
   }

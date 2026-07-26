@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { ApiError, ApiResponse, asyncHandler } from '@alias/utils'
+import { ApiError, ApiResponse, asyncHandler, getSafeInrTargetRange } from '@alias/utils'
 import { StatusCodes } from 'http-status-codes'
 import { AuditLog, DoctorProfile, Hospital, Notification, PatientProfile, User } from '@alias/models'
 import { AuditAction } from '@alias/models/auditlog.model'
@@ -656,7 +656,9 @@ export const getReports = asyncHandler(async (req: Request, res: Response) => {
 
   const doctor = await getDoctorUserOrThrow(req.user.user_id, req.authUser)
   const patientUser = await getPatientUserOrThrow(op_num)
-  const patient = await PatientProfile.findById(patientUser.profile_id).select('assigned_doctor_id hospital_id inr_history')
+  const patient = await PatientProfile.findById(patientUser.profile_id).select(
+    'assigned_doctor_id hospital_id inr_history medical_config.target_inr',
+  )
   if (!patient) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
   }
@@ -666,12 +668,17 @@ export const getReports = asyncHandler(async (req: Request, res: Response) => {
   await ensureSameHospital(doctor, patient)
   const requesterHospitalId = await getRequiredDoctorHospitalId(doctor)
 
+  const { targetInrMin, targetInrMax } = getSafeInrTargetRange(patient.medical_config?.target_inr)
   const includeUrls = String(req.query.include_urls ?? '').toLowerCase() === 'true'
   const history = (patient?.inr_history || []).map((report) => {
     const reportObj = typeof (report as any).toObject === 'function'
       ? (report as any).toObject()
       : { ...(report as any) }
-    return reportObj
+    return {
+      ...reportObj,
+      target_inr_min: targetInrMin,
+      target_inr_max: targetInrMax,
+    }
   })
 
   let inrHistory = history
@@ -1001,7 +1008,15 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
     purpose: FileAssetPurpose.INR_REPORT,
     legacyEligible: isLegacyFileReferenceEligible(report.uploaded_at),
   })
-  const reportResponse = { ...report.toObject(), file_url: downloadUrl }
+  const { targetInrMin, targetInrMax } = getSafeInrTargetRange(
+    patientProfile.medical_config?.target_inr,
+  )
+  const reportResponse = {
+    ...report.toObject(),
+    file_url: downloadUrl,
+    target_inr_min: targetInrMin,
+    target_inr_max: targetInrMax,
+  }
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report fetched successfully', { report: reportResponse }))
 })
 

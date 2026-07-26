@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/utils/inr_target_range.dart';
 import 'package:frontend/core/widgets/doctor/report_action_modal.dart';
 import 'package:intl/intl.dart';
 
@@ -22,17 +23,9 @@ class ReportCardWithActions extends StatelessWidget {
   bool get _isCritical => report['is_critical'] as bool? ?? false;
 
   /// Patient therapeutic band when provided by the caller; otherwise clinical default.
-  double get _targetMin {
-    final raw = report['target_inr_min'] ?? report['target_min'];
-    if (raw is num) return raw.toDouble();
-    return 2.0;
-  }
-
-  double get _targetMax {
-    final raw = report['target_inr_max'] ?? report['target_max'];
-    if (raw is num) return raw.toDouble();
-    return 3.0;
-  }
+  InrTargetRange get _targets => InrTargetRange.resolve(report);
+  double get _targetMin => _targets.min;
+  double get _targetMax => _targets.max;
 
   DateTime? get _testDate {
     final date = report['test_date'];

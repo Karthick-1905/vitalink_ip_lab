@@ -378,6 +378,11 @@ class PatientRepository {
         'isCritical': isCritical,
         'fileUrl': entry['file_url'] ?? '',
         'uploadedAt': formatDate(entry['uploaded_at']),
+        // Keep raw report field names so shared cards can resolve the range.
+        'inr_value': entry['inr_value'],
+        'is_critical': isCritical,
+        'target_inr_min': targetMin,
+        'target_inr_max': targetMax,
         'status': isCritical
             ? 'Critical'
             : _getINRStatus(entry['inr_value'], targetMin, targetMax),

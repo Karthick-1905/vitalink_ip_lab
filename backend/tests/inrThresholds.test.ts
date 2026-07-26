@@ -2,6 +2,9 @@ import { describe, expect, it } from '@jest/globals'
 import {
   DEFAULT_INR_CRITICAL_HIGH,
   DEFAULT_INR_CRITICAL_LOW,
+  DEFAULT_INR_TARGET_MAX,
+  DEFAULT_INR_TARGET_MIN,
+  getSafeInrTargetRange,
   getSafeInrThresholds,
 } from '@alias/utils/inrThresholds'
 
@@ -37,6 +40,30 @@ describe('getSafeInrThresholds', () => {
     expect(getSafeInrThresholds({ critical_low: 1, critical_high: Number.NaN })).toEqual({
       criticalLow: 1,
       criticalHigh: DEFAULT_INR_CRITICAL_HIGH,
+    })
+  })
+})
+
+describe('getSafeInrTargetRange', () => {
+  it('returns clinical defaults for missing or invalid targets', () => {
+    expect(getSafeInrTargetRange(undefined)).toEqual({
+      targetInrMin: DEFAULT_INR_TARGET_MIN,
+      targetInrMax: DEFAULT_INR_TARGET_MAX,
+    })
+    expect(getSafeInrTargetRange({ min: 3.5, max: 2.5 })).toEqual({
+      targetInrMin: DEFAULT_INR_TARGET_MIN,
+      targetInrMax: DEFAULT_INR_TARGET_MAX,
+    })
+    expect(getSafeInrTargetRange({ min: Number.NaN, max: 3 })).toEqual({
+      targetInrMin: DEFAULT_INR_TARGET_MIN,
+      targetInrMax: DEFAULT_INR_TARGET_MAX,
+    })
+  })
+
+  it('accepts finite ordered patient targets', () => {
+    expect(getSafeInrTargetRange({ min: 2.5, max: 3.5 })).toEqual({
+      targetInrMin: 2.5,
+      targetInrMax: 3.5,
     })
   })
 })
