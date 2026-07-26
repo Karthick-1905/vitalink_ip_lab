@@ -17,6 +17,10 @@ psghospitalinrapp-firebase-adminsdk-fbsvc-c33c6bd64d.json
 *-firebase-adminsdk-*.json
 
 frontend/android/app/google-services.json
+frontend/android/key.properties
+frontend/android/*.jks
+frontend/android/*keystore*
+frontend/android/upload-keystore.credentials.txt
 docs/AWS_MIGRATION_IMPLEMENTATION_PLAN.md
 /docs/deliverables
 /tools

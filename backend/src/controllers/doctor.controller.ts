@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { ApiError, ApiResponse, asyncHandler } from '@alias/utils'
+import { ApiError, ApiResponse, asyncHandler, getSafeInrTargetRange } from '@alias/utils'
 import { StatusCodes } from 'http-status-codes'
 import { AuditLog, DoctorProfile, Hospital, Notification, PatientProfile, User } from '@alias/models'
 import { AuditAction } from '@alias/models/auditlog.model'
@@ -656,7 +656,9 @@ export const getReports = asyncHandler(async (req: Request, res: Response) => {
 
   const doctor = await getDoctorUserOrThrow(req.user.user_id, req.authUser)
   const patientUser = await getPatientUserOrThrow(op_num)
-  const patient = await PatientProfile.findById(patientUser.profile_id).select('assigned_doctor_id hospital_id inr_history')
+  const patient = await PatientProfile.findById(patientUser.profile_id).select(
+    'assigned_doctor_id hospital_id inr_history medical_config.target_inr',
+  )
   if (!patient) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Patient not found')
   }
@@ -666,12 +668,17 @@ export const getReports = asyncHandler(async (req: Request, res: Response) => {
   await ensureSameHospital(doctor, patient)
   const requesterHospitalId = await getRequiredDoctorHospitalId(doctor)
 
+  const { targetInrMin, targetInrMax } = getSafeInrTargetRange(patient.medical_config?.target_inr)
   const includeUrls = String(req.query.include_urls ?? '').toLowerCase() === 'true'
   const history = (patient?.inr_history || []).map((report) => {
     const reportObj = typeof (report as any).toObject === 'function'
       ? (report as any).toObject()
       : { ...(report as any) }
-    return reportObj
+    return {
+      ...reportObj,
+      target_inr_min: targetInrMin,
+      target_inr_max: targetInrMax,
+    }
   })
 
   let inrHistory = history
@@ -932,14 +939,41 @@ export const UpdateProfile = asyncHandler(async (req: Request<{}, {}, UpdateProf
 export const getDoctors = asyncHandler(async (req: Request, res: Response) => {
   const doctorUser = await getDoctorUserOrThrow(req.user.user_id, req.authUser)
   const hospitalId = await getDoctorHospitalId(doctorUser)
-  let doctorsQuery = User.find({ user_type: UserType.DOCTOR, is_active: true })
-    .populate('profile_id')
-    // Peer-facing list: explicit allowlist only (exclude lockout/MFA/auth material).
-    .select('_id login_id user_type user_type_model profile_id is_active createdAt updatedAt')
-  const doctors = (await doctorsQuery.lean()).filter((doctor: any) => {
-    const doctorHospitalId = doctor?.profile_id?.hospital_id ? String(doctor.profile_id.hospital_id) : undefined
-    return hospitalId ? doctorHospitalId === hospitalId : String(doctor._id) === String(doctorUser._id)
-  })
+
+  // Peer-facing list: explicit allowlist only (exclude lockout/MFA/auth material).
+  // Filter by hospital at the profile query so multi-tenant lists do not load
+  // every doctor in the deployment into memory.
+  let doctors: any[]
+  if (hospitalId) {
+    const peerProfiles = await DoctorProfile.find({ hospital_id: hospitalId })
+      .select('_id name department contact_number hospital_id profile_picture_url')
+      .lean()
+    const profileIds = peerProfiles.map((profile) => profile._id)
+    const users = await User.find({
+      user_type: UserType.DOCTOR,
+      is_active: true,
+      profile_id: { $in: profileIds },
+    })
+      .select('_id login_id user_type user_type_model profile_id is_active createdAt updatedAt')
+      .lean()
+    const profilesById = new Map(peerProfiles.map((profile) => [String(profile._id), profile]))
+    doctors = users.map((user) => ({
+      ...user,
+      profile_id: profilesById.get(String(user.profile_id)) ?? user.profile_id,
+    }))
+  } else {
+    // Tenantless doctors only see themselves (legacy migration path).
+    const self = await User.findOne({
+      _id: doctorUser._id,
+      user_type: UserType.DOCTOR,
+      is_active: true,
+    })
+      .populate('profile_id')
+      .select('_id login_id user_type user_type_model profile_id is_active createdAt updatedAt')
+      .lean()
+    doctors = self ? [self] : []
+  }
+
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Doctors fetched successfully", { doctors }))
 })
 
@@ -974,7 +1008,15 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
     purpose: FileAssetPurpose.INR_REPORT,
     legacyEligible: isLegacyFileReferenceEligible(report.uploaded_at),
   })
-  const reportResponse = { ...report.toObject(), file_url: downloadUrl }
+  const { targetInrMin, targetInrMax } = getSafeInrTargetRange(
+    patientProfile.medical_config?.target_inr,
+  )
+  const reportResponse = {
+    ...report.toObject(),
+    file_url: downloadUrl,
+    target_inr_min: targetInrMin,
+    target_inr_max: targetInrMax,
+  }
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report fetched successfully', { report: reportResponse }))
 })
 
