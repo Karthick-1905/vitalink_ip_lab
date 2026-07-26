@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/core/storage/secure_storage.dart';
+import 'package:frontend/core/utils/inr_target_range.dart';
 
 class PatientRepository {
   PatientRepository(
@@ -356,13 +357,8 @@ class PatientRepository {
   List<Map<String, dynamic>> _parseINRHistory(Map<String, dynamic>? report) {
     if (report == null) return [];
 
-    final medicalConfig =
-        report['medical_config'] is Map ? report['medical_config'] as Map : {};
-    final targetInr = medicalConfig['target_inr'] is Map
-        ? medicalConfig['target_inr'] as Map
-        : const {};
-    final targetMin = (targetInr['min'] as num?)?.toDouble() ?? 2.0;
-    final targetMax = (targetInr['max'] as num?)?.toDouble() ?? 3.0;
+    // Parent therapeutic band from medical_config (or clinical defaults).
+    final parentRange = InrTargetRange.resolve(report);
 
     final inrHistory = report['inr_history'];
     if (inrHistory is! List) return [];
@@ -370,6 +366,9 @@ class PatientRepository {
     return inrHistory.map((item) {
       final entry = item as Map<String, dynamic>;
       final isCritical = entry['is_critical'] == true;
+      // Prefer server-resolved per-entry bounds; fall back to parent range.
+      final resolved = _resolveHistoryEntryRange(entry, parentRange);
+
       return {
         'id': entry['_id'],
         'date': formatDate(entry['test_date']),
@@ -381,13 +380,40 @@ class PatientRepository {
         // Keep raw report field names so shared cards can resolve the range.
         'inr_value': entry['inr_value'],
         'is_critical': isCritical,
-        'target_inr_min': targetMin,
-        'target_inr_max': targetMax,
+        'target_inr_min': resolved.min,
+        'target_inr_max': resolved.max,
         'status': isCritical
             ? 'Critical'
-            : _getINRStatus(entry['inr_value'], targetMin, targetMax),
+            : _getINRStatus(entry['inr_value'], resolved.min, resolved.max),
       };
     }).toList();
+  }
+
+  /// Prefer finite ordered entry bounds from the server; otherwise parent range.
+  InrTargetRange _resolveHistoryEntryRange(
+    Map<String, dynamic> entry,
+    InrTargetRange parentRange,
+  ) {
+    final rawMin = entry['target_inr_min'] ?? entry['target_min'];
+    final rawMax = entry['target_inr_max'] ?? entry['target_max'];
+    final min = rawMin is num
+        ? rawMin.toDouble()
+        : rawMin is String
+            ? double.tryParse(rawMin)
+            : null;
+    final max = rawMax is num
+        ? rawMax.toDouble()
+        : rawMax is String
+            ? double.tryParse(rawMax)
+            : null;
+    if (min != null &&
+        max != null &&
+        min.isFinite &&
+        max.isFinite &&
+        min < max) {
+      return InrTargetRange(min: min, max: max);
+    }
+    return parentRange;
   }
 
   List<Map<String, dynamic>> _parsePrescriptions(Map<String, dynamic>? report) {
