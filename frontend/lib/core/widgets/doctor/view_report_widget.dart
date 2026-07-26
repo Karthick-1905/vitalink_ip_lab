@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/utils/inr_target_range.dart';
 import 'package:frontend/features/doctor/models/report_model.dart';
 import 'package:frontend/core/widgets/common/file_preview_modal.dart';
 import 'package:intl/intl.dart';
@@ -67,10 +68,13 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
 
         final reportData = snapshot.data!;
         final report = ReportModel.fromJson(reportData);
+        final targets = InrTargetRange.resolve(reportData);
+        final targetMin = targets.min;
+        final targetMax = targets.max;
 
         return _isPreviewMode
-            ? _buildPreviewMode(report)
-            : _buildDetailMode(report);
+            ? _buildPreviewMode(report, targetMin: targetMin, targetMax: targetMax)
+            : _buildDetailMode(report, targetMin: targetMin, targetMax: targetMax);
       },
     );
   }
@@ -151,7 +155,11 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     );
   }
 
-  Widget _buildDetailMode(ReportModel report) {
+  Widget _buildDetailMode(
+    ReportModel report, {
+    double targetMin = 2.0,
+    double targetMax = 3.0,
+  }) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,12 +198,22 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: _getINRGradientColors(report.inrValue),
+                      colors: _getINRGradientColors(
+                        report.inrValue,
+                        isCritical: report.isCritical,
+                        min: targetMin,
+                        max: targetMax,
+                      ),
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: _getINRColor(report.inrValue).withValues(alpha: 0.3),
+                        color: _getINRColor(
+                          report.inrValue,
+                          isCritical: report.isCritical,
+                          min: targetMin,
+                          max: targetMax,
+                        ).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -231,7 +249,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          _getINRStatus(report.inrValue),
+                          _getINRStatus(
+                            report.inrValue,
+                            isCritical: report.isCritical,
+                            min: targetMin,
+                            max: targetMax,
+                          ),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -249,38 +272,52 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                   icon: Icons.calendar_today,
                 ),
                 const SizedBox(height: 16),
-                // Critical Status
-                if (report.isCritical)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.red[700],
+                // Status (critical / low / high / normal)
+                Builder(
+                  builder: (context) {
+                    final status = _getINRStatus(
+                      report.inrValue,
+                      isCritical: report.isCritical,
+                      min: targetMin,
+                      max: targetMax,
+                    );
+                    if (status == 'CRITICAL') {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red[200]!),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'CRITICAL - Immediate attention required',
-                          style: TextStyle(
-                            color: Colors.red[700],
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.red[700],
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'CRITICAL - Immediate attention required',
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
-                else
-                  _buildInfoRow(
-                    label: 'Status',
-                    value: 'Normal',
-                    icon: Icons.check_circle,
-                  ),
+                      );
+                    }
+                    return _buildInfoRow(
+                      label: 'Status',
+                      value: status,
+                      icon: status == 'LOW'
+                          ? Icons.arrow_downward
+                          : status == 'HIGH'
+                              ? Icons.arrow_upward
+                              : Icons.check_circle,
+                    );
+                  },
+                ),
                 const SizedBox(height: 24),
                 // Notes
                 if (report.notes != null && report.notes!.isNotEmpty) ...[
@@ -343,7 +380,11 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     );
   }
 
-  Widget _buildPreviewMode(ReportModel report) {
+  Widget _buildPreviewMode(
+    ReportModel report, {
+    double targetMin = 2.0,
+    double targetMax = 3.0,
+  }) {
     return Column(
       children: [
         // Header
@@ -401,7 +442,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: _getINRGradientColors(report.inrValue),
+                        colors: _getINRGradientColors(
+                          report.inrValue,
+                          isCritical: report.isCritical,
+                          min: targetMin,
+                          max: targetMax,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -443,7 +489,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                         const SizedBox(height: 12),
                         _buildPreviewRow(
                           'Status',
-                          _getINRStatus(report.inrValue),
+                          _getINRStatus(
+                            report.inrValue,
+                            isCritical: report.isCritical,
+                            min: targetMin,
+                            max: targetMax,
+                          ),
                         ),
                         if (report.isCritical) ...[
                           const SizedBox(height: 12),
@@ -589,25 +640,29 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     }
   }
 
-  Color _getINRColor(double inrValue) {
-    if (inrValue < 2.0) return Colors.blue;
-    if (inrValue > 3.0) return Colors.red;
+  Color _getINRColor(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+    if (isCritical) return Colors.red;
+    if (inrValue < min) return Colors.blue;
+    if (inrValue > max) return Colors.red;
     return Colors.green;
   }
 
-  List<Color> _getINRGradientColors(double inrValue) {
-    if (inrValue < 2.0) {
-      return [Colors.blue[400]!, Colors.blue[600]!];
-    } else if (inrValue > 3.0) {
+  List<Color> _getINRGradientColors(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+    if (isCritical || inrValue > max) {
       return [Colors.red[400]!, Colors.red[600]!];
-    } else {
-      return [Colors.green[400]!, Colors.green[600]!];
     }
+    if (inrValue < min) {
+      return [Colors.blue[400]!, Colors.blue[600]!];
+    }
+    return [Colors.green[400]!, Colors.green[600]!];
   }
 
-  String _getINRStatus(double inrValue) {
-    if (inrValue < 2.0) return 'LOW';
-    if (inrValue > 3.0) return 'HIGH';
-    return 'NORMAL';
+  String _getINRStatus(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+    return InrTargetRange.statusLabel(
+      inrValue,
+      isCritical: isCritical,
+      min: min,
+      max: max,
+    );
   }
 }

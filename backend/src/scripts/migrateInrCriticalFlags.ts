@@ -4,6 +4,7 @@ import connectDB from '@alias/config/db'
 import { PatientProfile } from '@alias/models'
 import { getSystemConfig } from '@alias/services/config.service'
 import { getObjectIdString } from '@alias/utils/objectid'
+import { getSafeInrThresholds } from '@alias/utils/inrThresholds'
 
 type CliOptions = {
   dryRun: boolean
@@ -22,11 +23,16 @@ type MigrationStats = {
 }
 
 function parseCliArgs(argv: string[]): CliOptions {
-  const options: CliOptions = { dryRun: false }
+  // Default to dry-run; require explicit --execute to mutate.
+  const options: CliOptions = { dryRun: true }
 
   for (const arg of argv) {
     if (arg === '--dry-run') {
       options.dryRun = true
+      continue
+    }
+    if (arg === '--execute') {
+      options.dryRun = false
       continue
     }
     if (arg.startsWith('--limit=')) {
@@ -48,26 +54,14 @@ function parseCliArgs(argv: string[]): CliOptions {
 }
 
 function printUsageAndExit(code: number): never {
-  console.log('Usage: ts-node src/scripts/migrateInrCriticalFlags.ts [--dry-run] [--limit=<n>]')
+  console.log('Usage: ts-node src/scripts/migrateInrCriticalFlags.ts [--dry-run] [--execute] [--limit=<n>]')
   console.log('')
+  console.log('Defaults to dry-run. Pass --execute to apply writes.')
   console.log('Options:')
-  console.log('  --dry-run    Preview changes without writing to database')
+  console.log('  --dry-run    Preview changes without writing to database (default)')
+  console.log('  --execute    Apply updates to the database')
   console.log('  --limit      Scan only first N patient profiles')
   process.exit(code)
-}
-
-function getSafeInrThresholds(thresholds: { critical_low?: number; critical_high?: number } | undefined) {
-  const defaultThresholds = { criticalLow: 1.5, criticalHigh: 4.5 }
-  const rawLow = thresholds?.critical_low
-  const rawHigh = thresholds?.critical_high
-  const criticalLow = typeof rawLow === 'number' && Number.isFinite(rawLow) ? rawLow : defaultThresholds.criticalLow
-  const criticalHigh = typeof rawHigh === 'number' && Number.isFinite(rawHigh) ? rawHigh : defaultThresholds.criticalHigh
-
-  if (criticalLow >= criticalHigh) {
-    return defaultThresholds
-  }
-
-  return { criticalLow, criticalHigh }
 }
 
 async function main() {

@@ -16,6 +16,16 @@ const errorHandler: ErrorRequestHandler = (err: any, req: Request, res: Response
     return res.status(StatusCodes.BAD_REQUEST).json(new ApiResponse(StatusCodes.BAD_REQUEST, 'Malformed JSON request body'))
   }
 
+  // Known client/upload/constraint failures: handle before the generic
+  // "Unhandled error" path so they are not misclassified as 500s in logs.
+  if (err?.name === 'MulterError') {
+    return res.status(StatusCodes.BAD_REQUEST).json(new ApiResponse(StatusCodes.BAD_REQUEST, 'Invalid file upload request'))
+  }
+
+  if (err?.code === 11000) {
+    return res.status(StatusCodes.CONFLICT).json(new ApiResponse(StatusCodes.CONFLICT, 'A resource with the same unique identifier already exists'))
+  }
+
   if (err instanceof ZodError) {
     const errors = err.issues.map((issue) => ({ message: issue.message }))
     logger.error(`Validation Error: ${JSON.stringify(errors, null, 2)}`)
@@ -46,14 +56,6 @@ const errorHandler: ErrorRequestHandler = (err: any, req: Request, res: Response
       ? 'The server could not complete the request.'
       : sanitizeLogText(error.message || 'Invalid database operation')
     error = new ApiError(statusCode, message)
-  }
-
-  if (err?.name === 'MulterError') {
-    return res.status(StatusCodes.BAD_REQUEST).json(new ApiResponse(StatusCodes.BAD_REQUEST, 'Invalid file upload request'))
-  }
-
-  if (err?.code === 11000) {
-    return res.status(StatusCodes.CONFLICT).json(new ApiResponse(StatusCodes.CONFLICT, 'A resource with the same unique identifier already exists'))
   }
 
   const response = new ApiResponse(error.statusCode, error.message, error.data)

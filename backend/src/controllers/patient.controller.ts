@@ -6,8 +6,6 @@ import { NotificationPriority, NotificationType } from '@alias/models/notificati
 import { UserType } from '@alias/validators'
 import { getSystemConfig, isFeatureEnabled } from '@alias/services/config.service'
 import * as notificationService from '@alias/services/notification.service'
-import { extractTokenFromHeader } from '@alias/utils/jwt.utils'
-import { validateAuthToken } from '@alias/middlewares/authProvider.middleware'
 import { registerUserNotificationStream } from '@alias/services/realtime-notification.service'
 import { publishClinicalNotificationToUser } from '@alias/services/realtime-notification.service'
 import { enqueueNotificationPush } from '@alias/services/notification-delivery.service'
@@ -29,8 +27,10 @@ import { FileAssetPurpose } from '@alias/models/fileasset.model'
 import { compensateFileAsset, resolveAssetDownloadUrl, resolveAssetDownloadUrls, retireReplacedFileAsset, uploadTrackedFile } from '@alias/services/fileasset.service'
 import { config } from '@alias/config'
 import { parseStrictDateOnly } from '@alias/utils/dateOnly'
+import { getSafeInrTargetRange, getSafeInrThresholds } from '@alias/utils/inrThresholds'
 import { acquirePatientFileOperationLease } from '@alias/services/patient-file-purge.service'
-import { createNotificationStreamTicket, verifyNotificationStreamTicket } from '@alias/services/notification-stream-ticket.service'
+import { createNotificationStreamTicket } from '@alias/services/notification-stream-ticket.service'
+import { resolveStreamUserOrThrow } from '@alias/services/notification-stream-auth.service'
 import type { AuthUserSnapshot } from '@alias/types/auth-user'
 
 type DoctorUpdateEvent = {
@@ -255,26 +255,21 @@ const getDoctorUpdateNotifications = async (
 	return notificationCursor.lean()
 }
 
-const resolvePatientStreamUserOrThrow = async (req: Request) => {
-	const headerToken = extractTokenFromHeader(req.headers.authorization)
-	if (headerToken) {
-		const { user } = await validateAuthToken(headerToken, UserType.PATIENT)
-		return user
-	}
-	const ticket = typeof req.query.ticket === 'string' ? req.query.ticket : null
-	const payload = ticket ? verifyNotificationStreamTicket(ticket, UserType.PATIENT) : null
-	if (!payload) {
-		throw new ApiError(StatusCodes.UNAUTHORIZED, 'Missing authentication token')
-	}
-	const user = await User.findById(payload.user_id)
-	if (!user?.is_active || user.user_type !== UserType.PATIENT) {
-		throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid or expired stream ticket')
-	}
-	return user
-}
+const resolvePatientStreamUserOrThrow = (req: Request) =>
+	resolveStreamUserOrThrow(req, UserType.PATIENT, hasActiveClinicalHospitalAccess)
 
 export const createPatientNotificationStreamTicket = asyncHandler(async (req: Request, res: Response) => {
-	const ticket = createNotificationStreamTicket(String(req.user.user_id), UserType.PATIENT)
+	if (!req.user?.session_id || !req.user?.token_id) {
+		throw new ApiError(StatusCodes.UNAUTHORIZED, 'Missing authentication token')
+	}
+	const securityVersion = Number(req.authUser?.security_version || 0)
+	const ticket = await createNotificationStreamTicket({
+		userId: String(req.user.user_id),
+		userType: UserType.PATIENT,
+		sessionId: req.user.session_id,
+		tokenId: req.user.token_id,
+		securityVersion,
+	})
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Notification stream ticket created', { ticket }))
 })
 
@@ -375,6 +370,14 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
 	// should not pay N× FileAsset + S3 signing cost on every home load.
 	const includeUrls = String(req.query.include_urls ?? '').toLowerCase() === 'true'
 	const patientData = patient.toObject()
+	const { targetInrMin, targetInrMax } = getSafeInrTargetRange(
+		patientData.medical_config?.target_inr,
+	)
+	const attachTargetRange = (report: any) => ({
+		...report,
+		target_inr_min: targetInrMin,
+		target_inr_max: targetInrMax,
+	})
 	if (includeUrls && patientData.inr_history && Array.isArray(patientData.inr_history)) {
 		const history = patientData.inr_history as any[]
 		// Only resolve rows that already expose a file reference (same guard as
@@ -399,10 +402,12 @@ export const getReport = asyncHandler(async (req: Request, res: Response) => {
 		resolveIndexes.forEach((historyIndex, i) => {
 			urlByHistoryIndex.set(historyIndex, urls[i] ?? null)
 		})
-		patientData.inr_history = history.map((report, index) => ({
+		patientData.inr_history = history.map((report, index) => attachTargetRange({
 			...report,
 			file_url: urlByHistoryIndex.has(index) ? urlByHistoryIndex.get(index) : report.file_url,
 		})) as any
+	} else if (patientData.inr_history && Array.isArray(patientData.inr_history)) {
+		patientData.inr_history = (patientData.inr_history as any[]).map(attachTargetRange) as any
 	}
 
 	res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Report fetched', { report: patientData }))
@@ -1085,7 +1090,17 @@ export const markAllNotificationsAsRead = asyncHandler(async (
 
 export const streamNotifications = asyncHandler(async (req: Request, res: Response) => {
 	const patientUser = await resolvePatientStreamUserOrThrow(req)
-	registerUserNotificationStream(String(patientUser._id), res)
+	const result = registerUserNotificationStream(String(patientUser._id), res, {
+		ip: req.ip || req.socket.remoteAddress || 'unknown',
+	})
+	if (result.ok === false) {
+		throw new ApiError(
+			StatusCodes.TOO_MANY_REQUESTS,
+			result.reason === 'user_limit'
+				? 'Too many active notification streams for this user'
+				: 'Too many active notification streams from this network',
+		)
+	}
 })
 
 function parseDDMMYYYY(date: string | Date): Date {
@@ -1222,18 +1237,4 @@ function findMissedDoses(medicationDates: string[], takenDates: Array<Date | str
 		return Date.UTC(ay, am - 1, ad) - Date.UTC(by, bm - 1, bd)
 	})
 	return missed
-}
-
-function getSafeInrThresholds(thresholds: { critical_low?: number; critical_high?: number } | undefined) {
-	const defaultThresholds = { criticalLow: 1.5, criticalHigh: 4.5 }
-	const rawLow = thresholds?.critical_low
-	const rawHigh = thresholds?.critical_high
-	const criticalLow = typeof rawLow === 'number' && Number.isFinite(rawLow) ? rawLow : defaultThresholds.criticalLow
-	const criticalHigh = typeof rawHigh === 'number' && Number.isFinite(rawHigh) ? rawHigh : defaultThresholds.criticalHigh
-
-	if (criticalLow >= criticalHigh) {
-		return defaultThresholds
-	}
-
-	return { criticalLow, criticalHigh }
 }
