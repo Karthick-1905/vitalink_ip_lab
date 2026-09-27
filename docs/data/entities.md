@@ -78,7 +78,7 @@ Durable push outbox linked to notification and user. It stores channel/provider/
 <!-- model: AuditLog -->
 ### `AuditLog` / `auditlogs`
 
-Actor, role, enumerated action, description, resource, before/after data, request metadata, success and sanitized failure detail. Compound indexes support actor, action, resource, outcome, and normalized-login/IP investigation. No TTL is defined.
+Actor, role, enumerated action, description, resource, before/after data, request metadata, success and sanitized failure detail. Immutable `event_hospital_id` determines tenant visibility. `actor_hospital_id`, `actor_role`, `resource_hospital_id`, and `scope_version` snapshot available event context; `user_id` identifies the actor. The compound `{ event_hospital_id: 1, createdAt: -1, _id: -1 }` index supports tenant history pagination. Other indexes support actor, action, resource, outcome, and normalized-login/IP investigation. Missing scope remains platform-only, including historical rows and unresolved events. No TTL is defined.
 
 ## Authorization and runtime configuration
 

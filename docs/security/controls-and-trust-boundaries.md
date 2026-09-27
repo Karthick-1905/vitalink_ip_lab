@@ -49,7 +49,7 @@ flowchart LR
 | SSE token leakage/replay | 30-second signed ticket, single-use JTI, session/token/security binding, query redaction | Process-local degraded ticket registry is per replica if Redis is unavailable |
 | Notification privacy | Recipient eligibility checks, validity deadline, durable cancellation, generic push copy, token ownership | Firebase remains an external processor; formal data-processing terms are not in source |
 | Payment forgery/replay | HTTPS provider URL requirement, server-owned amount/currency, HMAC payload, timing-safe compare, five-minute skew, provider event/session checks, idempotent settlement | Provider identity, key rotation, reconciliation job, and dispute process are unconfirmed |
-| Audit/log leakage | Audit body allowlists, sanitized errors, structured log-key/text redaction, sensitive query redaction, no raw Nginx query string | Audit rows are written after most mutations; failure is surfaced as `audit_recorded:false`, so monitoring must detect gaps |
+| Audit/log leakage | Audit body allowlists, sanitized errors, structured log-key/text redaction, access-log route templates with only numeric page/limit values, no raw Nginx query string | Audit rows are written after most mutations; failure is surfaced as `audit_recorded:false`, so monitoring must detect gaps |
 | Multi-instance races | Mongo transactions, unique/partial indexes, optimistic policy versions, leases/fences, Redis atomic Lua, idempotency keys | Mongo transactions require replica-set capability; live topology is unconfirmed |
 | Dependency/config failure | Production/staging required-variable checks and readiness detail | No secret manager, SBOM, signing, runtime scanner, or automated rotation is defined |
 
@@ -68,3 +68,9 @@ Maintenance mode blocks non-control-plane requests. Authentication, health, and 
 - Define backup encryption, restore tests, RPO/RTO, audit retention, and breach response.
 - Add alerting for readiness failure, audit gaps, lockout spikes, dead letters, Redis degradation, scanner failures, provider webhooks, and cross-tenant denials.
 - Add dependency/SBOM/container scanning and signed provenance to release workflows.
+
+## Audit tenant boundary and request logs
+
+Tenant audit history is filtered by immutable event hospital, never by current actor membership. Unscoped rows remain visible to platform audit readers only. Platform hospital changes therefore appear in the affected tenant history even when the actor is a global administrator. Actor user IDs remain stable; populated display information can reflect later account edits.
+
+Morgan formats matched route templates and numeric `page`/`limit` parameters. Raw paths, path identifiers, search terms, unknown query values, and unmatched URLs are omitted before formatting. Request IDs remain available for correlation. This controls application access logs; it does not rewrite older logs or prove external transport/proxy retention policies.

@@ -81,3 +81,7 @@ No implementation claim in this site depends on the following unknowns. Each ite
 **Inspected:** Flutter platforms, routes/components, `PRODUCT.md`, analyzer/test configuration, build workflows.
 
 **Missing evidence:** supported OS/browser/device matrix, assistive-technology test plan, audit results, localization policy, and conformance statement.
+
+## Lifecycle and audit rollout verification, 2026-09-28
+
+The fixes are local source changes. Live deployment, creation of the audit scope index in production, and recovery of accounts disabled by historical hospital suspensions have not been verified. No shared database migration was run. Historical audit hospital scope cannot be established from current membership and remains unclassified. The maintenance HTTP regression exercises fresh login and bootstrap; a browser reload through the Flutter portal remains a separate end-to-end check.

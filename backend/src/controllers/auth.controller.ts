@@ -55,6 +55,7 @@ import {
 } from '@alias/services/password.service'
 import logger from '@alias/utils/logger'
 import crypto from 'crypto'
+import { snapshotUserAuditScope } from '@alias/services/audit-scope.service'
 
 const getRequestIp = (req: Request) => req.ip || req.socket?.remoteAddress
 
@@ -81,7 +82,9 @@ const createAuthAuditLog = async (
 ) => {
   if (!user?._id || !user?.user_type) return
 
+  const scope = await snapshotUserAuditScope(user)
   await AuditLog.create({
+    ...scope,
     user_id: user._id,
     user_type: user.user_type,
     action,

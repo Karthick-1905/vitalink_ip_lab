@@ -19,6 +19,7 @@ erDiagram
     NOTIFICATION ||--o| NOTIFICATION_DELIVERY : "notification_id"
     USER ||--o{ NOTIFICATION_DELIVERY : "user_id"
     USER ||--o{ AUDIT_LOG : "user_id"
+    HOSPITAL o|--o{ AUDIT_LOG : "event_hospital_id"
     USER ||--o{ FILE_ASSET : "owner_user_id and created_by"
     HOSPITAL ||--o{ FILE_ASSET : "hospital_id"
     PATIENT_PROFILE ||--o{ FILE_ASSET : "patient_profile_id"
@@ -132,6 +133,11 @@ erDiagram
     AUDIT_LOG {
         ObjectId _id PK
         ObjectId user_id FK
+        ObjectId event_hospital_id FK
+        ObjectId actor_hospital_id FK
+        ObjectId resource_hospital_id FK
+        string actor_role
+        number scope_version
         string action
         boolean success
     }

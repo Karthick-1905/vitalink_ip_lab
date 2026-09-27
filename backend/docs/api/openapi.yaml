@@ -1647,6 +1647,7 @@ paths:
       x-admin-roles: [app_admin]
       tags: [Admin]
       summary: Update hospital status
+      description: Suspension blocks hospital access and revokes sessions while preserving individual account statuses. Reactivation restores hospital access for individually active accounts only. users_deactivated remains zero.
       parameters:
         - $ref: "#/components/parameters/IdPath"
       requestBody:
@@ -2126,7 +2127,7 @@ paths:
       tags: [Admin]
       operationId: updateAdminDoctorStatus
       summary: Suspend or restore a Doctor account
-      description: Dedicated same-hospital Doctor status operation. Generic Doctor update rejects status and credential fields.
+      description: Dedicated same-hospital Doctor status operation. Account status and security version commit in one transaction. Generic Doctor update rejects status and credential fields.
       parameters:
         - $ref: "#/components/parameters/IdPath"
       requestBody:
@@ -2306,7 +2307,7 @@ paths:
       tags: [Admin]
       operationId: updateAdminPatientStatus
       summary: Update Patient account status
-      description: Dedicated same-hospital Patient status operation. Generic Patient update rejects account and lifecycle status fields.
+      description: Dedicated same-hospital Patient status operation. Account status, patient lifecycle status, conflict cleanup, and security version commit in one transaction with expected-state and assignment checks. Requires transaction-capable MongoDB. Generic Patient update rejects account and lifecycle status fields.
       parameters:
         - $ref: "#/components/parameters/IdPath"
       requestBody:
@@ -2428,6 +2429,7 @@ paths:
       x-admin-roles: [app_admin, hospital_admin, auditor]
       tags: [Admin]
       summary: List audit logs
+      description: Tenant readers see immutable event_hospital_id matches, including actor-filtered requests. Unscoped historical rows are platform-only. Current actor membership does not grant history access.
       parameters:
         - $ref: "#/components/parameters/PageQuery"
         - in: query
@@ -4815,6 +4817,13 @@ components:
             data:
               type: object
               properties:
+                users_deactivated:
+                  type: integer
+                  const: 0
+                  description: Returned on lifecycle updates; individual account statuses are preserved.
+                invalidated_sessions:
+                  type: integer
+                  minimum: 0
                 hospital:
                   $ref: "#/components/schemas/AdminHospital"
 
@@ -5181,6 +5190,13 @@ components:
               properties:
                 message:
                   type: string
+                account_status:
+                  type: string
+                  enum: [Active, Discharged, Deceased]
+                  description: Returned for Patient status changes.
+                revocation_cleanup_completed:
+                  type: boolean
+                  description: False means physical session cleanup failed after the atomic lifecycle and security-version commit.
                 invalidated_sessions:
                   type: integer
                   minimum: 0
@@ -5236,10 +5252,14 @@ components:
         temporary_password:
           type: string
           description: Returned for successful reset_password operations.
+        revocation_cleanup_completed: { type: boolean }
+        account_status:
+          type: string
+          enum: [Active, Discharged, Deceased]
         invalidated_sessions:
           type: integer
           minimum: 0
-          description: Returned for successful deactivate or reset_password operations.
+          description: Returned for successful activate, deactivate, or reset_password operations.
 
     BatchOperationResponse:
       allOf:
@@ -5279,6 +5299,13 @@ components:
                   type: string
         user_type:
           type: string
+        event_hospital_id:
+          type: string
+          description: Immutable tenant event scope; absent for unresolved or legacy rows.
+        actor_hospital_id: { type: string }
+        actor_role: { type: string }
+        resource_hospital_id: { type: string }
+        scope_version: { type: integer }
         action:
           type: string
         description:

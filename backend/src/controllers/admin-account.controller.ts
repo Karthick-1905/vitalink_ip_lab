@@ -50,7 +50,8 @@ export const createAdminAccount = asyncHandler(async (req: Request, res: Respons
 /** PUT /api/admin/admin-accounts/:id */
 export const updateAdminAccount = asyncHandler(async (req: Request, res: Response) => {
   const access = requireAppAdminAccountAccess(req, true)
-  const result = await updateAdminAccountLifecycle(req.params.id, req.body, access)
+  const { audit_event_hospital_id, ...result } = await updateAdminAccountLifecycle(req.params.id, req.body, access)
+  res.locals.auditEventHospitalId = audit_event_hospital_id
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Administrator account updated', result))
 })
 

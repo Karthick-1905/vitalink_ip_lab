@@ -686,6 +686,7 @@ export async function updateAdminAccount(
       hospital_id: hospital?._id,
     }
     return {
+      audit_event_hospital_id: currentHospitalId ?? hospital?._id,
       admin_account: formatAdminAccount(updatedUser, responseProfile, hospital),
       invalidated_sessions: revocation.modifiedCount || 0,
       revocation_cleanup_completed: revocation.cleanupCompleted,

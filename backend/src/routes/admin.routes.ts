@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from 'express'
 import { authenticate, authorize, validate } from '@alias/middlewares'
 import { UserType } from '@alias/validators'
+import { captureAdminAuditScope } from '@alias/middlewares/audit-scope.middleware'
 import auditLogger from '@alias/middlewares/audit.middleware'
 import { requireAdminCapability } from '@alias/middlewares/adminPermission.middleware'
 import { registerAdminRoute } from '@alias/authorization/admin-route-policy'
@@ -48,6 +49,7 @@ const router = Router()
 // installed before typed route guards and handlers.
 router.use(authenticate)
 router.use(authorize([UserType.ADMIN]))
+router.use(captureAdminAuditScope)
 router.use(auditLogger)
 
 const requireBatchOperationCapability: RequestHandler = (req, res, next) => {

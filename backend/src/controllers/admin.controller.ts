@@ -432,7 +432,8 @@ export const inviteUser = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
-  const result = await adminService.updateAdminUser(req.params.id, req.body, accessContext(req))
+  const { audit_event_hospital_id, ...result } = await adminService.updateAdminUser(req.params.id, req.body, accessContext(req))
+  res.locals.auditEventHospitalId = audit_event_hospital_id
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'User updated successfully', result))
 })
 
@@ -456,6 +457,9 @@ export const resetUserAuthenticator = asyncHandler(async (req: Request, res: Res
   try {
     await AuditLog.create({
       user_id: accessContext(req).userId, user_type: 'ADMIN',
+      scope_version: 1, actor_role: accessContext(req).role,
+      event_hospital_id: result.admin_account?.hospital?.id,
+      resource_hospital_id: result.admin_account?.hospital?.id,
       action: AuditAction.MFA_RESET, description: 'Supervised admin authenticator reset completed',
       resource_type: 'User', resource_id: req.params.id, success: true,
       ip_address: req.ip || req.socket?.remoteAddress, user_agent: req.headers['user-agent'],

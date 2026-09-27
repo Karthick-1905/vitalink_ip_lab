@@ -185,7 +185,7 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
       context,
       title: '$action $hospitalName?',
       message: status == 'suspended'
-          ? 'Staff and patients will lose access until this hospital is reactivated.'
+          ? 'Staff and patients will lose hospital access. Individual account statuses are preserved. Reactivation restores access for accounts that are still active.'
           : 'This restores hospital access. Deactivated user accounts must be reactivated separately.',
       confirmLabel: action,
     );

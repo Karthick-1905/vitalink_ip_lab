@@ -2,7 +2,7 @@ import axios, { type AxiosInstance } from 'axios'
 import express from 'express'
 import fs from 'fs'
 import path from 'path'
-import type { Server } from 'http'
+import { Agent, type Server } from 'http'
 import ts from 'typescript'
 
 jest.mock('@alias/middlewares/adminAccess.middleware', () => ({
@@ -150,7 +150,9 @@ describe('RBAC V2 typed route enforcement', () => {
     })
     const address = server.address()
     if (!address || typeof address === 'string') throw new Error('Test server did not expose a TCP port')
-    api = axios.create({ baseURL: `http://127.0.0.1:${address.port}`, validateStatus: () => true })
+    // Source-inventory compilation can outlive the server keep-alive timeout.
+    // Use fresh sockets so policy assertions do not depend on an idle connection.
+    api = axios.create({ httpAgent: new Agent({ keepAlive: false }), baseURL: `http://127.0.0.1:${address.port}`, validateStatus: () => true })
   })
 
   afterAll(async () => {

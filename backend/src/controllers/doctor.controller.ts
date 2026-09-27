@@ -556,6 +556,9 @@ export const reassignPatient = asyncHandler(async (
           try {
             await AuditLog.create({
               user_id: currentDoctorUser._id,
+              scope_version: 1,
+              event_hospital_id: patient.hospital_id,
+              resource_hospital_id: patient.hospital_id,
               user_type: currentDoctorUser.user_type,
               action: AuditAction.PATIENT_REASSIGN,
               description: 'Doctor reassignment entered assignment-conflict review',
@@ -594,6 +597,9 @@ export const reassignPatient = asyncHandler(async (
   try {
     await AuditLog.create({
       user_id: currentDoctorUser._id,
+      scope_version: 1,
+      event_hospital_id: patient.hospital_id,
+      resource_hospital_id: patient.hospital_id,
       user_type: currentDoctorUser.user_type,
       action: AuditAction.PATIENT_REASSIGN,
       description: 'Doctor reassigned patient successfully',

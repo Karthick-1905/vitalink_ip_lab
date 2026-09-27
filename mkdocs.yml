@@ -111,6 +111,7 @@ nav:
       - "ADR-0006: Durable notification delivery": decisions/0006-durable-notification-delivery.md
       - "ADR-0007: Blue-green deployment": decisions/0007-blue-green-deployment.md
       - "ADR-0008: Single-use SSE tickets": decisions/0008-single-use-sse-tickets.md
+      - "ADR-0009: Lifecycle and audit boundaries": decisions/0009-lifecycle-and-event-audit-boundaries.md
   - Reference:
       - Environments: environments.md
       - Source evidence: reference/source-evidence.md

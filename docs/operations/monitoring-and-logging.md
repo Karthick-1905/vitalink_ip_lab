@@ -5,7 +5,7 @@
 | Signal | Source | Availability |
 | --- | --- | --- |
 | Request correlation | Incoming sanitized `X-Request-Id` or generated UUID, echoed in response | Every Express request |
-| HTTP access log | Morgan method, redacted safe URL, status, size, latency, request ID | Winston console and optional Loki |
+| HTTP access log | Morgan method, matched route template, numeric page/limit only, status, size, latency, request ID | Winston console and optional Loki |
 | Application events | Structured Winston info/warn/error calls | Console; optional Loki when configured |
 | Sensitive-data redaction | Key-based and text-pattern sanitizer; maximum log text length | Winston formatting and selected error calls |
 | Nginx access log | Method and normalized `$uri`, status, size, upstream and latency | Docker/Nginx logs; query string intentionally omitted |

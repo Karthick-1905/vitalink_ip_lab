@@ -39,3 +39,9 @@ The exact per-environment sequence depends on existing schema state and is an op
 ## Rollback posture
 
 Application rollback does not automatically reverse a data migration. A migration that adds compatible fields can usually remain in place while code rolls back; destructive or semantic rewrites require a separately designed reverse/restore plan. The checked-in scripts do not collectively provide a universal database rollback mechanism.
+
+## Event-scoped audit rollout
+
+New audit rows carry immutable scope where the writer has reliable event context. Tenant queries require an exact `event_hospital_id` match, including when filtering by actor. Actor transfers cannot move older events between tenants. Platform readers retain access to unscoped rows. Successful tenant administrative mutations use their authorized request scope; hospital management uses the affected hospital. Administrator transfers retain the source hospital as event scope and record the resulting resource hospital separately. New tenant administrator creation uses the server-returned hospital identity. Authentication writers snapshot the actor's persisted profile when writing the event. Failed administrative attempts without verified resource scope remain platform-only.
+
+Deploy all audit writers and readers together and ensure the new `{ event_hospital_id: 1, createdAt: -1, _id: -1 }` index exists. Do not infer historical scope from current profiles. This change deliberately leaves old rows unscoped; a future evidence-backed migration needs independent historical records and separate review. Rolling back to membership-based readers would restore the original disclosure risk.

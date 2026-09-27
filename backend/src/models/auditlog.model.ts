@@ -39,10 +39,18 @@ const AuditLogSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+    immutable: true,
   },
+  // Missing scope denotes a legacy/unresolved event, visible only to platform readers.
+  event_hospital_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', immutable: true },
+  actor_hospital_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', immutable: true },
+  actor_role: { type: String, immutable: true },
+  resource_hospital_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', immutable: true },
+  scope_version: { type: Number, immutable: true },
   user_type: {
     type: String,
     required: true,
+    immutable: true,
   },
   action: {
     type: String,
@@ -82,6 +90,8 @@ const AuditLogSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
   },
 }, { timestamps: true })
+
+AuditLogSchema.index({ event_hospital_id: 1, createdAt: -1, _id: -1 })
 
 // Compound indexes for efficient querying
 AuditLogSchema.index({ user_id: 1, createdAt: -1 })

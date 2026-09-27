@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { GenericContainer, StartedTestContainer } from 'testcontainers';
+import { startMongoReplicaSet, MongoReplicaSetHarness } from './setup/mongo-replica-set';
 import mongoose from 'mongoose';
 import app from '@alias/app';
 import { AdminMfaChallenge, AdminProfile, AdminRolePolicy, AuthSession, DoctorProfile, PatientProfile, User, Hospital, Notification, NotificationDelivery, AuditLog, Invoice, FileAsset } from '@alias/models';
@@ -18,7 +18,7 @@ import { purgePatientFileAssets } from '@alias/services/patient-file-purge.servi
 import { purgeFilePermanently } from '@alias/utils/fileUpload';
 
 describe('Admin Routes', () => {
-    let mongoContainer: StartedTestContainer;
+    let mongoContainer: MongoReplicaSetHarness;
     let server: Server;
     let api: AxiosInstance;
     let adminToken: string;
@@ -40,12 +40,8 @@ describe('Admin Routes', () => {
     let createdPatientLoginId: string;
 
     beforeAll(async () => {
-        mongoContainer = await new GenericContainer('mongo:7.0')
-            .withExposedPorts(27017)
-            .start();
-
-        const mongoUri = `mongodb://${mongoContainer.getHost()}:${mongoContainer.getMappedPort(27017)}/test`;
-        await mongoose.connect(mongoUri);
+        mongoContainer = await startMongoReplicaSet({ databaseName: 'admin_routes' });
+        await mongoose.connect(mongoContainer.uri);
 
         server = app.listen(0);
         const address = server.address();
@@ -1032,8 +1028,8 @@ describe('Admin Routes', () => {
                 const response = await suspensionPromise;
                 expect(response.status).toBe(200);
                 expect((await Hospital.findById(hospital._id).lean())?.status).toBe('suspended');
-                expect((await User.findById(doctor._id).lean())?.is_active).toBe(false);
-                expect((await User.findById(patient._id).lean())?.is_active).toBe(false);
+                expect((await User.findById(doctor._id).lean())?.is_active).toBe(true);
+                expect((await User.findById(patient._id).lean())?.is_active).toBe(true);
             } finally {
                 await heldGuard();
                 await Promise.all([
@@ -1076,7 +1072,7 @@ describe('Admin Routes', () => {
                     status: 'suspended',
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
                 expect(suspended.status).toBe(200);
-                expect((await User.findById(doctor._id).lean())?.is_active).toBe(false);
+                expect((await User.findById(doctor._id).lean())?.is_active).toBe(true);
                 expect((await Hospital.findById(hospital._id).lean())?.status).toBe('suspended');
             } finally {
                 await membership.release();
@@ -1151,7 +1147,7 @@ describe('Admin Routes', () => {
             }
         });
 
-        test('should not let a stale suspender deactivate over a successor doctor fence', async () => {
+        test('should reject a stale suspender after a successor doctor fence', async () => {
             const hospital = await Hospital.create({
                 code: `STALE_SUSPEND_${Date.now()}`, name: 'Stale Suspend Hospital', location: 'Test',
                 admin_email: `stale-suspend-${Date.now()}@example.com`,
@@ -1164,7 +1160,7 @@ describe('Admin Routes', () => {
             const originalUpdateOne = User.updateOne.bind(User);
             let successor: Awaited<ReturnType<typeof acquireDoctorMoveGuard>> | undefined;
             const spy = jest.spyOn(User, 'updateOne').mockImplementation((async (filter: any, update: any, ...rest: any[]) => {
-                if (!successor && String(filter?._id) === String(doctor._id) && update?.$set?.is_active === false &&
+                if (!successor && String(filter?._id) === String(doctor._id) && update?.$set?.['doctor_operation_lock.expires_at'] &&
                     filter?.['doctor_operation_lock.lease_id']) {
                     await originalUpdateOne({ _id: doctor._id }, {
                         $set: { 'doctor_operation_lock.expires_at': new Date(Date.now() - 1_000) },
@@ -2304,13 +2300,14 @@ describe('Admin Routes', () => {
             expect(response.data.message).toContain('Cross-tenant');
         });
 
-        test('should scope hospital admin audit logs to same-tenant users', async () => {
+        test('should scope hospital admin audit logs to event hospital', async () => {
             await AuditLog.create([
                 {
                     user_id: baselinePatientUser._id,
                     user_type: 'PATIENT',
                     action: AuditAction.PROFILE_UPDATE,
                     description: 'Tenant A patient update',
+                    event_hospital_id: primaryHospital._id, scope_version: 1,
                     success: true
                 },
                 {
@@ -2318,6 +2315,7 @@ describe('Admin Routes', () => {
                     user_type: 'PATIENT',
                     action: AuditAction.PROFILE_UPDATE,
                     description: 'Tenant B patient update',
+                    event_hospital_id: secondaryHospital._id, scope_version: 1,
                     success: true
                 }
             ]);
@@ -2758,17 +2756,14 @@ describe('Admin Routes', () => {
             }
         });
 
-        test('compensates a batch activation that loses its hospital lease after commit', async () => {
+        test('rolls back batch activation when its hospital fence no longer matches', async () => {
             await User.updateOne({ _id: baselinePatientUser._id }, { $set: { is_active: false } });
-            const originalFindOneAndUpdate = User.findOneAndUpdate.bind(User);
-            const spy = jest.spyOn(User, 'findOneAndUpdate').mockImplementation((async (filter: any, update: any, ...rest: any[]) => {
-                const result = await originalFindOneAndUpdate(filter, update, ...rest as any);
-                if (String(filter?._id) === String(baselinePatientUser._id) && update?.$set?.is_active === true) {
-                    await Hospital.updateOne({ _id: primaryHospital._id }, {
-                        $set: { 'lifecycle_lock.expires_at': new Date(Date.now() - 1_000) },
-                    });
+            const originalUpdateOne = Hospital.updateOne.bind(Hospital);
+            const spy = jest.spyOn(Hospital, 'updateOne').mockImplementation(((filter: any, update: any, options: any) => {
+                if (options?.session && filter?.['lifecycle_lock.lease_id']) {
+                    return Promise.resolve({ matchedCount: 0, modifiedCount: 0 }) as any;
                 }
-                return result as any;
+                return originalUpdateOne(filter, update, options);
             }) as any);
             try {
                 const response = await api.post('/api/admin/users/batch', {
@@ -2779,13 +2774,10 @@ describe('Admin Routes', () => {
                 expect((await User.findById(baselinePatientUser._id).lean())?.is_active).toBe(false);
             } finally {
                 spy.mockRestore();
-                await Hospital.updateOne({ _id: primaryHospital._id }, {
-                    $set: { lifecycle_state: 'STABLE', accepting_assignments: true, status: 'active' },
-                    $unset: { lifecycle_lock: 1 },
-                });
                 await User.updateOne({ _id: baselinePatientUser._id }, { $set: { is_active: true } });
             }
         });
+
 
         test.each([
             ['doctor', () => primaryDoctorUser, (id: string) => `/api/admin/doctors/${id}`],
@@ -2804,7 +2796,7 @@ describe('Admin Routes', () => {
             expect(after?.security_version).toBe(before?.security_version);
         });
 
-        test('should deactivate hospital users and revoke access when a hospital is suspended', async () => {
+        test('should preserve hospital account statuses and revoke access when suspended', async () => {
             const suspensionPatientProfile = await PatientProfile.create({
                 assigned_doctor_id: primaryDoctorUser._id,
                 hospital_id: primaryHospital._id,
@@ -2840,15 +2832,15 @@ describe('Admin Routes', () => {
 
             expect(suspendResponse.status).toBe(200);
             expect(suspendResponse.data.data.hospital.status).toBe('suspended');
-            expect(suspendResponse.data.data.users_deactivated).toBeGreaterThanOrEqual(1);
+            expect(suspendResponse.data.data.users_deactivated).toBe(0);
             expect(suspendResponse.data.data.invalidated_sessions).toBeGreaterThanOrEqual(2);
 
             const [patient, hospitalAdmin] = await Promise.all([
                 User.findById(suspensionPatientUser._id).lean(),
                 User.findOne({ login_id: 'hospital_admin_a' }).lean(),
             ]);
-            expect(patient?.is_active).toBe(false);
-            expect(hospitalAdmin?.is_active).toBe(false);
+            expect(patient?.is_active).toBe(true);
+            expect(hospitalAdmin?.is_active).toBe(true);
 
             const existingPatientSession = await api.get('/api/patient/profile', {
                 headers: { Authorization: `Bearer ${patientLogin.data.data.token}` },

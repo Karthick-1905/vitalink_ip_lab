@@ -6,6 +6,7 @@ import ApiResponse from "../utils/ApiResponse";
 import { StatusCodes } from "http-status-codes";
 import logger from "@alias/utils/logger";
 import { sanitizeLogText } from "@alias/utils/logger";
+import { safeRequestUrl } from '@alias/utils/request-log';
 import { isAdminCapability } from '@alias/constants/admin-capabilities';
 
 const errorHandler: ErrorRequestHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
@@ -50,7 +51,7 @@ const errorHandler: ErrorRequestHandler = (err: any, req: Request, res: Response
       errorName: error instanceof Error ? error.name : 'UnknownError',
       requestId: (req as any).requestId,
       method: req.method,
-      path: req.originalUrl.split('?')[0],
+      path: safeRequestUrl(req),
     })
     const statusCode = error instanceof mongoose.Error ? StatusCodes.BAD_REQUEST : StatusCodes.INTERNAL_SERVER_ERROR
     const message = statusCode === StatusCodes.INTERNAL_SERVER_ERROR

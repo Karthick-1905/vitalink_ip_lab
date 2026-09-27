@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { AuditLog } from '@alias/models'
 import { AuditAction } from '@alias/models/auditlog.model'
+import { safeRequestUrl } from '@alias/utils/request-log'
 import logger, { sanitizeLogText } from '@alias/utils/logger'
 
 /**
@@ -249,7 +250,22 @@ export function auditLogger(req: Request, res: Response, next: NextFunction): vo
 
     const success = res.statusCode < 400
     const resourceType = resolveResourceType(req.originalUrl)
+    let responseData: any
+    try { responseData = (typeof body === 'string' ? JSON.parse(body) : body)?.data } catch { /* unstructured response */ }
+    // Use only server-returned resource scope, never a submitted hospital id.
+    const resourceHospital = success
+      ? responseData?.hospital?._id ?? responseData?.admin_account?.hospital?.id
+      : undefined
+    const hasResourceScope = responseData?.hospital !== undefined || responseData?.admin_account !== undefined
+    const eventHospital = success
+      ? req.adminAccess?.hospitalId ?? res.locals.auditEventHospitalId ?? resourceHospital
+      : undefined
     const auditPayload = {
+      scope_version: 1,
+      event_hospital_id: eventHospital,
+      resource_hospital_id: hasResourceScope ? resourceHospital : eventHospital,
+      actor_hospital_id: req.adminAccess ? req.adminAccess.hospitalId : res.locals.auditActor?.hospital_id,
+      actor_role: req.adminAccess?.role ?? res.locals.auditActor?.role,
       user_id: req.user.user_id,
       user_type: req.user.user_type,
       action,
@@ -289,9 +305,9 @@ export function auditLogger(req: Request, res: Response, next: NextFunction): vo
         logger.error('audit.persistence_failed', {
           error: sanitizeLogText(err.message),
           action,
-          path: req.originalUrl.split('?')[0],
+          path: safeRequestUrl(req),
+          requestId: (req as any).requestId,
           resource_type: resourceType,
-          resource_id: auditPayload.resource_id,
           mutation_committed: success,
           alert: success ? 'audit_gap' : undefined,
         })

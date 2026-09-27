@@ -110,10 +110,10 @@ flowchart LR
 stateDiagram-v2
     [*] --> Active
     Active --> Suspending: authorized suspension
-    Suspending --> Suspended: membership writes fenced, accounts disabled, sessions revoked
+    Suspending --> Suspended: membership writes fenced, hospital access blocked, sessions revoked
     Suspending --> Suspending: interrupted transition remains resumable
     Suspended --> Activating: authorized reactivation
-    Activating --> Active: membership/accounts reconciled
+    Activating --> Active: hospital access restored, account statuses preserved
     Activating --> Activating: interrupted transition remains resumable
     Active --> Inactive: authorized deactivation path
 ```
@@ -204,3 +204,15 @@ flowchart LR
     Cache --> Sessions["Session timeout calculation"]
     API --> Audit["Audit CONFIG_UPDATE outcome"]
 ```
+
+### Lifecycle commit and recovery
+
+Individual Doctor/Patient status routes, legacy deactivation routes, and batch activation/deactivation share one transition service. A MongoDB transaction commits `User.is_active`, `User.security_version`, patient `account_status`, and conflict-metadata cleanup. Expected account, hospital, assignment, and profile state must still match. Hospital and doctor lease documents participate in the transaction to reject superseded owners. Patient activation also excludes purged/purging profiles and requires an active same-hospital doctor. Deceased patients cannot be restored or discharged.
+
+Transactions require a replica set. These transitions fail closed on standalone MongoDB; there is no independent-write fallback. Physical session cleanup runs after commit. `revocation_cleanup_completed: false` reports cleanup failure while the committed security version rejects old sessions.
+
+Hospital suspension/inactivation blocks hospital access, bumps member security versions to invalidate in-flight login snapshots, and revokes existing sessions while preserving individual account and patient statuses. Reactivation restores access only for individually active accounts; users must sign in again after session revocation. Accounts disabled by earlier releases remain disabled and require explicit review before restoration. No automatic historical restoration is attempted.
+
+### Maintenance recovery
+
+The exact `/admin/access/me` bootstrap and `/admin/config` endpoints remain reachable during maintenance along with authentication, password/MFA recovery bootstrap, and health endpoints. Their normal authentication and authorization still apply. An Application Admin can sign in again, reload access, open configuration, and disable maintenance. Tenant application routes remain unavailable.

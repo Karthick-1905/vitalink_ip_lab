@@ -6,6 +6,7 @@ import { AuthSessionRevocationReason } from '@alias/models/authsession.model'
 import { comparePasswords, ApiError, generateSalt, hashPassword } from '@alias/utils'
 import { config } from '@alias/config'
 import { bestEffortRevokeSessionsAfterSecurityVersionBump } from './auth-session.service'
+import { snapshotUserAuditScope } from './audit-scope.service'
 import logger, { sanitizeLogText } from '@alias/utils/logger'
 
 type PasswordHistoryEntry = {
@@ -201,6 +202,7 @@ export async function adminResetPassword(
     throw new ApiError(StatusCodes.NOT_FOUND, 'Target user not found')
   }
 
+  const targetScope = await snapshotUserAuditScope(targetUser)
   const password = newPassword?.trim() || generateTemporaryPassword()
   await setUserPasswordWithPolicy(targetUser, password, { mustChangePassword: true })
   const invalidatedSessionResult = await bestEffortRevokeSessionsAfterSecurityVersionBump(
@@ -215,6 +217,9 @@ export async function adminResetPassword(
   let auditRecorded = true
   try {
     await AuditLog.create({
+      scope_version: 1,
+      event_hospital_id: targetScope.event_hospital_id,
+      resource_hospital_id: targetScope.resource_hospital_id,
       user_id: adminUserId,
       user_type: 'ADMIN',
       action: AuditAction.PASSWORD_RESET,
