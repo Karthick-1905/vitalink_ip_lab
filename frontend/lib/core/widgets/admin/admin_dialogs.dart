@@ -1248,11 +1248,13 @@ Future<bool> showReassignPatientDialog(
   BuildContext context, {
   required String patientOpNum,
   required String currentDoctorId,
+  bool resolvingConflict = false,
   List<Map<String, dynamic>> doctors = const [],
   VoidCallback? onSuccess,
 }) async {
-  String? selectedDoctorId =
-      currentDoctorId.isNotEmpty ? currentDoctorId : null;
+    String? selectedDoctorId = resolvingConflict
+        ? null
+        : (currentDoctorId.isNotEmpty ? currentDoctorId : null);
 
   // Auto-fetch doctors if none provided
   List<Map<String, dynamic>> doctorList = List.from(doctors);
@@ -1291,7 +1293,9 @@ Future<bool> showReassignPatientDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Select a new doctor for this patient'),
+                Text(resolvingConflict
+                    ? 'Select the doctor who should own this patient. Saving will clear the assignment conflict.'
+                    : 'Select a new doctor for this patient'),
               const SizedBox(height: 16),
               if (doctorsLoading)
                 const Padding(
@@ -1351,7 +1355,7 @@ Future<bool> showReassignPatientDialog(
             FilledButton(
               onPressed: (loading ||
                       selectedDoctorId == null ||
-                      selectedDoctorId == currentDoctorId)
+                        (!resolvingConflict && selectedDoctorId == currentDoctorId))
                   ? null
                   : () async {
                       setState(() => loading = true);

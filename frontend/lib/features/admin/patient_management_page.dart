@@ -22,6 +22,9 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
   int _page = 1;
   String? _statusFilter;
   String? _doctorFilter;
+  String? _doctorFilterLabel;
+  List<Map<String, dynamic>> _availableDoctors = [];
+  bool _availableDoctorsLoading = false;
   int _refreshKey = 0;
 
   @override
@@ -170,9 +173,10 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: InputChip(
-                          label: Text('Doctor: $_doctorFilter'),
+                          label: Text('Doctor: ${_doctorFilterLabel ?? _doctorFilter}'),
                           onDeleted: () => setState(() {
                             _doctorFilter = null;
+                            _doctorFilterLabel = null;
                             _page = 1;
                           }),
                         ),
@@ -181,6 +185,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       onPressed: () => setState(() {
                         _statusFilter = null;
                         _doctorFilter = null;
+                        _doctorFilterLabel = null;
                         _page = 1;
                       }),
                       child: const Text('Clear All'),
@@ -310,11 +315,36 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
 
   void _showFilterSheet(BuildContext context) {
     String? status = _statusFilter;
+    String? doctorId = _doctorFilter;
+    String? doctorName = _doctorFilterLabel;
+    List<Map<String, dynamic>> doctors = List.of(_availableDoctors);
+    bool doctorsLoading = _availableDoctorsLoading || doctors.isEmpty;
+    String? doctorLoadError;
+
+    Future<void> loadDoctors(StateSetter setSheetState, BuildContext sheetContext) async {
+      if (_availableDoctors.isNotEmpty || _availableDoctorsLoading) return;
+      _availableDoctorsLoading = true;
+      try {
+        final response = await _repo.getAllDoctors(limit: 100, isActive: 'true');
+        final items = response['doctors'] as List? ?? [];
+        doctors = items.cast<Map<String, dynamic>>();
+        _availableDoctors = doctors;
+        doctorLoadError = null;
+      } catch (error) {
+        doctorLoadError = error.toString();
+      } finally {
+        _availableDoctorsLoading = false;
+        doctorsLoading = false;
+        if (sheetContext.mounted) setSheetState(() {});
+      }
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
+        builder: (ctx, setSheetState) {
+          if (doctorsLoading) loadDoctors(setSheetState, ctx);
+          return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom,
             left: 24,
@@ -351,8 +381,43 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                     onSelected: (_) =>
                         setSheetState(() => status = 'Discharged'),
                   ),
+                  FilterChip(
+                    label: const Text('Deceased'),
+                    selected: status == 'Deceased',
+                    onSelected: (_) => setSheetState(() => status = 'Deceased'),
+                  ),
+                  FilterChip(
+                    label: const Text('Assignment conflict'),
+                    selected: status == 'AssignmentConflict',
+                    onSelected: (_) => setSheetState(() => status = 'AssignmentConflict'),
+                  ),
                 ],
               ),
+              const SizedBox(height: 20),
+              Text('Assigned doctor', style: Theme.of(ctx).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              if (doctorsLoading)
+                const LinearProgressIndicator()
+              else if (doctorLoadError != null)
+                const Text('Could not load doctors. Reopen filters to retry.')
+              else
+                DropdownButtonFormField<String>(
+                  initialValue: doctorId,
+                  hint: const Text('All doctors'),
+                  decoration: const InputDecoration(labelText: 'Doctor'),
+                  items: doctors.map((doctor) {
+                    final profile = doctor['profile_id'] as Map<String, dynamic>? ?? {};
+                    final id = (doctor['_id'] ?? doctor['id']).toString();
+                    final name = profile['name'] as String? ?? doctor['login_id'] as String? ?? 'Unknown';
+                    return DropdownMenuItem(value: id, child: Text(name));
+                  }).toList(),
+                  onChanged: (value) => setSheetState(() {
+                    doctorId = value;
+                    doctorName = doctors.where((doctor) => (doctor['_id'] ?? doctor['id']).toString() == value)
+                        .map((doctor) => (doctor['profile_id'] as Map<String, dynamic>?)?['name'] as String?)
+                        .firstOrNull;
+                  }),
+                ),
               const SizedBox(height: 32),
               Row(
                 children: [
@@ -362,6 +427,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                         setState(() {
                           _statusFilter = null;
                           _doctorFilter = null;
+                          _doctorFilterLabel = null;
                           _page = 1;
                         });
                         Navigator.pop(ctx);
@@ -375,6 +441,8 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       onPressed: () {
                         setState(() {
                           _statusFilter = status;
+                          _doctorFilter = doctorId;
+                          _doctorFilterLabel = doctorName;
                           _page = 1;
                         });
                         Navigator.pop(ctx);
@@ -387,7 +455,8 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
               const SizedBox(height: 24),
             ],
           ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -423,6 +492,7 @@ class _PatientListTile extends StatelessWidget {
     final age = demographics['age'];
     final gender = demographics['gender'] as String? ?? '';
     final isActive = patient['is_active'] as bool? ?? true;
+    final accountStatus = profile['account_status'] as String? ?? 'Active';
     final id = patient['_id'] as String? ??
         patient['id'] as String? ??
         patient['user_id'] as String? ??
@@ -433,6 +503,12 @@ class _PatientListTile extends StatelessWidget {
     final currentDoctorId = assignedDoctorRef is Map
         ? (assignedDoctorRef['_id'] ?? assignedDoctorRef['id'])?.toString() ?? ''
         : assignedDoctorRef?.toString() ?? '';
+    final assignedDoctorProfile = assignedDoctorRef is Map
+        ? assignedDoctorRef['profile_id'] as Map<String, dynamic>?
+        : null;
+    final assignedDoctorName = patient['assigned_doctor_name'] as String? ??
+        assignedDoctorProfile?['name'] as String? ??
+        (currentDoctorId.isEmpty ? 'Unassigned' : 'Doctor unavailable');
     final details = [
       if (age != null) 'Age: $age',
       if (gender.isNotEmpty) gender,
@@ -484,6 +560,7 @@ class _PatientListTile extends StatelessWidget {
                             demographics,
                             isActive,
                             currentDoctorId,
+                            accountStatus,
                           ),
                           itemBuilder: (_) => [
                             if (canManage)
@@ -496,13 +573,15 @@ class _PatientListTile extends StatelessWidget {
                                   visualDensity: VisualDensity.compact,
                                 ),
                               ),
-                            if (canAssign)
-                              const PopupMenuItem(
+                            if (canAssign && accountStatus != 'Deceased')
+                              PopupMenuItem(
                                 value: 'reassign',
                                 child: ListTile(
                                   leading:
                                       Icon(Icons.swap_horiz_rounded, size: 20),
-                                  title: Text('Reassign Doctor'),
+                                  title: Text(accountStatus == 'AssignmentConflict'
+                                      ? 'Resolve assignment conflict'
+                                      : 'Reassign Doctor'),
                                   contentPadding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
                                 ),
@@ -518,7 +597,7 @@ class _PatientListTile extends StatelessWidget {
                                   visualDensity: VisualDensity.compact,
                                 ),
                               ),
-                            if (canStatus)
+                            if (canStatus && accountStatus != 'Deceased')
                               PopupMenuItem(
                                 value: 'status',
                                 child: ListTile(
@@ -580,7 +659,7 @@ class _PatientListTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          isActive ? 'Active' : 'Inactive',
+                          'Login ${isActive ? 'Active' : 'Inactive'}',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: isActive
                                 ? theme.colorScheme.onPrimaryContainer
@@ -588,8 +667,30 @@ class _PatientListTile extends StatelessWidget {
                           ),
                         ),
                       ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: accountStatus == 'AssignmentConflict'
+                              ? theme.colorScheme.errorContainer
+                              : theme.colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('Clinical: $accountStatus', style: theme.textTheme.labelSmall),
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text('Assigned doctor: $assignedDoctorName', style: theme.textTheme.bodySmall),
+                  if (accountStatus == 'AssignmentConflict') ...[
+                    const SizedBox(height: 4),
+                    Text('Assignment repair is required before clinical actions can resume.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                  ],
+                  if (accountStatus == 'Deceased') ...[
+                    const SizedBox(height: 4),
+                    Text('Deceased patient records cannot be reactivated or discharged.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+                  ],
                   if (details.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -617,6 +718,7 @@ class _PatientListTile extends StatelessWidget {
     Map<String, dynamic> demographics,
     bool isActive,
     String currentDoctorId,
+    String accountStatus,
   ) {
     switch (action) {
       case 'edit':
@@ -646,10 +748,17 @@ class _PatientListTile extends StatelessWidget {
           context,
           patientOpNum: opNum,
           currentDoctorId: currentDoctorId,
+          resolvingConflict: accountStatus == 'AssignmentConflict',
           onSuccess: onRefresh,
         );
         break;
       case 'status':
+        if (accountStatus == 'AssignmentConflict' && !isActive) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Resolve the assignment conflict before activating this account.'),
+          ));
+          return;
+        }
         showStatusToggleDialog(
           context,
           isActive: isActive,

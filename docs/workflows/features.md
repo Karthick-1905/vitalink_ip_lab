@@ -217,6 +217,10 @@ Transactions require a replica set. These transitions fail closed on standalone 
 
 Hospital suspension/inactivation blocks hospital access, bumps member security versions to invalidate in-flight login snapshots, and revokes existing sessions while preserving individual account and patient statuses. Reactivation restores access only for individually active accounts; users must sign in again after session revocation. Accounts disabled by earlier releases remain disabled and require explicit review before restoration. No automatic historical restoration is attempted.
 
+### Patient management directory
+
+The administrator patient directory shows login account status separately from clinical lifecycle status and includes the assigned doctor's display name. Its lifecycle filter includes Active, Discharged, Deceased, and AssignmentConflict; the doctor filter selects active doctors by name. AssignmentConflict is an operational quarantine: administrators with patient-assignment capability can use **Resolve assignment conflict** to reassign the patient through the guarded same-hospital assignment flow. Successful reassignment clears conflict metadata and returns the lifecycle status to Active. Deceased patients cannot be reassigned, reactivated, or discharged. AssignmentConflict patients cannot be activated until reassignment repairs the assignment.
+
 ### Maintenance recovery
 
 The exact `/admin/access/me` bootstrap and `/admin/config` endpoints remain reachable during maintenance along with authentication, password/MFA recovery bootstrap, and health endpoints. Their normal authentication and authorization still apply. An Application Admin can sign in again, reload access, open configuration, and disable maintenance. Tenant application routes remain unavailable.

@@ -1886,6 +1886,29 @@ export async function getAllPatients(
   const patients = result?.patients ?? []
   const total = result?.total[0]?.count ?? 0
 
+  // Resolve canonical doctor-user IDs to display names without exposing the
+  // rest of the doctor profile in the patient directory response.
+  const assignedDoctorIds = [...new Set(patients
+    .map((patient: any) => patient.profile_id?.assigned_doctor_id?.toString())
+    .filter((id: unknown): id is string => typeof id === 'string' && isStrictObjectId(id)))]
+  if (assignedDoctorIds.length) {
+    const doctors = await User.aggregate([
+      { $match: { _id: { $in: (assignedDoctorIds as string[]).map(id => new mongoose.Types.ObjectId(id)) }, user_type: UserType.DOCTOR } },
+      { $lookup: { from: DoctorProfile.collection.name, localField: 'profile_id', foreignField: '_id', as: 'doctor_profile' } },
+      { $unwind: { path: '$doctor_profile', preserveNullAndEmptyArrays: true } },
+      { $project: { _id: 1, name: '$doctor_profile.name', login_id: 1 } },
+    ])
+    const names = new Map<string, string>(doctors.map((doctor: any) => [
+      String(doctor._id), String(doctor.name || doctor.login_id || 'Unknown doctor'),
+    ]))
+    for (const patient of patients) {
+      const assignedDoctorId = patient.profile_id?.assigned_doctor_id?.toString()
+      if (assignedDoctorId && names.has(assignedDoctorId)) {
+        patient.assigned_doctor_name = names.get(assignedDoctorId)
+      }
+    }
+  }
+
   return {
     patients,
     pagination: paginationResult(total, page, limit),

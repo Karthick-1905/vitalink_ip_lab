@@ -5177,6 +5177,7 @@ components:
                   type: array
                   items:
                     $ref: "#/components/schemas/User"
+                  description: Patient user records include profile_id.account_status, profile_id.assigned_doctor_id, and assigned_doctor_name when the assigned doctor record is available.
                 pagination:
                   $ref: "#/components/schemas/Pagination"
 
