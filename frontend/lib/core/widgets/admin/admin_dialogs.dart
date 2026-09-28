@@ -3,6 +3,7 @@ import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/core/utils/phone_utils.dart';
 import 'package:frontend/core/widgets/admin/admin_access_scope.dart';
+import 'package:frontend/core/widgets/admin/admin_mutation_dialog.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/admin_access_model.dart';
 
@@ -11,8 +12,9 @@ import 'package:frontend/features/admin/models/admin_access_model.dart';
 /// Riverpod providers (matching the target project conventions).
 
 final AdminRepository _repo = AppDependencies.adminRepository;
-final RegExp _strongPasswordRegex =
-    RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$');
+final RegExp _strongPasswordRegex = RegExp(
+  r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$',
+);
 
 String? _validateStrongPassword(String? value) {
   if (value == null || value.isEmpty) return 'Required';
@@ -43,7 +45,8 @@ String _errorMessage(Object error) {
       access.hospital != null) {
     final hospital = access.hospital!;
     final label = [
-      if (hospital.name != null && hospital.name!.trim().isNotEmpty) hospital.name!.trim(),
+      if (hospital.name != null && hospital.name!.trim().isNotEmpty)
+        hospital.name!.trim(),
       hospital.code,
     ].join(' · ');
     return (isTenant: true, hospitalId: hospital.id, hospitalLabel: label);
@@ -85,240 +88,253 @@ Future<bool> showAddDoctorDialog(
 
   final result = await showDialog<Map<String, dynamic>>(
     context: context,
+    barrierDismissible: false,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
         if (!hospitalsRequested) {
           hospitalsRequested = true;
-          _repo.getHospitals(status: 'active').then((response) {
-            final items = response['hospitals'] as List? ?? [];
-            if (ctx.mounted) {
-              setState(() {
-                hospitalList = items.cast<Map<String, dynamic>>();
-                hospitalsLoading = false;
-                // Prefer a single catalog entry when only one hospital is returned.
-                if (selectedHospitalId == null && hospitalList.length == 1) {
-                  final only = hospitalList.first;
-                  selectedHospitalId =
-                      (only['_id'] ?? only['id'])?.toString();
+          _repo
+              .getHospitals(status: 'active')
+              .then((response) {
+                final items = response['hospitals'] as List? ?? [];
+                if (ctx.mounted) {
+                  setState(() {
+                    hospitalList = items.cast<Map<String, dynamic>>();
+                    hospitalsLoading = false;
+                    // Prefer a single catalog entry when only one hospital is returned.
+                    if (selectedHospitalId == null &&
+                        hospitalList.length == 1) {
+                      final only = hospitalList.first;
+                      selectedHospitalId = (only['_id'] ?? only['id'])
+                          ?.toString();
+                    }
+                  });
+                }
+              })
+              .catchError((e) {
+                if (ctx.mounted) {
+                  setState(() {
+                    hospitalsError = _errorMessage(e);
+                    hospitalsLoading = false;
+                  });
                 }
               });
-            }
-          }).catchError((e) {
-            if (ctx.mounted) {
-              setState(() {
-                hospitalsError = _errorMessage(e);
-                hospitalsLoading = false;
-              });
-            }
-          });
         }
 
-        return AlertDialog(
-          title: const Text('Register New Doctor'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextFormField(
-                    controller: loginId,
-                    decoration: const InputDecoration(
-                      labelText: 'Login ID',
-                      prefixIcon: Icon(Icons.person_outline_rounded),
-                    ),
-                    enabled: !loading,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: name,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: Icon(Icons.badge_rounded),
-                    ),
-                    enabled: !loading,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: department,
-                    decoration: const InputDecoration(
-                      labelText: 'Department',
-                      hintText: 'e.g., Cardiology',
-                      prefixIcon: Icon(Icons.local_hospital_rounded),
-                    ),
-                    enabled: !loading,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: contact,
-                    decoration: const InputDecoration(
-                      labelText: 'Contact Number',
-                      hintText: '10-digit Indian number',
-                      helperText: '+91 is added automatically',
-                      prefixIcon: Icon(Icons.phone_rounded),
-                    ),
-                    keyboardType: TextInputType.phone,
-                    enabled: !loading,
-                    validator: (v) => PhoneUtils.validate(
-                      v,
-                      label: 'Contact',
-                      required: true,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (binding.isTenant)
-                    InputDecorator(
+        return AdminMutationDialog(
+          busy: loading,
+          child: AlertDialog(
+            title: const Text('Register New Doctor'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: loginId,
                       decoration: const InputDecoration(
-                        labelText: 'Hospital',
-                        prefixIcon: Icon(Icons.local_hospital_outlined),
-                        helperText:
-                            'Doctors are registered under your assigned hospital.',
+                        labelText: 'Login ID',
+                        prefixIcon: Icon(Icons.person_outline_rounded),
                       ),
-                      child: Text(binding.hospitalLabel),
-                    )
-                  else
-                    DropdownButtonFormField<String?>(
-                      initialValue: selectedHospitalId,
+                      enabled: !loading,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: name,
                       decoration: const InputDecoration(
-                        labelText: 'Hospital',
-                        prefixIcon: Icon(Icons.local_hospital_outlined),
-                        hintText: 'Select hospital',
+                        labelText: 'Full Name',
+                        prefixIcon: Icon(Icons.badge_rounded),
                       ),
-                      isExpanded: true,
-                      items: [
-                        ...hospitalList.map((hospital) {
-                          final id =
-                              (hospital['_id'] ?? hospital['id'])?.toString() ??
-                                  '';
-                          final label = hospital['name'] as String? ??
-                              hospital['code'] as String? ??
-                              'Hospital';
-                          return DropdownMenuItem<String?>(
-                            value: id.isNotEmpty ? id : null,
-                            child: Text(label),
-                          );
-                        }),
-                      ],
-                      onChanged: hospitalsLoading
-                          ? null
-                          : (value) =>
-                              setState(() => selectedHospitalId = value),
-                      validator: (value) =>
-                          (value == null || value.isEmpty)
-                              ? 'Hospital is required'
-                              : null,
-                      hint: hospitalsLoading
-                          ? const Text('Loading hospitals...')
-                          : const Text('Select hospital'),
+                      enabled: !loading,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
                     ),
-                  if (hospitalsError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        hospitalsError!,
-                        style: TextStyle(
-                          color: Theme.of(ctx).colorScheme.error,
-                          fontSize: 12,
-                        ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: department,
+                      decoration: const InputDecoration(
+                        labelText: 'Department',
+                        hintText: 'e.g., Cardiology',
+                        prefixIcon: Icon(Icons.local_hospital_rounded),
+                      ),
+                      enabled: !loading,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: contact,
+                      decoration: const InputDecoration(
+                        labelText: 'Contact Number',
+                        hintText: '10-digit Indian number',
+                        helperText: '+91 is added automatically',
+                        prefixIcon: Icon(Icons.phone_rounded),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      enabled: !loading,
+                      validator: (v) => PhoneUtils.validate(
+                        v,
+                        label: 'Contact',
+                        required: true,
                       ),
                     ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'A temporary password is generated after registration. The doctor must change it on first login.',
-                    style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 12),
+                    if (binding.isTenant)
+                      InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Hospital',
+                          prefixIcon: Icon(Icons.local_hospital_outlined),
+                          helperText:
+                              'Doctors are registered under your assigned hospital.',
                         ),
-                  ),
-                  if (formError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        formError!,
-                        style: TextStyle(
-                          color: Theme.of(ctx).colorScheme.error,
-                          fontSize: 12,
+                        child: Text(binding.hospitalLabel),
+                      )
+                    else
+                      DropdownButtonFormField<String?>(
+                        initialValue: selectedHospitalId,
+                        decoration: const InputDecoration(
+                          labelText: 'Hospital',
+                          prefixIcon: Icon(Icons.local_hospital_outlined),
+                          hintText: 'Select hospital',
+                        ),
+                        isExpanded: true,
+                        items: [
+                          ...hospitalList.map((hospital) {
+                            final id =
+                                (hospital['_id'] ?? hospital['id'])
+                                    ?.toString() ??
+                                '';
+                            final label =
+                                hospital['name'] as String? ??
+                                hospital['code'] as String? ??
+                                'Hospital';
+                            return DropdownMenuItem<String?>(
+                              value: id.isNotEmpty ? id : null,
+                              child: Text(label),
+                            );
+                          }),
+                        ],
+                        onChanged: hospitalsLoading
+                            ? null
+                            : (value) =>
+                                  setState(() => selectedHospitalId = value),
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? 'Hospital is required'
+                            : null,
+                        hint: hospitalsLoading
+                            ? const Text('Loading hospitals...')
+                            : const Text('Select hospital'),
+                      ),
+                    if (hospitalsError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          hospitalsError!,
+                          style: TextStyle(
+                            color: Theme.of(ctx).colorScheme.error,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'A temporary password is generated after registration. The doctor must change it on first login.',
+                      style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                ],
+                    if (formError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          formError!,
+                          style: TextStyle(
+                            color: Theme.of(ctx).colorScheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: loading
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-                      final hospitalId =
-                          binding.isTenant ? binding.hospitalId : selectedHospitalId;
-                      if (hospitalId == null || hospitalId.isEmpty) {
-                        setState(() {
-                          formError = 'Hospital is required to register a doctor.';
-                        });
-                        return;
-                      }
-                      setState(() {
-                        loading = true;
-                        formError = null;
-                      });
-                      try {
-                        final contactNumber =
-                            PhoneUtils.formatForApi(contact.text);
-                        if (contactNumber == null) {
+            actions: [
+              TextButton(
+                onPressed: loading ? null : () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: loading
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        final hospitalId = binding.isTenant
+                            ? binding.hospitalId
+                            : selectedHospitalId;
+                        if (hospitalId == null || hospitalId.isEmpty) {
                           setState(() {
-                            loading = false;
-                            formError = 'Enter a valid 10-digit contact number.';
+                            formError =
+                                'Hospital is required to register a doctor.';
                           });
                           return;
                         }
-                        // Do not send password — backend generates a temporary one
-                        // and createDoctorSchema rejects unknown fields (strict).
-                        final created = await _repo.createDoctor({
-                          'login_id': loginId.text.trim(),
-                          'name': name.text.trim(),
-                          'department': department.text.trim().isNotEmpty
-                              ? department.text.trim()
-                              : 'General',
-                          'contact_number': contactNumber,
-                          'hospital_id': hospitalId,
+                        setState(() {
+                          loading = true;
+                          formError = null;
                         });
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx, created);
-                        }
-                      } catch (e) {
-                        if (ctx.mounted) {
-                          setState(() {
-                            loading = false;
-                            formError = _errorMessage(e);
-                          });
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            SnackBar(
-                              content: Text(formError!),
-                              backgroundColor: Colors.red,
-                            ),
+                        try {
+                          final contactNumber = PhoneUtils.formatForApi(
+                            contact.text,
                           );
+                          if (contactNumber == null) {
+                            setState(() {
+                              loading = false;
+                              formError =
+                                  'Enter a valid 10-digit contact number.';
+                            });
+                            return;
+                          }
+                          // Do not send password — backend generates a temporary one
+                          // and createDoctorSchema rejects unknown fields (strict).
+                          final created = await _repo.createDoctor({
+                            'login_id': loginId.text.trim(),
+                            'name': name.text.trim(),
+                            'department': department.text.trim().isNotEmpty
+                                ? department.text.trim()
+                                : 'General',
+                            'contact_number': contactNumber,
+                            'hospital_id': hospitalId,
+                          });
+                          if (ctx.mounted) {
+                            Navigator.pop(ctx, created);
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            setState(() {
+                              loading = false;
+                              formError = _errorMessage(e);
+                            });
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(formError!),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
-                      }
-                    },
-              child: loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Register'),
-            ),
-          ],
+                      },
+                child: loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Register'),
+              ),
+            ],
+          ),
         );
       },
     ),
@@ -328,22 +344,13 @@ Future<bool> showAddDoctorDialog(
 
   if (result != null && context.mounted) {
     final tempPassword = result['temporary_password']?.toString();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Doctor registered'),
-        content: Text(
-          tempPassword != null && tempPassword.isNotEmpty
-              ? 'Share this one-time password securely. It will not be shown again:\n\n$tempPassword'
-              : 'Doctor registered successfully. If a temporary password was issued, retrieve it from the API response or reset credentials.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
+    await showAdminCredentialResult(
+      context,
+      title: 'Doctor registered',
+      successMessage: tempPassword != null && tempPassword.isNotEmpty
+          ? 'Doctor registered. Share this one-time password securely. It will not be shown again.'
+          : 'Doctor registered successfully.',
+      temporaryPassword: tempPassword,
     );
     onSuccess?.call();
     return true;
@@ -384,22 +391,25 @@ Future<bool> showEditDoctorDialog(
       builder: (ctx, setState) {
         if (!hospitalsRequested) {
           hospitalsRequested = true;
-          _repo.getHospitals(status: 'active').then((response) {
-            final items = response['hospitals'] as List? ?? [];
-            if (ctx.mounted) {
-              setState(() {
-                hospitalList = items.cast<Map<String, dynamic>>();
-                hospitalsLoading = false;
+          _repo
+              .getHospitals(status: 'active')
+              .then((response) {
+                final items = response['hospitals'] as List? ?? [];
+                if (ctx.mounted) {
+                  setState(() {
+                    hospitalList = items.cast<Map<String, dynamic>>();
+                    hospitalsLoading = false;
+                  });
+                }
+              })
+              .catchError((e) {
+                if (ctx.mounted) {
+                  setState(() {
+                    hospitalsError = _errorMessage(e);
+                    hospitalsLoading = false;
+                  });
+                }
               });
-            }
-          }).catchError((e) {
-            if (ctx.mounted) {
-              setState(() {
-                hospitalsError = _errorMessage(e);
-                hospitalsLoading = false;
-              });
-            }
-          });
         }
 
         return AlertDialog(
@@ -442,7 +452,8 @@ Future<bool> showEditDoctorDialog(
                       decoration: const InputDecoration(
                         labelText: 'Hospital',
                         prefixIcon: Icon(Icons.local_hospital_outlined),
-                        helperText: 'Hospital assignment is fixed for your tenant.',
+                        helperText:
+                            'Hospital assignment is fixed for your tenant.',
                       ),
                       child: Text(binding.hospitalLabel),
                     )
@@ -459,8 +470,9 @@ Future<bool> showEditDoctorDialog(
                         ...hospitalList.map((hospital) {
                           final id =
                               (hospital['_id'] ?? hospital['id'])?.toString() ??
-                                  '';
-                          final label = hospital['name'] as String? ??
+                              '';
+                          final label =
+                              hospital['name'] as String? ??
                               hospital['code'] as String? ??
                               'Hospital';
                           return DropdownMenuItem<String?>(
@@ -472,7 +484,7 @@ Future<bool> showEditDoctorDialog(
                       onChanged: hospitalsLoading
                           ? null
                           : (value) =>
-                              setState(() => selectedHospitalId = value),
+                                setState(() => selectedHospitalId = value),
                       hint: hospitalsLoading
                           ? const Text('Loading hospitals...')
                           : const Text('Select hospital'),
@@ -504,8 +516,9 @@ Future<bool> showEditDoctorDialog(
                       if (!formKey.currentState!.validate()) return;
                       setState(() => loading = true);
                       try {
-                        final contactNumber =
-                            PhoneUtils.formatForApi(contact.text);
+                        final contactNumber = PhoneUtils.formatForApi(
+                          contact.text,
+                        );
                         final hospitalId = binding.isTenant
                             ? binding.hospitalId
                             : selectedHospitalId;
@@ -581,230 +594,292 @@ Future<bool> showAddPatientDialog(
   bool doctorsRequested = !doctorsLoading;
   String? doctorsError;
   bool loading = false;
+  final doctorSearch = TextEditingController();
+  var doctorSearchSequence = 0;
+  var doctorHasMore = false;
+  var doctorPage = 1;
+
+  Future<void> loadDoctors(
+    StateSetter setState,
+    BuildContext ctx, {
+    bool reset = false,
+  }) async {
+    final sequence = ++doctorSearchSequence;
+    final requestedPage = reset ? 1 : doctorPage + 1;
+    await Future<void>.delayed(Duration.zero);
+    if (!ctx.mounted || sequence != doctorSearchSequence) return;
+    setState(() {
+      doctorsLoading = true;
+      doctorsError = null;
+    });
+    try {
+      final response = await _repo.getDoctorAssignmentOptions(
+        page: requestedPage,
+        search: doctorSearch.text,
+      );
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      final items = (response['doctors'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
+      final pagination = response['pagination'] as Map<String, dynamic>? ?? {};
+      setState(() {
+        doctorList = reset ? items : [...doctorList, ...items];
+        doctorPage = requestedPage;
+        doctorHasMore = pagination['hasNext'] == true || items.length == 20;
+        doctorsLoading = false;
+      });
+    } catch (e) {
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      setState(() {
+        doctorsError = _errorMessage(e);
+        doctorsLoading = false;
+      });
+    }
+  }
 
   final result = await showDialog<Object?>(
     context: context,
+    barrierDismissible: false,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
         // Fetch doctors on first build if list is empty
         if (!doctorsRequested) {
           doctorsRequested = true;
-          _repo.getAllDoctors(limit: 100, isActive: 'true').then((response) {
-            final items = response['doctors'] as List? ?? [];
-            if (ctx.mounted) {
-              setState(() {
-                doctorList = items.cast<Map<String, dynamic>>();
-                doctorsLoading = false;
-              });
-            }
-          }).catchError((e) {
-            if (ctx.mounted) {
-              setState(() {
-                doctorsError = _errorMessage(e);
-                doctorsLoading = false;
-              });
-            }
-          });
+          loadDoctors(setState, ctx, reset: true);
         }
 
-        return AlertDialog(
-          title: const Text('Onboard New Patient'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: loginId,
-                    decoration: const InputDecoration(
-                      labelText: 'Login ID',
-                      prefixIcon: Icon(Icons.person_outline_rounded),
-                    ),
-                    enabled: !loading,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: name,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: Icon(Icons.badge_rounded),
-                    ),
-                    enabled: !loading,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  if (doctorsLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          SizedBox(width: 12),
-                          Text('Loading doctors...'),
-                        ],
-                      ),
-                    )
-                  else if (doctorsError != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        doctorsError!,
-                        style: TextStyle(color: Colors.red[700], fontSize: 12),
-                      ),
-                    )
-                  else
-                    DropdownButtonFormField<String>(
+        return AdminMutationDialog(
+          busy: loading,
+          child: AlertDialog(
+            title: const Text('Onboard New Patient'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: loginId,
                       decoration: const InputDecoration(
-                        labelText: 'Assigned Doctor',
-                        prefixIcon: Icon(Icons.medical_services_rounded),
+                        labelText: 'Login ID',
+                        prefixIcon: Icon(Icons.person_outline_rounded),
                       ),
-                      items: doctorList.map((d) {
-                        final profile =
-                            d['profile_id'] as Map<String, dynamic>? ?? {};
-                        final dName = profile['name'] as String? ??
-                            d['name'] as String? ??
-                            d['login_id'] as String? ??
-                            'Unknown';
-                        return DropdownMenuItem(
-                          value: d['_id'] as String? ?? d['id'] as String?,
-                          child: Text(dName),
-                        );
-                      }).toList(),
-                      onChanged: (v) => setState(() => selectedDoctorId = v),
-                      validator: (v) => v == null ? 'Required' : null,
+                      enabled: !loading,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
                     ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: age,
-                          decoration: const InputDecoration(labelText: 'Age'),
-                          keyboardType: TextInputType.number,
-                        ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: name,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name',
+                        prefixIcon: Icon(Icons.badge_rounded),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Gender',
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'Male',
-                              child: Text('Male'),
+                      enabled: !loading,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    if (doctorsLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                            DropdownMenuItem(
-                              value: 'Female',
-                              child: Text('Female'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Other',
-                              child: Text('Other'),
-                            ),
+                            SizedBox(width: 12),
+                            Text('Loading doctors...'),
                           ],
-                          onChanged: (v) => setState(() => selectedGender = v),
                         ),
+                      )
+                    else if (doctorsError != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          doctorsError!,
+                          style: TextStyle(
+                            color: Colors.red[700],
+                            fontSize: 12,
+                          ),
+                        ),
+                      )
+                    else ...[
+                      TextField(
+                        controller: doctorSearch,
+                        decoration: InputDecoration(
+                          labelText: 'Search doctors',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: doctorSearch.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    doctorSearch.clear();
+                                    loadDoctors(setState, ctx, reset: true);
+                                  },
+                                ),
+                        ),
+                        onChanged: (_) =>
+                            loadDoctors(setState, ctx, reset: true),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                      hintText: '10-digit Indian number',
-                      helperText: '+91 is added automatically',
-                      prefixIcon: Icon(Icons.phone_rounded),
-                    ),
-                    keyboardType: TextInputType.phone,
-                    enabled: !loading,
-                    validator: (v) => PhoneUtils.validate(
-                      v,
-                      label: 'Phone',
-                      required: true,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'A temporary password is generated after onboarding.',
-                    style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Assigned Doctor',
+                          prefixIcon: Icon(Icons.medical_services_rounded),
                         ),
-                  ),
-                ],
+                        items: doctorList.map((d) {
+                          final dName =
+                              d['name'] as String? ??
+                              d['login_id'] as String? ??
+                              'Unknown';
+                          return DropdownMenuItem(
+                            value: d['_id'] as String? ?? d['id'] as String?,
+                            child: Text(dName),
+                          );
+                        }).toList(),
+                        onChanged: (v) => setState(() => selectedDoctorId = v),
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                      if (doctorHasMore)
+                        TextButton.icon(
+                          onPressed: doctorsLoading
+                              ? null
+                              : () => loadDoctors(setState, ctx),
+                          icon: const Icon(Icons.expand_more),
+                          label: const Text('Load more doctors'),
+                        ),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: age,
+                            decoration: const InputDecoration(labelText: 'Age'),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: 'Gender',
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'Male',
+                                child: Text('Male'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Female',
+                                child: Text('Female'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Other',
+                                child: Text('Other'),
+                              ),
+                            ],
+                            onChanged: (v) =>
+                                setState(() => selectedGender = v),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number',
+                        hintText: '10-digit Indian number',
+                        helperText: '+91 is added automatically',
+                        prefixIcon: Icon(Icons.phone_rounded),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      enabled: !loading,
+                      validator: (v) => PhoneUtils.validate(
+                        v,
+                        label: 'Phone',
+                        required: true,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'A temporary password is generated after onboarding.',
+                      style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: loading
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate() ||
-                          selectedDoctorId == null) {
-                        return;
-                      }
-                      setState(() => loading = true);
-                      try {
-                        final phoneNumber = PhoneUtils.formatForApi(phone.text);
-                        if (phoneNumber == null) {
-                          setState(() => loading = false);
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            const SnackBar(
-                              content: Text('Enter a valid phone number.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+            actions: [
+              TextButton(
+                onPressed: loading ? null : () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: loading
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate() ||
+                            selectedDoctorId == null) {
                           return;
                         }
-                        // Backend rejects unknown password field (strict body).
-                        final created = await _repo.createPatient({
-                          'login_id': loginId.text.trim(),
-                          'assigned_doctor_id': selectedDoctorId,
-                          'demographics': {
-                            'name': name.text.trim(),
-                            if (age.text.isNotEmpty)
-                              'age': int.tryParse(age.text),
-                            if (selectedGender != null)
-                              'gender': selectedGender,
-                            'phone': phoneNumber,
-                          },
-                        });
-                        if (ctx.mounted) Navigator.pop(ctx, created);
-                      } catch (e) {
-                        if (ctx.mounted) {
-                          ScaffoldMessenger.of(ctx).showSnackBar(
-                            SnackBar(
-                              content: Text(_errorMessage(e)),
-                              backgroundColor: Colors.red,
-                            ),
+                        setState(() => loading = true);
+                        try {
+                          final phoneNumber = PhoneUtils.formatForApi(
+                            phone.text,
                           );
-                          setState(() => loading = false);
+                          if (phoneNumber == null) {
+                            setState(() => loading = false);
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(
+                                content: Text('Enter a valid phone number.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          // Backend rejects unknown password field (strict body).
+                          final created = await _repo.createPatient({
+                            'login_id': loginId.text.trim(),
+                            'assigned_doctor_id': selectedDoctorId,
+                            'demographics': {
+                              'name': name.text.trim(),
+                              if (age.text.isNotEmpty)
+                                'age': int.tryParse(age.text),
+                              if (selectedGender != null)
+                                'gender': selectedGender,
+                              'phone': phoneNumber,
+                            },
+                          });
+                          if (ctx.mounted) Navigator.pop(ctx, created);
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(_errorMessage(e)),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            setState(() => loading = false);
+                          }
                         }
-                      }
-                    },
-              child: loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Onboard'),
-            ),
-          ],
+                      },
+                child: loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Onboard'),
+              ),
+            ],
+          ),
         );
       },
     ),
@@ -814,26 +889,19 @@ Future<bool> showAddPatientDialog(
 
   if (result is Map<String, dynamic> && context.mounted) {
     final tempPassword = result['temporary_password']?.toString();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Patient onboarded'),
-        content: Text(
-          tempPassword != null && tempPassword.isNotEmpty
-              ? 'Share this one-time password securely. It will not be shown again:\n\n$tempPassword'
-              : 'Patient onboarded successfully.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
+    await showAdminCredentialResult(
+      context,
+      title: 'Patient onboarded',
+      successMessage: tempPassword != null && tempPassword.isNotEmpty
+          ? 'Patient onboarded. Share this one-time password securely. It will not be shown again.'
+          : 'Patient onboarded successfully.',
+      temporaryPassword: tempPassword,
     );
     onSuccess?.call();
+    doctorSearch.dispose();
     return true;
   }
+  doctorSearch.dispose();
   return false;
 }
 
@@ -844,8 +912,9 @@ Future<bool> showEditPatientDialog(
   VoidCallback? onSuccess,
 }) async {
   final formKey = GlobalKey<FormState>();
-  final name =
-      TextEditingController(text: currentData['name'] as String? ?? '');
+  final name = TextEditingController(
+    text: currentData['name'] as String? ?? '',
+  );
   final age = TextEditingController(
     text: currentData['age'] != null ? '${currentData['age']}' : '',
   );
@@ -891,22 +960,30 @@ Future<bool> showEditPatientDialog(
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          initialValue: ['Male', 'Female', 'Other'].contains(
-                            selectedGender,
-                          )
+                          initialValue:
+                              [
+                                'Male',
+                                'Female',
+                                'Other',
+                              ].contains(selectedGender)
                               ? selectedGender
                               : null,
-                          decoration:
-                              const InputDecoration(labelText: 'Gender'),
+                          decoration: const InputDecoration(
+                            labelText: 'Gender',
+                          ),
                           items: const [
                             DropdownMenuItem(
-                                value: 'Male', child: Text('Male')),
+                              value: 'Male',
+                              child: Text('Male'),
+                            ),
                             DropdownMenuItem(
                               value: 'Female',
                               child: Text('Female'),
                             ),
                             DropdownMenuItem(
-                                value: 'Other', child: Text('Other')),
+                              value: 'Other',
+                              child: Text('Other'),
+                            ),
                           ],
                           onChanged: loading
                               ? null
@@ -1156,6 +1233,7 @@ Future<bool> showResetPasswordDialog(
   BuildContext context, {
   required String userId,
   required String userName,
+
   /// Prefer a V2 credentials-reset callback when available so callers hit the
   /// capability-scoped doctor/patient endpoints instead of the legacy bulk path.
   Future<void> Function(String newPassword)? onReset,
@@ -1252,9 +1330,9 @@ Future<bool> showReassignPatientDialog(
   List<Map<String, dynamic>> doctors = const [],
   VoidCallback? onSuccess,
 }) async {
-    String? selectedDoctorId = resolvingConflict
-        ? null
-        : (currentDoctorId.isNotEmpty ? currentDoctorId : null);
+  String? selectedDoctorId = resolvingConflict
+      ? null
+      : (currentDoctorId.isNotEmpty ? currentDoctorId : null);
 
   // Auto-fetch doctors if none provided
   List<Map<String, dynamic>> doctorList = List.from(doctors);
@@ -1262,6 +1340,46 @@ Future<bool> showReassignPatientDialog(
   bool doctorsRequested = !doctorsLoading;
   String? doctorsError;
   bool loading = false;
+  final doctorSearch = TextEditingController();
+  var doctorSearchSequence = 0;
+  var doctorHasMore = false;
+  var doctorPage = 1;
+
+  Future<void> loadDoctors(
+    StateSetter setState,
+    BuildContext ctx, {
+    bool reset = false,
+  }) async {
+    final sequence = ++doctorSearchSequence;
+    final requestedPage = reset ? 1 : doctorPage + 1;
+    await Future<void>.delayed(Duration.zero);
+    setState(() {
+      doctorsLoading = true;
+      doctorsError = null;
+    });
+    try {
+      final response = await _repo.getDoctorAssignmentOptions(
+        page: requestedPage,
+        search: doctorSearch.text,
+      );
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      final items = (response['doctors'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
+      final pagination = response['pagination'] as Map<String, dynamic>? ?? {};
+      setState(() {
+        doctorList = reset ? items : [...doctorList, ...items];
+        doctorPage = requestedPage;
+        doctorHasMore = pagination['hasNext'] == true || items.length == 20;
+        doctorsLoading = false;
+      });
+    } catch (e) {
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      setState(() {
+        doctorsError = _errorMessage(e);
+        doctorsLoading = false;
+      });
+    }
+  }
 
   final result = await showDialog<bool>(
     context: context,
@@ -1270,22 +1388,7 @@ Future<bool> showReassignPatientDialog(
         // Fetch doctors on first build if list is empty
         if (!doctorsRequested) {
           doctorsRequested = true;
-          _repo.getAllDoctors(limit: 100, isActive: 'true').then((response) {
-            final items = response['doctors'] as List? ?? [];
-            if (ctx.mounted) {
-              setState(() {
-                doctorList = items.cast<Map<String, dynamic>>();
-                doctorsLoading = false;
-              });
-            }
-          }).catchError((e) {
-            if (ctx.mounted) {
-              setState(() {
-                doctorsError = e.toString();
-                doctorsLoading = false;
-              });
-            }
-          });
+          loadDoctors(setState, ctx, reset: true);
         }
 
         return AlertDialog(
@@ -1293,9 +1396,11 @@ Future<bool> showReassignPatientDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-                Text(resolvingConflict
+              Text(
+                resolvingConflict
                     ? 'Select the doctor who should own this patient. Saving will clear the assignment conflict.'
-                    : 'Select a new doctor for this patient'),
+                    : 'Select a new doctor for this patient',
+              ),
               const SizedBox(height: 16),
               if (doctorsLoading)
                 const Padding(
@@ -1320,11 +1425,30 @@ Future<bool> showReassignPatientDialog(
                     style: TextStyle(color: Colors.red[700]),
                   ),
                 )
-              else
+              else ...[
+                TextField(
+                  controller: doctorSearch,
+                  decoration: InputDecoration(
+                    labelText: 'Search doctors',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: doctorSearch.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              doctorSearch.clear();
+                              loadDoctors(setState, ctx, reset: true);
+                            },
+                          ),
+                  ),
+                  onChanged: (_) => loadDoctors(setState, ctx, reset: true),
+                ),
+                const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  initialValue: doctorList.any(
-                    (d) => (d['_id'] ?? d['id']) == selectedDoctorId,
-                  )
+                  initialValue:
+                      doctorList.any(
+                        (d) => (d['_id'] ?? d['id']) == selectedDoctorId,
+                      )
                       ? selectedDoctorId
                       : null,
                   decoration: const InputDecoration(
@@ -1332,9 +1456,7 @@ Future<bool> showReassignPatientDialog(
                     prefixIcon: Icon(Icons.medical_services_rounded),
                   ),
                   items: doctorList.map((d) {
-                    final profile =
-                        d['profile_id'] as Map<String, dynamic>? ?? {};
-                    final dName = profile['name'] as String? ??
+                    final dName =
                         d['name'] as String? ??
                         d['login_id'] as String? ??
                         'Unknown';
@@ -1345,6 +1467,15 @@ Future<bool> showReassignPatientDialog(
                   }).toList(),
                   onChanged: (v) => setState(() => selectedDoctorId = v),
                 ),
+                if (doctorHasMore)
+                  TextButton.icon(
+                    onPressed: doctorsLoading
+                        ? null
+                        : () => loadDoctors(setState, ctx),
+                    icon: const Icon(Icons.expand_more),
+                    label: const Text('Load more doctors'),
+                  ),
+              ],
             ],
           ),
           actions: [
@@ -1353,9 +1484,11 @@ Future<bool> showReassignPatientDialog(
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: (loading ||
+              onPressed:
+                  (loading ||
                       selectedDoctorId == null ||
-                        (!resolvingConflict && selectedDoctorId == currentDoctorId))
+                      (!resolvingConflict &&
+                          selectedDoctorId == currentDoctorId))
                   ? null
                   : () async {
                       setState(() => loading = true);
@@ -1400,5 +1533,6 @@ Future<bool> showReassignPatientDialog(
     );
     onSuccess?.call();
   }
+  doctorSearch.dispose();
   return result ?? false;
 }

@@ -1384,6 +1384,10 @@ describe('Admin Routes', () => {
             expect(response.data.data.patients[0].password).toBeUndefined();
             expect(response.data.data.patients[0].salt).toBeUndefined();
             expect(response.data.data.patients[0].password_history).toBeUndefined();
+            expect(Object.keys(response.data.data.patients[0]).sort()).toEqual(['_id', 'is_active', 'login_id', 'profile_id', 'assigned_doctor_name'].sort());
+            expect(Object.keys(response.data.data.patients[0].profile_id).sort()).toEqual(['_id', 'hospital_id', 'demographics', 'assigned_doctor_id', 'account_status'].sort());
+            expect(Object.keys(response.data.data.patients[0].profile_id.demographics).sort()).toEqual(['name', 'age', 'gender', 'phone'].sort());
+            expect(response.data.data.patients[0].profile_id.medical_config).toBeUndefined();
         });
 
         test('should keep a Hospital Admin patient filter inside the persisted tenant scope', async () => {

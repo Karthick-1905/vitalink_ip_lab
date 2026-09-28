@@ -87,6 +87,14 @@ export const getDoctorsSchema = z.object({
   }),
 })
 
+export const doctorAssignmentOptionsSchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().positive().optional(),
+    limit: z.coerce.number().int().positive().max(50).optional(),
+    search: z.string().trim().max(100).optional(),
+  }),
+})
+
 // ─── Patient Schemas ───
 
 // Keep an explicit typed shape so older TypeScript callers still compile, but

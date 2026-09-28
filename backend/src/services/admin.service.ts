@@ -1505,7 +1505,7 @@ export async function registerDoctor(data: {
   }
 }
 
-export async function getAllDoctors(
+  export async function getAllDoctors(
   filters: { department?: string; is_active?: boolean; search?: string; hospital_id?: string } = {},
   pagination: { page?: number; limit?: number } = {},
   actor?: AdminActorInput
@@ -1873,12 +1873,28 @@ export async function getAllPatients(
     { $lookup: { from: PatientProfile.collection.name, localField: 'profile_id', foreignField: '_id', as: 'profile' } },
     { $unwind: '$profile' },
     { $match: profileQuery },
-    { $set: { profile_id: '$profile' } },
-    // Aggregation bypasses User#toJSON, so explicitly preserve its sensitive-field contract.
-    { $unset: [...USER_AGGREGATION_SENSITIVE_UNSET] },
     {
       $facet: {
-        patients: [{ $sort: { createdAt: -1, _id: -1 } }, { $skip: skip }, { $limit: limit }],
+        patients: [
+          { $sort: { createdAt: -1, _id: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+          { $project: {
+            _id: 1, login_id: 1, is_active: 1,
+            profile_id: {
+              _id: '$profile._id',
+              hospital_id: '$profile.hospital_id',
+              demographics: {
+                name: '$profile.demographics.name',
+                age: '$profile.demographics.age',
+                gender: '$profile.demographics.gender',
+                phone: '$profile.demographics.phone',
+              },
+              assigned_doctor_id: '$profile.assigned_doctor_id',
+              account_status: '$profile.account_status',
+            },
+          } },
+        ],
         total: [{ $count: 'count' }],
       },
     },
@@ -1913,6 +1929,44 @@ export async function getAllPatients(
     patients,
     pagination: paginationResult(total, page, limit),
   }
+}
+
+export async function getDoctorAssignmentOptions(
+  search: string | undefined,
+  pagination: { page?: number; limit?: number } = {},
+  actor?: AdminActorInput,
+) {
+  const ctx = await getAdminContext(actor)
+  requireHospitalAdmin(ctx)
+  const page = Math.max(1, pagination.page || 1)
+  const limit = Math.min(50, Math.max(1, pagination.limit || 20))
+  const profileMatch: Record<string, unknown> = {}
+  if (!ctx.isAppAdmin && ctx.hospitalId) {
+    profileMatch.hospital_id = new mongoose.Types.ObjectId(ctx.hospitalId)
+  }
+  const searchPattern = search?.trim() ? new RegExp(escapeRegex(search.trim()), 'i') : undefined
+  const skip = (page - 1) * limit
+  const [result] = await DoctorProfile.aggregate([
+    { $match: profileMatch },
+    { $lookup: { from: User.collection.name, localField: '_id', foreignField: 'profile_id', as: 'user' } },
+    { $unwind: '$user' },
+    { $match: { 'user.user_type': UserType.DOCTOR, 'user.is_active': true } },
+    ...(searchPattern ? [{ $match: { $or: [{ name: searchPattern }, { 'user.login_id': searchPattern }] } }] : []),
+    { $sort: { name: 1, _id: 1 } },
+    {
+      $facet: {
+        doctors: [
+          { $skip: skip },
+          { $limit: limit },
+          { $project: { _id: '$user._id', login_id: '$user.login_id', name: 1, department: 1, eligible: { $literal: true } } },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    },
+  ])
+  const doctors = result?.doctors ?? []
+  const total = result?.total?.[0]?.count ?? 0
+  return { doctors, pagination: paginationResult(total, page, limit) }
 }
 
 export async function updatePatient(
