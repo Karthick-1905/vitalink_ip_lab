@@ -35,9 +35,15 @@ class AppStrings {
       '$apiPathPrefix/auth/login/otp/resend';
   static const String loginTotpVerifyPath =
       '$apiPathPrefix/auth/login/totp/verify';
+  static const String loginTotpEnrollSetupPath =
+      '$apiPathPrefix/auth/login/totp/enroll/setup';
+  static const String loginTotpEnrollActivatePath =
+      '$apiPathPrefix/auth/login/totp/enroll/activate';
   static const String authRefreshPath = '$apiPathPrefix/auth/refresh';
   static const String authRevokePath = '$apiPathPrefix/auth/revoke';
   static const String logoutPath = '$apiPathPrefix/auth/logout';
+  static const String authMePath = '$apiPathPrefix/auth/me';
+  static const String changePasswordPath = '$apiPathPrefix/auth/change-password';
   static const String deviceRegisterPath = '$apiPathPrefix/devices/register';
   static const String adminTotpSetupPath =
       '$apiPathPrefix/auth/admin/mfa/totp/setup';
@@ -65,6 +71,10 @@ class AppStrings {
 
   /// Admin endpoints.
   static const String adminBasePath = '$apiPathPrefix/admin';
+  static const String adminAccessMePath = '$apiPathPrefix/admin/access/me';
+  static const String adminRolePoliciesPath =
+      '$apiPathPrefix/admin/role-policies';
+  static const String adminAccountsPath = '$apiPathPrefix/admin/admin-accounts';
   static const String adminDoctorsPath = '$apiPathPrefix/admin/doctors';
   static const String adminPatientsPath = '$apiPathPrefix/admin/patients';
   static const String adminHospitalsPath = '$apiPathPrefix/admin/hospitals';

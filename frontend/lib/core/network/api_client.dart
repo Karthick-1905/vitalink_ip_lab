@@ -10,6 +10,7 @@ enum ApiErrorKind {
   forbidden,
   notFound,
   locked,
+  gone,
   rateLimited,
   requestTooLarge,
   server,
@@ -31,7 +32,11 @@ class ApiException implements Exception {
     this.sunset,
     this.apiVersion,
     this.supportedVersions,
-  }) : title = title ?? _defaultTitle(kind);
+    Map<String, dynamic>? details,
+  }) : details = details == null
+           ? null
+           : Map<String, dynamic>.unmodifiable(details),
+       title = title ?? _defaultTitle(kind);
 
   final String message;
   final int? statusCode;
@@ -42,6 +47,11 @@ class ApiException implements Exception {
   final String? sunset;
   final String? apiVersion;
   final String? supportedVersions;
+  final Map<String, dynamic>? details;
+
+  bool get isConflict => statusCode == 409;
+
+  Map<String, dynamic>? get conflictDetails => isConflict ? details : null;
 
   bool get canRetry =>
       kind == ApiErrorKind.network ||
@@ -51,6 +61,16 @@ class ApiException implements Exception {
 
   bool get shouldReturnToLogin =>
       kind == ApiErrorKind.unauthorized || kind == ApiErrorKind.locked;
+
+  /// Authenticator-code failures stay on the challenge form.
+  ///
+  /// Prefers a structured `details.code` when the server sends one; falls back
+  /// to the documented "Invalid TOTP code" message.
+  bool get isInvalidTotpCode {
+    final code = details?['code']?.toString().trim().toUpperCase();
+    if (code == 'INVALID_TOTP') return true;
+    return message.toLowerCase().contains('invalid totp');
+  }
 
   String get actionLabel {
     if (shouldReturnToLogin) return 'Back to login';
@@ -70,6 +90,8 @@ class ApiException implements Exception {
         return 'This service is unavailable';
       case ApiErrorKind.locked:
         return 'Account temporarily locked';
+      case ApiErrorKind.gone:
+        return 'This sign-in step expired';
       case ApiErrorKind.rateLimited:
         return 'Please slow down';
       case ApiErrorKind.requestTooLarge:
@@ -91,6 +113,16 @@ class ApiException implements Exception {
 
   @override
   String toString() => message;
+}
+
+class ApiConflictException extends ApiException {
+  ApiConflictException(
+    super.message, {
+    required super.statusCode,
+    super.apiVersion,
+    super.supportedVersions,
+    super.details,
+  }) : super(kind: ApiErrorKind.unknown, title: 'Changes are out of date');
 }
 
 class _RefreshRejected implements Exception {
@@ -124,6 +156,47 @@ class ApiClient {
   static const String _skipAuthRefreshExtra = 'skipAuthRefresh';
   static const String _hasRetriedAfterRefreshExtra = 'hasRetriedAfterRefresh';
   Future<String>? _pendingRefresh;
+  VoidCallback? _authorizationDeniedHandler;
+  VoidCallback? _passwordChangeRequiredHandler;
+
+  static const String passwordExpiredMessage =
+      'Password has expired. Change your password before continuing.';
+  static const String passwordChangeRequiredMessage =
+      'Password change is required before continuing.';
+
+  void setAuthorizationDeniedHandler(VoidCallback? handler) {
+    _authorizationDeniedHandler = handler;
+  }
+
+  void setPasswordChangeRequiredHandler(VoidCallback? handler) {
+    _passwordChangeRequiredHandler = handler;
+  }
+
+  void _notifyAuthorizationDenied() {
+    final handler = _authorizationDeniedHandler;
+    if (handler == null) return;
+    try {
+      handler();
+    } catch (error) {
+      _logDebug('Authorization-denied handler failed: $error');
+    }
+  }
+
+  void _notifyPasswordChangeRequired() {
+    final handler = _passwordChangeRequiredHandler;
+    if (handler == null) return;
+    try {
+      handler();
+    } catch (error) {
+      _logDebug('Password-change-required handler failed: $error');
+    }
+  }
+
+  static bool isPasswordChangeRequiredMessage(String? message) {
+    final text = (message ?? '').trim();
+    return text == passwordExpiredMessage ||
+        text == passwordChangeRequiredMessage;
+  }
 
   void _logDebug(String message) {
     if (kDebugMode) debugPrint(message);
@@ -188,6 +261,7 @@ class ApiClient {
   }
 
   Future<String> _runRefreshAccessToken() async {
+    final generationBefore = SecureStorage.authSessionGeneration;
     final refreshToken = await _secureStorage.readRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) {
       throw const _RefreshRejected('Refresh token is missing');
@@ -225,11 +299,20 @@ class ApiClient {
         );
       }
 
-      await _secureStorage.saveRefreshToken(rotatedRefreshToken);
-      await _secureStorage.saveToken(token);
       final session = body['session'];
-      if (session is Map<String, dynamic>) {
-        await _secureStorage.saveAuthSession(session);
+      final sessionMap = session is Map<String, dynamic>
+          ? session
+          : session is Map
+              ? Map<String, dynamic>.from(session)
+              : null;
+      final saved = await _secureStorage.saveRefreshedTokensIfCurrent(
+        expectedGeneration: generationBefore,
+        token: token,
+        refreshToken: rotatedRefreshToken,
+        session: sessionMap,
+      );
+      if (!saved) {
+        throw const _RefreshRejected('Session was cleared during refresh');
       }
       return token;
     } on DioException catch (e) {
@@ -285,8 +368,13 @@ class ApiClient {
     final extra = Map<String, dynamic>.from(request.extra);
     extra[_hasRetriedAfterRefreshExtra] = true;
 
+    // FormData streams are single-use after finalize; clone for the 401 retry.
+    final data = request.data is FormData
+        ? (request.data as FormData).clone()
+        : request.data;
+
     return _dio.fetch<dynamic>(
-      request.copyWith(headers: headers, extra: extra),
+      request.copyWith(headers: headers, extra: extra, data: data),
     );
   }
 
@@ -350,11 +438,15 @@ class ApiClient {
 
   Future<Map<String, dynamic>> post(
     String path, {
-    Map<String, dynamic>? data,
+    Object? data,
     bool authenticated = true,
   }) async {
     try {
-      final headers = await _buildHeaders(includeAuth: authenticated);
+      // FormData must not force application/json — Dio sets multipart boundary.
+      final headers = await _buildHeaders(
+        includeAuth: authenticated,
+        includeJsonContentType: data is! FormData,
+      );
       final response = await _sendWithRetry(
         () => _dio.post<Map<String, dynamic>>(
           path,
@@ -501,11 +593,16 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, String>> _buildHeaders({required bool includeAuth}) async {
+  Future<Map<String, String>> _buildHeaders({
+    required bool includeAuth,
+    bool includeJsonContentType = true,
+  }) async {
     final headers = <String, String>{
-      'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
+    if (includeJsonContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (includeAuth) {
       final token = await _secureStorage.readToken();
@@ -625,16 +722,49 @@ class ApiClient {
           kind: ApiErrorKind.unauthorized,
           apiVersion: apiVersion,
           supportedVersions: supportedVersions,
+          details: _safeStructuredDetails(body),
         );
       case 403:
-        return ApiException(
-          _sanitizeServerMessage(
-            serverMessage ?? 'You do not have access to this action.',
-          ),
+        final sanitized = _sanitizeServerMessage(
+          serverMessage ?? 'You do not have access to this action.',
+        );
+        final exception = ApiException(
+          sanitized,
           statusCode: statusCode,
           kind: ApiErrorKind.forbidden,
           apiVersion: apiVersion,
           supportedVersions: supportedVersions,
+        );
+        if (isPasswordChangeRequiredMessage(serverMessage) ||
+            isPasswordChangeRequiredMessage(sanitized)) {
+          if (!_isPasswordChangeRecoveryPath(response.requestOptions.path)) {
+            _notifyPasswordChangeRequired();
+          }
+          return exception;
+        }
+        _notifyAuthorizationDenied();
+        return exception;
+      case 410:
+        return ApiException(
+          _sanitizeServerMessage(
+            serverMessage ??
+                'This sign-in step expired. Return to login and try again.',
+          ),
+          statusCode: statusCode,
+          kind: ApiErrorKind.gone,
+          apiVersion: apiVersion,
+          supportedVersions: supportedVersions,
+        );
+      case 409:
+        return ApiConflictException(
+          _sanitizeServerMessage(
+            serverMessage ??
+                'This record changed after you opened it. Review the latest version and try again.',
+          ),
+          statusCode: statusCode,
+          apiVersion: apiVersion,
+          supportedVersions: supportedVersions,
+          details: _safeStructuredDetails(body),
         );
       case 404:
         return ApiException(
@@ -706,6 +836,55 @@ class ApiClient {
           supportedVersions: supportedVersions,
         );
     }
+  }
+
+  Map<String, dynamic>? _safeStructuredDetails(Map<String, dynamic> body) {
+    final raw = body['details'] ?? body['data'];
+    if (raw is! Map) return null;
+
+    final safe = _copySafeMap(raw, depth: 0);
+    return safe.isEmpty ? null : safe;
+  }
+
+  Map<String, dynamic> _copySafeMap(
+    Map<dynamic, dynamic> source, {
+    required int depth,
+  }) {
+    if (depth >= 5) return <String, dynamic>{};
+    final result = <String, dynamic>{};
+    for (final entry in source.entries) {
+      final key = entry.key.toString();
+      if (_isSensitiveDetailKey(key)) continue;
+      final value = _copySafeValue(entry.value, depth: depth + 1);
+      if (value != null) result[key] = value;
+    }
+    return result;
+  }
+
+  Object? _copySafeValue(Object? value, {required int depth}) {
+    if (value == null || value is String || value is num || value is bool) {
+      return value;
+    }
+    if (depth >= 5) return null;
+    if (value is Map) return _copySafeMap(value, depth: depth);
+    if (value is List) {
+      return value
+          .take(100)
+          .map((item) => _copySafeValue(item, depth: depth + 1))
+          .where((item) => item != null)
+          .toList(growable: false);
+    }
+    return null;
+  }
+
+  bool _isSensitiveDetailKey(String key) {
+    final normalized = key.toLowerCase();
+    return normalized.contains('password') ||
+        normalized.contains('token') ||
+        normalized.contains('secret') ||
+        normalized == 'stack' ||
+        normalized == 'stack_trace' ||
+        normalized == 'stacktrace';
   }
 
   String _extractMessage(DioException e) {
@@ -835,6 +1014,13 @@ class ApiClient {
       return true;
     }
     return false;
+  }
+
+  bool _isPasswordChangeRecoveryPath(String path) {
+    return path.contains('/auth/me') ||
+        path.contains('/auth/change-password') ||
+        path.contains('/auth/logout') ||
+        path.contains('/auth/admin/mfa/totp');
   }
 
   bool _isBrowserXhrNetworkError(String message) {

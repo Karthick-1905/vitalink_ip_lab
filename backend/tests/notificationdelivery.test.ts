@@ -1677,14 +1677,14 @@ describe('Notification delivery durability', () => {
     })
 
     // Stale path: send still targets the token under A after ownership moved to B.
-    jest.spyOn(DeviceToken, 'find').mockImplementation((query: any) => ({
+    jest.spyOn(DeviceToken, 'find').mockImplementation(((query: any) => ({
       lean: async () => {
         if (String(query.user_id) === String(ownerA) && query.is_active === true) {
           return [{ fcm_token: 'shared-physical-token' }]
         }
         return []
       },
-    }) as any)
+    })) as any)
 
     const updateOne = jest.spyOn(DeviceToken, 'updateOne')
 

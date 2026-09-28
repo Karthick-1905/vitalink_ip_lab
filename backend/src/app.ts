@@ -16,6 +16,8 @@ import { apiLimiter, authLimiter } from "./config/ratelimiter";
 import { apiVersionHeaders, legacyApiHeaders } from "./middlewares/apiVersion.middleware";
 import { enforceSystemFeatureFlags } from './middlewares/systemConfig.middleware'
 
+import { safeRequestUrl } from './utils/request-log'
+
 const app = express();
 app.set('trust proxy', config.trustProxy);
 const dbStates: Record<number, string> = {
@@ -26,34 +28,7 @@ const dbStates: Record<number, string> = {
 };
 
 morgan.token('request-id', (req: Request) => (req as any).requestId ?? '-');
-morgan.token('safe-url', (req: Request) => {
-  const rawUrl = req.originalUrl || req.url || ''
-  if (!rawUrl.includes('?')) {
-    return rawUrl
-  }
-
-  const [path, queryString] = rawUrl.split('?')
-  const params = new URLSearchParams(queryString || '')
-  const sensitiveQueryParams = new Set([
-    'token',
-    'ticket',
-    'access_token',
-    'refresh_token',
-    'authorization',
-    'password',
-    'code',
-    'otp',
-    'totp',
-    'secret',
-  ])
-
-  for (const key of Array.from(params.keys())) {
-    if (sensitiveQueryParams.has(key.toLowerCase())) {
-      params.set(key, '[redacted]')
-    }
-  }
-  return `${path}?${params.toString()}`
-});
+morgan.token('safe-url', safeRequestUrl);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   const incomingRequestId = req.header('x-request-id')?.trim();

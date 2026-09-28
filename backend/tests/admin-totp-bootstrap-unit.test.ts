@@ -22,7 +22,7 @@ describe('admin TOTP bootstrap enrollment', () => {
 
     expect(enrollment.secret).toMatch(/^[A-Z2-7]+$/)
     expect(enrollment.otpauth_url).toContain(`secret=${enrollment.secret}`)
-    const persistedUpdate = update.mock.calls[0][1] as any
+    const persistedUpdate = (update.mock.calls as unknown as Array<[unknown, unknown]>)[0][1] as any
     expect(persistedUpdate.$set['admin_mfa.totp.status']).toBe('PENDING')
     expect(persistedUpdate.$set['admin_mfa.totp.pending_secret_ciphertext']).toBeDefined()
     expect(JSON.stringify(persistedUpdate)).not.toContain(enrollment.secret)

@@ -2,9 +2,11 @@ import axios, { AxiosInstance } from 'axios';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import mongoose from 'mongoose';
 import app from '@alias/app';
-import { AdminMfaChallenge, AdminProfile, AuditLog, AuthSession, DoctorProfile, Hospital, OtpChallenge, PatientProfile, User } from '@alias/models';
+import { AdminMfaChallenge, AdminProfile, AdminRolePolicy, AuditLog, AuthSession, DoctorProfile, Hospital, OtpChallenge, PatientProfile, User } from '@alias/models';
 import { Server } from 'http';
-import { OtpChallengeStatus } from '@alias/models/otpchallenge.model';
+import { AdminRole } from '@alias/models/adminprofile.model';
+import { DEFAULT_ADMIN_ROLE_POLICIES } from '@alias/constants/admin-capabilities';
+import { OtpChallengePurpose, OtpChallengeStatus } from '@alias/models/otpchallenge.model';
 import { AdminMfaChallengeStatus } from '@alias/models/adminmfachallenge.model';
 import { createAdminTotpEnrollment, generateTotpCode, replaceAdminTotpForRecovery } from '@alias/services/admin-totp.service';
 import { updateSystemConfig } from '@alias/services/config.service';
@@ -147,8 +149,19 @@ describe('Auth Routes', () => {
             is_active: true
         });
 
+        await AdminRolePolicy.create(Object.values(AdminRole).map(role => ({
+            role_key: role,
+            capabilities: DEFAULT_ADMIN_ROLE_POLICIES[role],
+            protected: role === AdminRole.APP_ADMIN,
+            schema_version: 2,
+            policy_version: 1,
+            updated_by: adminUser._id,
+            change_reason: 'Auth controller RBAC V2 test fixture',
+        })));
+
         const mfaAdminProfile = await AdminProfile.create({
             name: 'MFA Admin',
+            admin_role: AdminRole.AUDITOR,
         }) as any;
 
         mfaAdminUser = await User.create({
@@ -820,19 +833,36 @@ describe('Auth Routes', () => {
                 login_id: 'unverified-patient',
                 password: 'testpassword123'
             });
-            await OtpChallenge.findByIdAndUpdate(lockedLogin.data.data.challenge.challenge_id, {
-                $set: {
-                    status: OtpChallengeStatus.LOCKED,
-                    attempt_count: 5,
-                },
-            });
+            const lockedChallengeId = lockedLogin.data.data.challenge.challenge_id;
+            try {
+                await OtpChallenge.findByIdAndUpdate(lockedChallengeId, {
+                    $set: {
+                        status: OtpChallengeStatus.LOCKED,
+                        attempt_count: 5,
+                    },
+                });
 
-            const lockedResponse = await api.post('/api/auth/login/otp/verify', {
-                challenge_id: lockedLogin.data.data.challenge.challenge_id,
-                code: '123456',
-            });
-            expect(lockedResponse.status).toBe(423);
-            expect(mockCheckVerification).not.toHaveBeenCalledWith('+919000004444', '123456');
+                const lockedResponse = await api.post('/api/auth/login/otp/verify', {
+                    challenge_id: lockedChallengeId,
+                    code: '123456',
+                });
+                expect(lockedResponse.status).toBe(423);
+                expect(mockCheckVerification).not.toHaveBeenCalledWith('+919000004444', '123456');
+            } finally {
+                // Scope cleanup to this challenge so later first-login OTP cases
+                // for the fixture user are not blocked by intentional LOCKED state.
+                await OtpChallenge.updateOne(
+                    {
+                        _id: lockedChallengeId,
+                        purpose: OtpChallengePurpose.PHONE_FIRST_LOGIN,
+                    },
+                    { $set: { status: OtpChallengeStatus.CANCELLED } },
+                );
+                await User.updateOne(
+                    { _id: unverifiedPatientUser._id },
+                    { $set: { failed_login_attempts: 0 }, $unset: { locked_until: 1 } },
+                );
+            }
         });
 
         test('should prevent cross-account login challenge replay after registered phone changes', async () => {

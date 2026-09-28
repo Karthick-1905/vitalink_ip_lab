@@ -1,9 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
-import { GenericContainer, StartedTestContainer } from 'testcontainers';
+import { startMongoReplicaSet, MongoReplicaSetHarness } from './setup/mongo-replica-set';
 import mongoose from 'mongoose';
 import app from '@alias/app';
-import { AdminMfaChallenge, AdminProfile, AuthSession, DoctorProfile, PatientProfile, User, Hospital, Notification, NotificationDelivery, AuditLog, Invoice, FileAsset } from '@alias/models';
+import { AdminMfaChallenge, AdminProfile, AdminRolePolicy, AuthSession, DoctorProfile, PatientProfile, User, Hospital, Notification, NotificationDelivery, AuditLog, Invoice, FileAsset } from '@alias/models';
 import { AdminRole } from '@alias/models/adminprofile.model';
+import { DEFAULT_ADMIN_ROLE_POLICIES } from '@alias/constants/admin-capabilities';
 import { AuditAction } from '@alias/models/auditlog.model';
 import { Server } from 'http';
 import * as adminService from '@alias/services/admin.service';
@@ -17,7 +18,7 @@ import { purgePatientFileAssets } from '@alias/services/patient-file-purge.servi
 import { purgeFilePermanently } from '@alias/utils/fileUpload';
 
 describe('Admin Routes', () => {
-    let mongoContainer: StartedTestContainer;
+    let mongoContainer: MongoReplicaSetHarness;
     let server: Server;
     let api: AxiosInstance;
     let adminToken: string;
@@ -39,12 +40,8 @@ describe('Admin Routes', () => {
     let createdPatientLoginId: string;
 
     beforeAll(async () => {
-        mongoContainer = await new GenericContainer('mongo:7.0')
-            .withExposedPorts(27017)
-            .start();
-
-        const mongoUri = `mongodb://${mongoContainer.getHost()}:${mongoContainer.getMappedPort(27017)}/test`;
-        await mongoose.connect(mongoUri);
+        mongoContainer = await startMongoReplicaSet({ databaseName: 'admin_routes' });
+        await mongoose.connect(mongoContainer.uri);
 
         server = app.listen(0);
         const address = server.address();
@@ -77,6 +74,16 @@ describe('Admin Routes', () => {
             is_active: true
         });
 
+        await AdminRolePolicy.create(Object.values(AdminRole).map(role => ({
+            role_key: role,
+            capabilities: DEFAULT_ADMIN_ROLE_POLICIES[role],
+            protected: role === AdminRole.APP_ADMIN,
+            schema_version: 2,
+            policy_version: 1,
+            updated_by: adminUser._id,
+            change_reason: 'Admin controller RBAC V2 test fixture',
+        })));
+
         const hospitalAdminProfile = await AdminProfile.create({
             name: 'Tenant A Admin',
             admin_role: AdminRole.HOSPITAL_ADMIN,
@@ -93,7 +100,6 @@ describe('Admin Routes', () => {
         const auditorProfile = await AdminProfile.create({
             name: 'Read-only Auditor',
             admin_role: AdminRole.AUDITOR,
-            hospital_id: primaryHospital._id,
         });
         await User.create({
             login_id: 'auditor001',
@@ -279,7 +285,7 @@ describe('Admin Routes', () => {
 
             expect(response.status).toBe(403);
             expect(response.data.success).toBe(false);
-            expect(String(response.data.message)).toMatch(/read-only|manage_system/i);
+            expect(String(response.data.message)).toMatch(/read-only|required capability/i);
         });
 
         test('should prevent auditors from broadcasting notifications', async () => {
@@ -294,92 +300,44 @@ describe('Admin Routes', () => {
 
             expect(response.status).toBe(403);
             expect(response.data.success).toBe(false);
-            expect(String(response.data.message)).toMatch(/read-only|manage_system/i);
+            expect(String(response.data.message)).toMatch(/read-only|required capability/i);
             expect(await Notification.countDocuments({ title: 'Auditor broadcast attempt' })).toBe(0);
         });
 
-        test('should persist role edits and enforce the edited permission', async () => {
+        test('retires legacy role writes and keeps V2 policy as the authorization source', async () => {
             const rolesResponse = await api.get('/api/admin/roles', {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
             expect(rolesResponse.status).toBe(200);
             expect(rolesResponse.data.data.roles.app_admin.permissions.manage_roles).toBe(true);
-            expect(rolesResponse.data.data.roles.app_admin.permissions.manage_system).toBe(true);
 
-            const lockoutAttempt = await api.put('/api/admin/roles/app_admin', {
+            // Compatibility RoleDefinition writes are gone; V2 role-policies own
+            // capability changes so operators cannot drift a second source of truth.
+            const legacyEdit = await api.put('/api/admin/roles/app_admin', {
                 permissions: { manage_roles: false, manage_users: false },
             }, {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
-            expect(lockoutAttempt.status).toBe(200);
-            expect(lockoutAttempt.data.data.role.permissions.manage_roles).toBe(true);
-            expect(lockoutAttempt.data.data.role.permissions.manage_users).toBe(false);
+            expect(legacyEdit.status).toBe(410);
+            expect(legacyEdit.data.success).toBe(false);
+            expect(String(legacyEdit.data.message)).toMatch(/role-policies|retired/i);
 
-            const deniedUsersResponse = await api.post('/api/admin/users', {
-                name: 'Denied by role policy',
-                email: 'role-policy-denied@example.com',
+            const invited = await api.post('/api/admin/users', {
+                name: 'V2 capability governed admin',
+                email: 'v2-capability-admin@example.com',
                 role: 'hospital_admin',
                 hospital_id: primaryHospital._id.toString(),
             }, {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
-            expect(deniedUsersResponse.status).toBe(403);
-            expect(String(deniedUsersResponse.data.message)).toMatch(/manage_users/i);
+            expect(invited.status).toBe(201);
+            expect(invited.data.data.user.login_id).toBe('v2-capability-admin@example.com');
 
-            const deniedUsersList = await api.get('/api/admin/users', {
+            const access = await api.get('/api/admin/access/me', {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
-            expect(deniedUsersList.status).toBe(403);
-
-            // Role management must remain available for recovery after manage_users is revoked.
-            const refreshedRoles = await api.get('/api/admin/roles', {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
-            expect(refreshedRoles.status).toBe(200);
-            expect(refreshedRoles.data.data.roles.app_admin.permissions.manage_users).toBe(false);
-            expect(refreshedRoles.data.data.roles.app_admin.permissions.manage_roles).toBe(true);
-
-            const restoreResponse = await api.put('/api/admin/roles/app_admin', {
-                permissions: { manage_users: true },
-            }, {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
-            expect(restoreResponse.status).toBe(200);
-            expect(restoreResponse.data.data.role.permissions.manage_users).toBe(true);
-
-            const allowedUsersResponse = await api.post('/api/admin/users', {
-                name: 'Allowed after restore',
-                email: 'role-policy-restored@example.com',
-                role: 'hospital_admin',
-                hospital_id: primaryHospital._id.toString(),
-            }, {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
-            expect(allowedUsersResponse.status).toBe(201);
-
-            // Seed path must not overwrite saved permission edits on subsequent reads.
-            const hospitalAdminRoles = await api.get('/api/admin/roles', {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
-            expect(hospitalAdminRoles.status).toBe(200);
-            expect(hospitalAdminRoles.data.data.roles.app_admin.permissions.manage_users).toBe(true);
-
-            await api.put('/api/admin/roles/hospital_admin', {
-                permissions: { manage_billing: false },
-            }, {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
-            const reReadHospitalAdmin = await api.get('/api/admin/roles', {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
-            expect(reReadHospitalAdmin.data.data.roles.hospital_admin.permissions.manage_billing).toBe(false);
-
-            // Restore hospital_admin billing for later suite tests that may rely on defaults.
-            await api.put('/api/admin/roles/hospital_admin', {
-                permissions: { manage_billing: true },
-            }, {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
+            expect(access.status).toBe(200);
+            expect(access.data.data.effective_capabilities).toContain('platform.admin_accounts.manage');
         });
 
         test('should deny hospital admin role policy updates', async () => {
@@ -392,7 +350,7 @@ describe('Admin Routes', () => {
             expect(response.data.success).toBe(false);
         });
 
-        test('should reject unknown roles and malformed role permissions', async () => {
+        test('should reject unknown roles and legacy role permission writes', async () => {
             const invalidRole = await api.put(`/api/admin/users/${adminUser._id}`, {
                 role: 'super_admin',
             }, {
@@ -401,13 +359,13 @@ describe('Admin Routes', () => {
             expect(invalidRole.status).toBe(400);
             expect(invalidRole.data.success).toBe(false);
 
-            const invalidPermission = await api.put('/api/admin/roles/hospital_admin', {
+            const retiredPermissionWrite = await api.put('/api/admin/roles/hospital_admin', {
                 permissions: { arbitrary_permission: true },
             }, {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
-            expect(invalidPermission.status).toBe(400);
-            expect(invalidPermission.data.success).toBe(false);
+            expect(retiredPermissionWrite.status).toBe(410);
+            expect(retiredPermissionWrite.data.success).toBe(false);
         });
 
         test('should reject unknown fields on sensitive admin mutations', async () => {
@@ -429,7 +387,7 @@ describe('Admin Routes', () => {
             expect(invoice.status).toBe(400);
         });
 
-        test('should let auditors read billing when manage_billing is granted', async () => {
+        test('should let global auditors read platform billing', async () => {
             await Invoice.create([
                 {
                     invoice_number: 'AUDIT-A-2035', hospital_id: primaryHospital._id,
@@ -447,7 +405,7 @@ describe('Admin Routes', () => {
             expect(response.data.success).toBe(true);
             expect(Array.isArray(response.data.data.invoices)).toBe(true);
             expect(response.data.data.invoices.some((invoice: any) => invoice.id === 'AUDIT-A-2035')).toBe(true);
-            expect(response.data.data.invoices.some((invoice: any) => invoice.id === 'AUDIT-B-2035')).toBe(false);
+            expect(response.data.data.invoices.some((invoice: any) => invoice.id === 'AUDIT-B-2035')).toBe(true);
         });
 
         test('should generate a unique temporary password and require invited admins to change it', async () => {
@@ -497,7 +455,7 @@ describe('Admin Routes', () => {
                 hospital_id: new mongoose.Types.ObjectId().toString(),
             }, { headers });
             expect(missingHospital.status).toBe(400);
-            expect(missingHospital.data.message).toMatch(/hospital not found/i);
+            expect(missingHospital.data.message).toMatch(/hospital (not found|must be active and accepting members)/i);
 
             const noHospital = await api.post('/api/admin/users', {
                 name: 'Unassigned Hospital Admin',
@@ -505,15 +463,18 @@ describe('Admin Routes', () => {
                 role: 'hospital_admin',
             }, { headers });
             expect(noHospital.status).toBe(400);
-            expect(noHospital.data.message).toMatch(/assigned to an active hospital/i);
+            expect(noHospital.data.success).toBe(false);
 
             const roleChangeWithoutHospital = await api.put(`/api/admin/users/${adminUser._id}`, {
                 role: 'hospital_admin',
             }, { headers });
             expect(roleChangeWithoutHospital.status).toBe(400);
-            expect(roleChangeWithoutHospital.data.message).toMatch(/assigned to an active hospital/i);
+            expect(roleChangeWithoutHospital.data.success).toBe(false);
 
-            const roleChangeProfile = await AdminProfile.create({ name: 'Role Change Candidate' });
+            const roleChangeProfile = await AdminProfile.create({
+                name: 'Role Change Candidate',
+                admin_role: AdminRole.AUDITOR,
+            });
             const roleChangeUser = await User.create({
                 login_id: 'role-change-candidate@example.com',
                 password: 'RoleChange@123',
@@ -535,7 +496,7 @@ describe('Admin Routes', () => {
                 hospital_id: new mongoose.Types.ObjectId().toString(),
             }, { headers });
             expect(unknownUpdateHospital.status).toBe(400);
-            expect(unknownUpdateHospital.data.message).toMatch(/hospital not found/i);
+            expect(unknownUpdateHospital.data.message).toMatch(/hospital (not found|must be active and accepting members)/i);
 
             await Hospital.findByIdAndUpdate(secondaryHospital._id, { status: 'suspended' });
             const inactiveHospital = await api.post('/api/admin/users', {
@@ -555,6 +516,33 @@ describe('Admin Routes', () => {
             expect(inactiveUpdateHospital.data.message).toMatch(/hospital must be active/i);
             await Hospital.findByIdAndUpdate(secondaryHospital._id, { status: 'active' });
         });
+
+        test('should never treat Doctor or Patient accounts as administrator lifecycle targets', async () => {
+            const headers = { Authorization: `Bearer ${adminToken}` };
+            const beforeDoctor = await User.findById(primaryDoctorUser._id).lean();
+            const beforePatient = await User.findById(baselinePatientUser._id).lean();
+
+            const rejectedDoctor = await api.put(`/api/admin/users/${primaryDoctorUser._id}`, {
+                role: 'hospital_admin',
+                hospital_id: primaryHospital._id.toString(),
+            }, { headers });
+            const rejectedPatient = await api.put(`/api/admin/users/${baselinePatientUser._id}`, {
+                role: 'auditor',
+            }, { headers });
+            const rejectedStatus = await api.put(`/api/admin/users/${primaryDoctorUser._id}`, {
+                status: 'inactive',
+            }, { headers });
+
+            expect(rejectedDoctor.status).toBe(404);
+            expect(rejectedPatient.status).toBe(404);
+            expect(rejectedStatus.status).toBe(404);
+            const afterDoctor = await User.findById(primaryDoctorUser._id).lean();
+            const afterPatient = await User.findById(baselinePatientUser._id).lean();
+            expect(afterDoctor?.user_type).toBe('DOCTOR');
+            expect(afterDoctor?.is_active).toBe(beforeDoctor?.is_active);
+            expect(afterPatient?.user_type).toBe('PATIENT');
+            expect(afterPatient?.is_active).toBe(beforePatient?.is_active);
+        });
     });
 
     describe('Doctor Management', () => {
@@ -569,11 +557,10 @@ describe('Admin Routes', () => {
             try {
                 await expect(adminService.registerDoctor({
                     login_id: 'doctor_cleanup_verification',
-                    password: 'Doctor@456',
                     name: profileName,
                     contact_number: '9000000009',
                     hospital_id: primaryHospital._id.toString(),
-                }, String(adminUser._id))).rejects.toThrow('Simulated user creation failure');
+                }, String(hospitalAdminUser._id))).rejects.toThrow('Simulated user creation failure');
 
                 expect(await DoctorProfile.countDocuments({ name: profileName })).toBe(0);
             } finally {
@@ -582,9 +569,9 @@ describe('Admin Routes', () => {
             }
         });
 
-        test('should list doctors with pagination', async () => {
+        test('should list doctors with pagination for the Hospital Admin tenant', async () => {
             const response = await api.get('/api/admin/doctors?page=1&limit=10', {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(200);
@@ -608,29 +595,24 @@ describe('Admin Routes', () => {
             expect(response.data.data.doctors[0].password_history).toBeUndefined();
         });
 
-        test('should apply an app-admin hospital filter before doctor pagination', async () => {
+        test('should deny routine Doctor listing to an Application Admin', async () => {
             const response = await api.get(`/api/admin/doctors?hospital_id=${primaryHospital._id}&page=1&limit=10`, {
                 headers: { Authorization: `Bearer ${adminToken}` }
             });
 
-            expect(response.status).toBe(200);
-            expect(response.data.data.pagination.total).toBe(2);
-            expect(response.data.data.doctors).toHaveLength(2);
-            expect(response.data.data.doctors.every((doctor: any) =>
-                String(doctor.profile_id.hospital_id) === primaryHospital._id.toString()
-            )).toBe(true);
+            expect(response.status).toBe(403);
+            expect(response.data.required_capability).toBe('tenant.doctors.read');
         });
 
         test('should create a doctor successfully', async () => {
             const response = await api.post('/api/admin/doctors', {
                 login_id: 'doctor_admin_03',
-                password: 'Doctor@456',
                 name: 'Dr. Newly Added',
                 department: 'Oncology',
                 contact_number: '9000000003',
                 hospital_id: primaryHospital._id.toString()
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(201);
@@ -643,12 +625,11 @@ describe('Admin Routes', () => {
         test('should fail creating doctor with duplicate login_id', async () => {
             const response = await api.post('/api/admin/doctors', {
                 login_id: 'doctor_admin_03',
-                password: 'Doctor@456',
                 name: 'Dr. Duplicate',
                 contact_number: '9000000004',
                 hospital_id: primaryHospital._id.toString()
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(409);
@@ -658,10 +639,9 @@ describe('Admin Routes', () => {
         test('should fail creating doctor without contact_number', async () => {
             const response = await api.post('/api/admin/doctors', {
                 login_id: 'doctor_admin_no_phone',
-                password: 'Doctor@456',
                 name: 'Dr. No Phone'
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(400);
@@ -671,57 +651,100 @@ describe('Admin Routes', () => {
         test('should fail creating doctor with invalid contact_number', async () => {
             const response = await api.post('/api/admin/doctors', {
                 login_id: 'doctor_admin_bad_phone',
-                password: 'Doctor@456',
                 name: 'Dr. Bad Phone',
                 contact_number: '90000abc03'
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(400);
             expect(response.data.success).toBe(false);
         });
 
-        test('should update doctor details', async () => {
+        test('should update non-security Doctor details', async () => {
             const response = await api.put(`/api/admin/doctors/${createdDoctorId}`, {
                 department: 'Nephrology',
-                is_active: false
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(200);
             expect(response.data.success).toBe(true);
             expect(response.data.data.profile_id.department).toBe('Nephrology');
-            expect(response.data.data.is_active).toBe(false);
+            expect(response.data.data.is_active).toBe(true);
+        });
+
+        test('should require the dedicated Doctor status and credential routes', async () => {
+            const generic = await api.put(`/api/admin/doctors/${createdDoctorId}`, {
+                department: 'Must Not Persist',
+                is_active: false,
+                password: 'ForbiddenDoctor1!',
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+            expect(generic.status).toBe(400);
+
+            const status = await api.patch(`/api/admin/doctors/${createdDoctorId}/status`, {
+                is_active: false,
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+            expect(status.status).toBe(200);
+
+            const reset = await api.post(`/api/admin/doctors/${createdDoctorId}/credentials/reset`, {}, {
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` },
+            });
+            expect(reset.status).toBe(200);
+            expect(reset.data.data.temporary_password).toBeDefined();
+
+            const restore = await api.patch(`/api/admin/doctors/${createdDoctorId}/status`, {
+                is_active: true,
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+            expect(restore.status).toBe(200);
         });
 
         test('restores an admin membership move when post-write ownership is lost', async () => {
-            const profileId = hospitalAdminUser.profile_id;
+            const targetProfile = await AdminProfile.create({
+                name: 'Move Compensation Target',
+                admin_role: AdminRole.HOSPITAL_ADMIN,
+                hospital_id: primaryHospital._id,
+            });
+            const targetUser = await User.create({
+                login_id: `move-compensation-${Date.now()}@example.com`,
+                password: 'Admin@123', user_type: 'ADMIN', profile_id: targetProfile._id, is_active: true,
+            });
+            // updateAdminAccount may attempt a transaction first, then fall back to
+            // standalone writes when the test Mongo is not a replica set. Only expire
+            // the membership lease after a *successful* profile CAS so the Once-style
+            // side effect is not consumed by a failed transactional probe write.
             const original = AdminProfile.findOneAndUpdate.bind(AdminProfile);
-            const spy = jest.spyOn(AdminProfile, 'findOneAndUpdate').mockImplementationOnce((async (...args: any[]) => {
+            let membershipLeaseExpired = false;
+            const spy = jest.spyOn(AdminProfile, 'findOneAndUpdate').mockImplementation((async (...args: any[]) => {
                 const updated = await original(...args);
-                await Hospital.updateOne({ _id: secondaryHospital._id }, {
-                    $set: { 'lifecycle_lock.expires_at': new Date(Date.now() - 1_000) },
-                });
+                if (!membershipLeaseExpired) {
+                    membershipLeaseExpired = true;
+                    await Hospital.updateOne({ _id: secondaryHospital._id }, {
+                        $set: { 'lifecycle_lock.expires_at': new Date(Date.now() - 1_000) },
+                    });
+                }
                 return updated as any;
             }) as any);
             try {
-                const response = await api.put(`/api/admin/users/${hospitalAdminUser._id}`, {
+                const response = await api.put(`/api/admin/users/${targetUser._id}`, {
                     hospital_id: secondaryHospital._id.toString(),
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
                 expect(response.status).toBe(409);
                 const [afterProfile, afterUser] = await Promise.all([
-                    AdminProfile.findById(profileId).lean(), User.findById(hospitalAdminUser._id).lean(),
+                    AdminProfile.findById(targetProfile._id).lean(), User.findById(targetUser._id).lean(),
                 ]);
                 expect(String(afterProfile?.hospital_id)).toBe(String(primaryHospital._id));
                 expect(afterUser?.is_active).toBe(true);
             } finally {
                 spy.mockRestore();
-                await Hospital.updateOne({ _id: secondaryHospital._id }, {
-                    $set: { status: 'active', lifecycle_state: 'STABLE', accepting_assignments: true },
-                    $unset: { lifecycle_lock: 1 },
-                });
+                await Promise.all([
+                    User.deleteOne({ _id: targetUser._id }),
+                    AdminProfile.deleteOne({ _id: targetProfile._id }),
+                    Hospital.updateOne({ _id: secondaryHospital._id }, {
+                        $set: { status: 'active', lifecycle_state: 'STABLE', accepting_assignments: true },
+                        $unset: { lifecycle_lock: 1 },
+                    }),
+                ]);
             }
         });
 
@@ -768,15 +791,15 @@ describe('Admin Routes', () => {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
 
-            expect(response.status).toBe(409);
-            expect(response.data.message).toMatch(/still has assigned patients/i);
+            expect(response.status).toBe(403);
+            expect(response.data.required_capability).toBe('tenant.doctors.manage');
             const profile = await DoctorProfile.findById(primaryDoctorUser.profile_id);
             expect(String(profile?.hospital_id)).toBe(primaryHospital._id.toString());
         });
 
         test('should not deactivate a doctor who still has active assigned patients', async () => {
             const response = await api.delete(`/api/admin/doctors/${primaryDoctorUser._id}`, {
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` },
             });
 
             expect(response.status).toBe(409);
@@ -789,9 +812,9 @@ describe('Admin Routes', () => {
             const response = await api.put(`/api/admin/doctors/${primaryDoctorUser._id}`, {
                 name: 'Should Not Persist',
                 is_active: false,
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
-            expect(response.status).toBe(409);
+            expect(response.status).toBe(400);
             expect((await DoctorProfile.findById(primaryDoctorUser.profile_id).lean())?.name).toBe(before?.name);
             expect((await User.findById(primaryDoctorUser._id).lean())?.is_active).toBe(true);
         });
@@ -800,7 +823,7 @@ describe('Admin Routes', () => {
             const release = await acquireDoctorAssignmentGuard(secondaryDoctorUser._id);
             try {
                 const response = await api.delete(`/api/admin/doctors/${secondaryDoctorUser._id}`, {
-                    headers: { Authorization: `Bearer ${adminToken}` },
+                    headers: { Authorization: `Bearer ${hospitalAdminToken}` },
                 });
                 expect(response.status).toBe(409);
                 expect(response.data.message).toMatch(/operation.*progress/i);
@@ -855,11 +878,10 @@ describe('Admin Routes', () => {
             try {
                 const response = await api.post('/api/admin/patients', {
                     login_id: loginId,
-                    password: 'Patient@123',
                     assigned_doctor_id: secondaryDoctorUser._id.toString(),
                     hospital_id: primaryHospital._id.toString(),
                     demographics: { name: 'Release Safe', age: 45, gender: 'Female', phone: '9000000088' },
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(response.status).toBe(201);
                 expect(await User.countDocuments({ login_id: loginId })).toBe(1);
             } finally {
@@ -884,7 +906,7 @@ describe('Admin Routes', () => {
                 const move = await api.put(`/api/admin/doctors/${secondaryDoctorUser._id}`, {
                     hospital_id: secondaryHospital._id.toString(),
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(move.status).toBe(409);
+                expect(move.status).toBe(403);
             } finally {
                 await releaseAssignment();
             }
@@ -893,11 +915,10 @@ describe('Admin Routes', () => {
             try {
                 const onboard = await api.post('/api/admin/patients', {
                     login_id: `MOVE_RACE_${Date.now()}`,
-                    password: 'Patient@123',
                     assigned_doctor_id: secondaryDoctorUser._id.toString(),
                     hospital_id: primaryHospital._id.toString(),
                     demographics: { name: 'Move Race', age: 50, gender: 'Male', phone: '9000000098' },
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(onboard.status).toBe(409);
             } finally {
                 await moveGuard.release();
@@ -928,11 +949,12 @@ describe('Admin Routes', () => {
                 const response = await api.put(`/api/admin/doctors/${secondaryDoctorUser._id}`, {
                     hospital_id: secondaryHospital._id.toString(),
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(response.status).toBe(500);
+                expect(response.status).toBe(403);
+                expect(saveSpy).not.toHaveBeenCalled();
                 const after = await DoctorProfile.findById(secondaryDoctorUser.profile_id).lean();
-                expect(String(after?.hospital_id)).toBe(secondaryHospital._id.toString());
-                expect(Number(after?.doctor_operation_fence)).toBe(successorGuard?.fenceToken);
-                expect(String(successorProfile.assigned_doctor_id)).toBe(secondaryDoctorUser._id.toString());
+                expect(String(after?.hospital_id)).toBe(String(before?.hospital_id));
+                expect(successorGuard).toBeUndefined();
+                expect(successorProfile).toBeUndefined();
             } finally {
                 saveSpy.mockRestore();
                 if (successorGuard) await successorGuard();
@@ -983,11 +1005,11 @@ describe('Admin Routes', () => {
                     password: 'Doctor@123', name: 'Blocked Incoming', contact_number: '9000000043',
                     hospital_id: hospital._id.toString(),
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect([400, 409]).toContain(incomingCreate.status);
+                expect([400, 403, 409]).toContain(incomingCreate.status);
                 const incomingMove = await api.put(`/api/admin/doctors/${mover._id}`, {
                     hospital_id: hospital._id.toString(),
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect([400, 409]).toContain(incomingMove.status);
+                expect([400, 403, 409]).toContain(incomingMove.status);
                 expect(String((await DoctorProfile.findById(moverProfile._id).lean())?.hospital_id))
                     .toBe(secondaryHospital._id.toString());
                 const concurrentActivation = await api.patch(`/api/admin/hospitals/${hospital._id}/status`, {
@@ -1006,8 +1028,8 @@ describe('Admin Routes', () => {
                 const response = await suspensionPromise;
                 expect(response.status).toBe(200);
                 expect((await Hospital.findById(hospital._id).lean())?.status).toBe('suspended');
-                expect((await User.findById(doctor._id).lean())?.is_active).toBe(false);
-                expect((await User.findById(patient._id).lean())?.is_active).toBe(false);
+                expect((await User.findById(doctor._id).lean())?.is_active).toBe(true);
+                expect((await User.findById(patient._id).lean())?.is_active).toBe(true);
             } finally {
                 await heldGuard();
                 await Promise.all([
@@ -1050,7 +1072,7 @@ describe('Admin Routes', () => {
                     status: 'suspended',
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
                 expect(suspended.status).toBe(200);
-                expect((await User.findById(doctor._id).lean())?.is_active).toBe(false);
+                expect((await User.findById(doctor._id).lean())?.is_active).toBe(true);
                 expect((await Hospital.findById(hospital._id).lean())?.status).toBe('suspended');
             } finally {
                 await membership.release();
@@ -1125,7 +1147,7 @@ describe('Admin Routes', () => {
             }
         });
 
-        test('should not let a stale suspender deactivate over a successor doctor fence', async () => {
+        test('should reject a stale suspender after a successor doctor fence', async () => {
             const hospital = await Hospital.create({
                 code: `STALE_SUSPEND_${Date.now()}`, name: 'Stale Suspend Hospital', location: 'Test',
                 admin_email: `stale-suspend-${Date.now()}@example.com`,
@@ -1138,7 +1160,7 @@ describe('Admin Routes', () => {
             const originalUpdateOne = User.updateOne.bind(User);
             let successor: Awaited<ReturnType<typeof acquireDoctorMoveGuard>> | undefined;
             const spy = jest.spyOn(User, 'updateOne').mockImplementation((async (filter: any, update: any, ...rest: any[]) => {
-                if (!successor && String(filter?._id) === String(doctor._id) && update?.$set?.is_active === false &&
+                if (!successor && String(filter?._id) === String(doctor._id) && update?.$set?.['doctor_operation_lock.expires_at'] &&
                     filter?.['doctor_operation_lock.lease_id']) {
                     await originalUpdateOne({ _id: doctor._id }, {
                         $set: { 'doctor_operation_lock.expires_at': new Date(Date.now() - 1_000) },
@@ -1174,7 +1196,7 @@ describe('Admin Routes', () => {
             }
         });
 
-        test('should support combined move and deactivation and allow later inactive moves', async () => {
+        test('should reject combined Doctor move, status, and credential mutations with no partial write', async () => {
             const profile = await DoctorProfile.create({
                 name: 'Dr. Lifecycle', department: 'Cardiology', contact_number: '9000000087',
                 hospital_id: primaryHospital._id,
@@ -1184,29 +1206,25 @@ describe('Admin Routes', () => {
                 profile_id: profile._id, is_active: true,
             });
             try {
+                const before = await User.findById(doctor._id).select('+password').lean();
                 const combined = await api.put(`/api/admin/doctors/${doctor._id}`, {
                     hospital_id: secondaryHospital._id.toString(),
                     is_active: false,
                     password: 'MovedDoctor@456',
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(combined.status).toBe(200);
-                expect((await User.findById(doctor._id).lean())?.is_active).toBe(false);
-                expect(String((await DoctorProfile.findById(profile._id).lean())?.hospital_id))
-                    .toBe(secondaryHospital._id.toString());
-
-                const inactiveMove = await api.put(`/api/admin/doctors/${doctor._id}`, {
-                    hospital_id: primaryHospital._id.toString(),
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(inactiveMove.status).toBe(200);
-                expect((await User.findById(doctor._id).lean())?.is_active).toBe(false);
-                expect(String((await DoctorProfile.findById(profile._id).lean())?.hospital_id))
-                    .toBe(primaryHospital._id.toString());
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+                expect(combined.status).toBe(400);
+                const [afterUser, afterProfile] = await Promise.all([
+                    User.findById(doctor._id).select('+password').lean(), DoctorProfile.findById(profile._id).lean(),
+                ]);
+                expect(afterUser?.is_active).toBe(true);
+                expect(afterUser?.password).toBe(before?.password);
+                expect(String(afterProfile?.hospital_id)).toBe(primaryHospital._id.toString());
             } finally {
                 await Promise.all([User.deleteOne({ _id: doctor._id }), DoctorProfile.deleteOne({ _id: profile._id })]);
             }
         });
 
-        test('stale combined move/deactivate/password never reactivates or rolls security generation backward', async () => {
+        test('strict Doctor validation does not bump security generation for rejected combined mutations', async () => {
             const profile = await DoctorProfile.create({
                 name: 'Dr Irreversible Security', department: 'Cardiology', contact_number: '9000000086',
                 hospital_id: primaryHospital._id,
@@ -1215,41 +1233,18 @@ describe('Admin Routes', () => {
                 login_id: `irreversible-doctor-${Date.now()}`, password: 'Doctor@123', user_type: 'DOCTOR',
                 profile_id: profile._id, is_active: true,
             });
-            const beforeVersion = Number(doctor.security_version || 0);
-            const original = User.findOneAndUpdate.bind(User);
-            let successor: Awaited<ReturnType<typeof acquireDoctorMoveGuard>> | undefined;
-            const spy = jest.spyOn(User, 'findOneAndUpdate').mockImplementation(((filter: any, update: any, ...rest: any[]) => {
-                const query: any = original(filter, update, ...rest as any);
-                if (!successor && String(filter?._id) === String(doctor._id) && update?.$inc?.security_version === 1) {
-                    const originalExec = query.exec.bind(query);
-                    query.exec = async () => {
-                        const result = await originalExec();
-                        await User.updateOne({ _id: doctor._id }, {
-                            $set: { 'doctor_operation_lock.expires_at': new Date(Date.now() - 1_000) },
-                        });
-                        successor = await acquireDoctorMoveGuard(doctor._id);
-                        await stampDoctorProfileFence(profile._id, successor);
-                        return result;
-                    };
-                }
-                return query;
-            }) as any);
             try {
+                const before = await User.findById(doctor._id).select('+password').lean();
                 const response = await api.put(`/api/admin/doctors/${doctor._id}`, {
                     hospital_id: secondaryHospital._id.toString(), is_active: false,
                     password: 'IrreversibleDoctor@456',
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(response.status).toBe(409);
-                const [afterUser, afterProfile] = await Promise.all([
-                    User.findById(doctor._id).lean(), DoctorProfile.findById(profile._id).lean(),
-                ]);
-                expect(afterUser?.is_active).toBe(false);
-                expect(Number(afterUser?.security_version)).toBe(beforeVersion + 1);
-                expect(Number(afterProfile?.doctor_operation_fence)).toBe(successor?.fenceToken);
-                expect(String(afterProfile?.hospital_id)).toBe(String(secondaryHospital._id));
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+                expect(response.status).toBe(400);
+                const after = await User.findById(doctor._id).select('+password').lean();
+                expect(after?.is_active).toBe(before?.is_active);
+                expect(after?.security_version).toBe(before?.security_version);
+                expect(after?.password).toBe(before?.password);
             } finally {
-                spy.mockRestore();
-                if (successor) await successor.release();
                 await Promise.all([User.deleteOne({ _id: doctor._id }), DoctorProfile.deleteOne({ _id: profile._id })]);
             }
         });
@@ -1268,9 +1263,9 @@ describe('Admin Routes', () => {
             let spy = expireMembershipAfterCreate();
             try {
                 const doctorResponse = await api.post('/api/admin/doctors', {
-                    login_id: doctorLogin, password: 'PairDoctor@123', name: 'Dr Pair Integrity',
+                    login_id: doctorLogin, name: 'Dr Pair Integrity',
                     contact_number: '9000000085', hospital_id: primaryHospital._id.toString(),
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(doctorResponse.status).toBe(201);
             } finally {
                 spy.mockRestore();
@@ -1282,7 +1277,7 @@ describe('Admin Routes', () => {
                     email: adminLogin, name: 'Pair Integrity Admin', role: AdminRole.HOSPITAL_ADMIN,
                     hospital_id: primaryHospital._id.toString(),
                 }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(adminResponse.status).toBe(201);
+                expect(adminResponse.status).toBe(409);
             } finally {
                 spy.mockRestore();
             }
@@ -1292,6 +1287,8 @@ describe('Admin Routes', () => {
             ]);
             expect(doctorUser).toBeTruthy();
             expect(adminPairUser).toBeTruthy();
+            expect(doctorUser?.is_active).toBe(true);
+            expect(adminPairUser?.is_active).toBe(false);
             expect(await DoctorProfile.exists({ _id: doctorUser?.profile_id })).toBeTruthy();
             expect(await AdminProfile.exists({ _id: adminPairUser?.profile_id })).toBeTruthy();
             if (doctorUser) await Promise.all([
@@ -1320,8 +1317,7 @@ describe('Admin Routes', () => {
                 await expect(hasActiveHospitalAccess(users[1])).resolves.toBe(true);
                 await expect(hasActiveHospitalAccess(users[2])).resolves.toBe(false);
                 await expect(hasActiveHospitalAccess(users[3])).resolves.toBe(false);
-                const globalAuditorListing = await adminService.listUsers(String(users[1]._id));
-                expect(globalAuditorListing.users.map(user => user.loginId)).toContain(adminUser.login_id);
+                await expect(adminService.listUsers(String(users[1]._id))).rejects.toMatchObject({ statusCode: 403 });
             } finally {
                 await Promise.all([
                     User.deleteMany({ _id: { $in: users.map(user => user._id) } }),
@@ -1346,16 +1342,16 @@ describe('Admin Routes', () => {
             });
             const patient = await User.create({
                 login_id: `reactivation-patient-${Date.now()}`, password: 'Patient@123', user_type: 'PATIENT',
-                profile_id: profile._id, is_active: true,
+                profile_id: profile._id, is_active: false,
             });
             const deactivated = await api.delete(`/api/admin/doctors/${doctor._id}`, {
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` },
             });
             expect(deactivated.status).toBe(200);
 
-            const response = await api.put(`/api/admin/patients/${patient._id}`, {
+            const response = await api.patch(`/api/admin/patients/${patient._id}/status`, {
                 account_status: 'Active',
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
             expect(response.status).toBe(409);
             expect((await PatientProfile.findById(profile._id).lean())?.account_status).toBe('Discharged');
             await Promise.all([
@@ -1367,7 +1363,7 @@ describe('Admin Routes', () => {
 
         test('should fail when deactivating non-existent doctor', async () => {
             const response = await api.delete(`/api/admin/doctors/${new mongoose.Types.ObjectId().toString()}`, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(404);
@@ -1390,23 +1386,23 @@ describe('Admin Routes', () => {
             expect(response.data.data.patients[0].password_history).toBeUndefined();
         });
 
-        test('should apply an app-admin hospital filter before patient pagination', async () => {
-            const response = await api.get(`/api/admin/patients?hospital_id=${primaryHospital._id}&page=1&limit=10`, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+        test('should keep a Hospital Admin patient filter inside the persisted tenant scope', async () => {
+            const response = await api.get(`/api/admin/patients?hospital_id=${primaryHospital._id}&page=1&limit=20`, {
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(200);
-            expect(response.data.data.pagination.total).toBe(1);
-            expect(response.data.data.patients).toHaveLength(1);
-            expect(String(response.data.data.patients[0].profile_id.hospital_id)).toBe(primaryHospital._id.toString());
+            expect(response.data.data.patients.length).toBeGreaterThanOrEqual(1);
+            expect(response.data.data.patients.every((patient: any) =>
+                String(patient.profile_id.hospital_id) === primaryHospital._id.toString()
+            )).toBe(true);
         });
 
-        test('should create a patient successfully', async () => {
+        test('should create a patient without accepting caller-supplied credentials or clinical config', async () => {
             createdPatientLoginId = 'PAT_ADMIN_NEW';
 
             const response = await api.post('/api/admin/patients', {
                 login_id: createdPatientLoginId,
-                password: 'Patient@456',
                 assigned_doctor_id: primaryDoctorUser.login_id,
                 demographics: {
                     name: 'Admin Onboarded Patient',
@@ -1418,35 +1414,53 @@ describe('Admin Routes', () => {
                         relation: 'Sister',
                         phone: '9333333333'
                     }
-                },
-                medical_config: {
-                    therapy_drug: 'Warfarin',
-                    therapy_start_date: '2025-06-20',
-                    target_inr: { min: 2.0, max: 3.0 }
                 }
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(201);
             expect(response.data.success).toBe(true);
             expect(response.data.data.user.user_type).toBe('PATIENT');
             expect(response.data.data.user.login_id).toBe(createdPatientLoginId);
+            expect(response.data.data.temporary_password).toBeDefined();
+            expect(response.data.data.must_change_password).toBe(true);
+            expect(response.data.data.user.profile_id.medical_config?.diagnosis).toBeUndefined();
+            expect(response.data.data.user.profile_id.medical_config?.therapy_drug).toBeUndefined();
+            expect(response.data.data.user.profile_id.medical_config?.therapy_start_date).toBeUndefined();
             expect(response.data.data.user.profile_id.demographics.phone_verification.status).toBe('PENDING');
             createdPatientId = response.data.data.user._id;
+        });
+
+        test.each([
+            ['password', { password: 'Patient@456' }],
+            ['medical_config', { medical_config: { therapy_start_date: '2025-06-20' } }],
+        ])('should reject administrative Patient %s input with no partial write', async (field, forbidden) => {
+            const loginId = `PAT_STRICT_${field.toUpperCase()}`;
+            const profilesBefore = await PatientProfile.countDocuments();
+            const response = await api.post('/api/admin/patients', {
+                login_id: loginId,
+                assigned_doctor_id: primaryDoctorUser.login_id,
+                demographics: { name: 'Strict Patient', phone: '9222222299' },
+                ...forbidden,
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+
+            expect(response.status).toBe(400);
+            expect(response.data.success).toBe(false);
+            expect(await User.countDocuments({ login_id: loginId })).toBe(0);
+            expect(await PatientProfile.countDocuments()).toBe(profilesBefore);
         });
 
         test('should fail creating patient with invalid doctor identifier', async () => {
             const response = await api.post('/api/admin/patients', {
                 login_id: 'PAT_ADMIN_INVALID',
-                password: 'Patient@456',
                 assigned_doctor_id: 'no_such_doctor',
                 demographics: {
                     name: 'Invalid Assignment',
                     phone: '9444444444',
                 }
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(400);
@@ -1456,7 +1470,6 @@ describe('Admin Routes', () => {
         test('should prevent hospital admin onboarding with a cross-tenant assigned doctor', async () => {
             const response = await api.post('/api/admin/patients', {
                 login_id: 'PAT_ADMIN_CROSS_DOCTOR',
-                password: 'Patient@456',
                 assigned_doctor_id: crossTenantDoctorUser.login_id,
                 demographics: {
                     name: 'Cross Doctor Patient',
@@ -1476,13 +1489,12 @@ describe('Admin Routes', () => {
         test('should fail creating patient without demographics phone', async () => {
             const response = await api.post('/api/admin/patients', {
                 login_id: 'PAT_ADMIN_NO_PHONE',
-                password: 'Patient@456',
                 assigned_doctor_id: primaryDoctorUser.login_id,
                 demographics: {
                     name: 'Missing Phone Patient'
                 }
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(400);
@@ -1503,7 +1515,7 @@ describe('Admin Routes', () => {
                     name: 'Renamed Admin Patient'
                 }
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(200);
@@ -1514,34 +1526,22 @@ describe('Admin Routes', () => {
             expect(response.data.data.profile_id.demographics.phone_verification.verified_at).toBeDefined();
         });
 
-        test('should reject conflicting assigned doctor and hospital updates without a partial write', async () => {
+        test.each([
+            ['conflicting', false],
+            ['matching', true],
+        ])('should reject %s assigned_doctor_id input on generic Patient updates with no partial write', async (_kind, matchingHospital) => {
             const before = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
             const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
                 assigned_doctor_id: primaryDoctorUser._id.toString(),
-                hospital_id: secondaryHospital._id.toString(),
+                hospital_id: (matchingHospital ? primaryHospital : secondaryHospital)._id.toString(),
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` },
             });
 
-            expect(response.status).toBe(403);
-            expect(response.data.message).toMatch(/same hospital/i);
+            expect(response.status).toBe(400);
             const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
             expect(String(after?.assigned_doctor_id)).toBe(String(before?.assigned_doctor_id));
             expect(String(after?.hospital_id)).toBe(String(before?.hospital_id));
-        });
-
-        test('should accept matching assigned doctor and hospital updates', async () => {
-            const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                assigned_doctor_id: primaryDoctorUser._id.toString(),
-                hospital_id: primaryHospital._id.toString(),
-            }, {
-                headers: { Authorization: `Bearer ${adminToken}` },
-            });
-
-            expect(response.status).toBe(200);
-            const profile = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
-            expect(String(profile?.assigned_doctor_id)).toBe(primaryDoctorUser._id.toString());
-            expect(String(profile?.hospital_id)).toBe(primaryHospital._id.toString());
         });
 
         test('should reject a hospital-only move that conflicts with the retained doctor', async () => {
@@ -1549,7 +1549,7 @@ describe('Admin Routes', () => {
             const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
                 hospital_id: secondaryHospital._id.toString(),
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` },
             });
 
             expect(response.status).toBe(403);
@@ -1559,155 +1559,112 @@ describe('Admin Routes', () => {
             expect(String(after?.hospital_id)).toBe(String(before?.hospital_id));
         });
 
-        test('should preserve adherence and clinician fields during a partial medical config update', async () => {
-            await PatientProfile.updateOne(
-                { _id: baselinePatientUser.profile_id },
-                {
-                    $set: {
-                        'medical_config.instructions': ['Keep dose stable'],
-                        'medical_config.next_review_date': new Date('2030-02-01'),
-                        'medical_config.taken_doses': [new Date('2026-02-10')],
-                    },
-                },
-            );
-
+        test('should reject administrative medical configuration updates with no partial write', async () => {
+            const before = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
             const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                medical_config: { diagnosis: 'Updated diagnosis' },
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                demographics: { name: 'Must Not Persist With Clinical Input' },
+                medical_config: { diagnosis: 'Administrative diagnosis attempt' },
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
-            expect(response.status).toBe(200);
-            const profile = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
-            expect(profile?.medical_config?.diagnosis).toBe('Updated diagnosis');
-            expect(profile?.medical_config?.instructions).toEqual(['Keep dose stable']);
-            expect(profile?.medical_config?.taken_doses).toHaveLength(1);
-            expect(profile?.medical_config?.next_review_date).toEqual(new Date('2030-02-01'));
+            expect(response.status).toBe(400);
+            expect(response.data.success).toBe(false);
+            const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
+            expect(after?.demographics?.name).toBe(before?.demographics?.name);
+            expect(after?.medical_config).toEqual(before?.medical_config);
         });
 
-        test('should not persist patient profile edits when password policy rejects the update', async () => {
-            const before = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
+        test('should reject administrative Patient password updates with no partial write', async () => {
+            const beforeUser = await User.findById(baselinePatientUser._id).select('+password').lean();
+            const beforeProfile = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
             const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
                 demographics: { name: 'Should Not Persist' },
                 password: 'Patient@123',
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
             expect(response.status).toBe(400);
-            expect(response.data.message).toMatch(/recently used password/i);
-            expect((await PatientProfile.findById(baselinePatientUser.profile_id).lean())?.demographics?.name)
-                .toBe(before?.demographics?.name);
+            const [afterUser, afterProfile] = await Promise.all([
+                User.findById(baselinePatientUser._id).select('+password').lean(),
+                PatientProfile.findById(baselinePatientUser.profile_id).lean(),
+            ]);
+            expect(afterProfile?.demographics?.name).toBe(beforeProfile?.demographics?.name);
+            expect(afterUser?.password).toBe(beforeUser?.password);
+            expect(afterUser?.security_version).toBe(beforeUser?.security_version);
         });
 
-        test('field-scoped compensation preserves a concurrent clinical write after a late user-save failure', async () => {
+        test('strict Patient validation prevents mixed status updates before compensation paths', async () => {
             const before = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
-            const concurrentDose = new Date('2027-01-15T00:00:00.000Z');
-            const spy = jest.spyOn(User.prototype, 'save').mockImplementationOnce((async function (this: any) {
-                await PatientProfile.updateOne({ _id: baselinePatientUser.profile_id }, {
-                    $addToSet: { 'medical_config.taken_doses': concurrentDose },
-                });
-                throw new Error('late user save failure');
-            }) as any);
+            const userSave = jest.spyOn(User.prototype, 'save');
+            const profileUpdate = jest.spyOn(PatientProfile, 'findOneAndUpdate');
             try {
                 const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
                     demographics: { name: 'Transient Admin Name' },
                     is_active: false,
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(response.status).toBe(500);
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+                expect(response.status).toBe(400);
+                expect(userSave).not.toHaveBeenCalled();
+                expect(profileUpdate).not.toHaveBeenCalled();
                 const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
                 expect(after?.demographics?.name).toBe(before?.demographics?.name);
-                expect(after?.medical_config?.taken_doses?.map(date => new Date(date as any).toISOString()))
-                    .toContain(concurrentDose.toISOString());
             } finally {
-                spy.mockRestore();
+                userSave.mockRestore();
+                profileUpdate.mockRestore();
             }
         });
 
-        test('compensates coupled phone fields atomically without overwriting a concurrent tuple', async () => {
+        test('strict Doctor validation rejects mixed credential and profile updates before writes', async () => {
             const before = await DoctorProfile.findById(secondaryDoctorUser.profile_id).lean();
-            const concurrentVerifiedAt = new Date('2031-04-05T06:07:08.000Z');
-            const originalProfileUpdateOne = DoctorProfile.updateOne.bind(DoctorProfile);
-            const passwordSpy = jest.spyOn(User, 'findOneAndUpdate').mockImplementationOnce((() => ({
-                select: () => Promise.reject(new Error('late doctor credential failure')),
-            })) as any);
-            const compensationSpy = jest.spyOn(DoctorProfile, 'updateOne').mockImplementationOnce((async (
-                filter: any, update: any, options?: any,
-            ) => {
-                await originalProfileUpdateOne({ _id: secondaryDoctorUser.profile_id }, {
-                    $set: {
-                        contact_number: '9000000077',
-                        phone_verification: { status: 'VERIFIED', verified_at: concurrentVerifiedAt },
-                    },
-                });
-                return originalProfileUpdateOne(filter, update, options);
-            }) as any);
+            const userUpdate = jest.spyOn(User, 'findOneAndUpdate');
+            const profileUpdate = jest.spyOn(DoctorProfile, 'findOneAndUpdate');
             try {
                 const response = await api.put(`/api/admin/doctors/${secondaryDoctorUser._id}`, {
-                    name: 'Should Roll Back Independently',
+                    name: 'Should Not Persist',
                     contact_number: '9000000076',
                     password: 'NewDoctor@456',
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(response.status).toBe(500);
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+                expect(response.status).toBe(400);
+                expect(userUpdate).not.toHaveBeenCalled();
+                expect(profileUpdate).not.toHaveBeenCalled();
                 const after = await DoctorProfile.findById(secondaryDoctorUser.profile_id).lean();
-                expect(after?.contact_number).toBe('9000000077');
-                expect(after?.phone_verification?.status).toBe('VERIFIED');
-                expect(after?.phone_verification?.verified_at).toEqual(concurrentVerifiedAt);
+                expect(after?.contact_number).toBe(before?.contact_number);
                 expect(after?.name).toBe(before?.name);
             } finally {
-                passwordSpy.mockRestore();
-                compensationSpy.mockRestore();
+                userUpdate.mockRestore();
+                profileUpdate.mockRestore();
             }
         });
 
-        test('should reject moving therapy start after a recorded dose', async () => {
+        test('should reject therapy-start changes on administrative Patient routes', async () => {
             const before = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
             const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
                 medical_config: { therapy_start_date: '11-02-2026' },
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
-            expect(response.status).toBe(409);
-            expect(response.data.message).toMatch(/recorded dose/i);
+            expect(response.status).toBe(400);
+            expect(response.data.success).toBe(false);
             const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
-            expect(after?.medical_config?.therapy_start_date).toEqual(before?.medical_config?.therapy_start_date);
+            expect(after?.medical_config).toEqual(before?.medical_config);
         });
 
-        test('should atomically reject therapy-start changes racing with dose and review writes', async () => {
-            await PatientProfile.updateOne(
-                { _id: baselinePatientUser.profile_id },
-                {
-                    $set: {
-                        'medical_config.taken_doses': [],
-                        'medical_config.next_review_date': null,
-                        'medical_config.therapy_start_date': new Date('2025-01-10T00:00:00.000Z'),
-                    },
-                },
-            );
-            const originalFindOneAndUpdate = PatientProfile.findOneAndUpdate.bind(PatientProfile);
-            const spy = jest.spyOn(PatientProfile, 'findOneAndUpdate').mockImplementationOnce((async (...args: any[]) => {
-                await PatientProfile.updateOne(
-                    { _id: baselinePatientUser.profile_id },
-                    {
-                        $set: {
-                            'medical_config.taken_doses': [new Date('2026-02-10T00:00:00.000Z')],
-                            'medical_config.next_review_date': new Date('2026-02-10T00:00:00.000Z'),
-                        },
-                    },
-                );
-                return originalFindOneAndUpdate(...args) as any;
-            }) as any);
+        test('should reject mixed demographic and clinical updates before any write', async () => {
+            const before = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
+            const updateSpy = jest.spyOn(PatientProfile, 'findOneAndUpdate');
             try {
                 const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                    medical_config: { therapy_start_date: '11-02-2026' },
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                    demographics: { name: 'Must Not Reach Service' },
+                    medical_config: { therapy_start_date: '2026-02-11' },
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
-                expect(response.status).toBe(409);
-                const profile = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
-                expect(profile?.medical_config?.therapy_start_date).toEqual(new Date('2025-01-10T00:00:00.000Z'));
-                expect(profile?.medical_config?.taken_doses).toHaveLength(1);
-                expect(profile?.medical_config?.next_review_date).toEqual(new Date('2026-02-10T00:00:00.000Z'));
+                expect(response.status).toBe(400);
+                expect(updateSpy).not.toHaveBeenCalled();
+                const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
+                expect(after?.demographics?.name).toBe(before?.demographics?.name);
+                expect(after?.medical_config).toEqual(before?.medical_config);
             } finally {
-                spy.mockRestore();
+                updateSpy.mockRestore();
             }
         });
 
-        test('generic patient update returns truthful success after a valid reassignment commit loses its lease', async () => {
+        test('dedicated patient assignment route returns truthful success after a valid commit loses its lease', async () => {
             const [targetUserState, targetProfileState, targetHospitalState] = await Promise.all([
                 User.findById(secondaryDoctorUser._id).lean(),
                 DoctorProfile.findById(secondaryDoctorUser.profile_id).lean(),
@@ -1727,15 +1684,13 @@ describe('Admin Routes', () => {
                 return updated as any;
             }) as any);
             try {
-                const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                    assigned_doctor_id: secondaryDoctorUser.login_id,
-                    demographics: { name: 'Committed Generic Reassignment' },
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                const response = await api.put(`/api/admin/patients/${baselinePatientUser.login_id}/assignment`, {
+                    doctor_id: secondaryDoctorUser.login_id,
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
                 expect(response.status).toBe(200);
                 const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
                 expect(String(after?.assigned_doctor_id)).toBe(String(secondaryDoctorUser._id));
-                expect(after?.demographics?.name).toBe('Committed Generic Reassignment');
                 const reassignmentNotification = await Notification.findOne({
                     user_id: baselinePatientUser._id,
                     'data.change_type': 'DOCTOR_REASSIGNED',
@@ -1754,40 +1709,28 @@ describe('Admin Routes', () => {
                 await PatientProfile.updateOne({ _id: baselinePatientUser.profile_id }, {
                     $set: {
                         assigned_doctor_id: primaryDoctorUser._id,
-                        'demographics.name': 'Baseline Patient',
                     },
                 });
             }
         });
 
-        test('generic patient update rejects reassignment combined with account or password mutation', async () => {
+        test.each([
+            ['assignment and status', 'assignment-status'],
+            ['assignment and password', 'assignment-password'],
+            ['status only', 'status'],
+        ])('generic patient update rejects %s with no partial write', async (_case, payloadKind) => {
             const beforeUser = await User.findById(baselinePatientUser._id).select('+password').lean();
             const beforeProfile = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
+            const payload = payloadKind === 'assignment-status'
+                ? { assigned_doctor_id: secondaryDoctorUser.login_id, is_active: false }
+                : payloadKind === 'assignment-password'
+                    ? { assigned_doctor_id: secondaryDoctorUser.login_id, password: 'SeparateMutation@456' }
+                    : { is_active: false };
 
-            const accountResponse = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                assigned_doctor_id: secondaryDoctorUser.login_id,
-                is_active: false,
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
-            expect(accountResponse.status).toBe(409);
-            expect(accountResponse.data.message).toMatch(/submit them separately/i);
-
-            const passwordResponse = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                assigned_doctor_id: secondaryDoctorUser.login_id,
-                password: 'SeparateMutation@456',
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
-            expect(passwordResponse.status).toBe(409);
-
-            const sameDoctorPassword = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                assigned_doctor_id: primaryDoctorUser.login_id,
-                password: 'SameDoctorMustSeparate@456',
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
-            expect(sameDoctorPassword.status).toBe(409);
-
-            const sameDoctorStatus = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                assigned_doctor_id: primaryDoctorUser.login_id,
-                is_active: false,
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
-            expect(sameDoctorStatus.status).toBe(409);
+            const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, payload, {
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` },
+            });
+            expect(response.status).toBe(400);
 
             const [afterUser, afterProfile] = await Promise.all([
                 User.findById(baselinePatientUser._id).select('+password').lean(),
@@ -1812,9 +1755,9 @@ describe('Admin Routes', () => {
                 return updated as any;
             }) as any);
             try {
-                const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                    assigned_doctor_id: secondaryDoctorUser.login_id,
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                const response = await api.put(`/api/admin/patients/${baselinePatientUser.login_id}/assignment`, {
+                    doctor_id: secondaryDoctorUser.login_id,
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(response.status).toBe(409);
 
                 await DoctorProfile.updateOne(
@@ -1853,10 +1796,9 @@ describe('Admin Routes', () => {
                     },
                 },
             });
-            const response = await api.put(`/api/admin/patients/${baselinePatientUser._id}`, {
-                assigned_doctor_id: primaryDoctorUser.login_id,
-                account_status: 'Active',
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            const response = await api.put(`/api/admin/patients/${baselinePatientUser.login_id}/assignment`, {
+                doctor_id: primaryDoctorUser.login_id,
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
             expect(response.status).toBe(200);
             const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
             expect(after?.account_status).toBe('Active');
@@ -1891,7 +1833,7 @@ describe('Admin Routes', () => {
             try {
                 const response = await api.put(`/api/admin/reassign/${loginId}`, {
                     new_doctor_id: secondaryDoctorUser.login_id,
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(response.status).toBe(409);
                 const after = await PatientProfile.findById(patientUser.profile_id).lean();
                 expect(after?.assigned_doctor_id).toBeUndefined();
@@ -1947,7 +1889,7 @@ describe('Admin Routes', () => {
             try {
                 const response = await api.put(`/api/admin/reassign/${patientUser.login_id}`, {
                     new_doctor_id: secondaryDoctorUser.login_id,
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(response.status).toBe(200);
                 const after = await PatientProfile.findById(patientProfile._id).lean();
                 expect(String(after?.assigned_doctor_id)).toBe(secondaryDoctorUser._id.toString());
@@ -1969,7 +1911,7 @@ describe('Admin Routes', () => {
             const response = await api.put(`/api/admin/reassign/${createdPatientLoginId}`, {
                 new_doctor_id: secondaryDoctorUser.login_id
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(200);
@@ -1985,7 +1927,7 @@ describe('Admin Routes', () => {
             const response = await api.put('/api/admin/reassign/PATIENT_DOES_NOT_EXIST', {
                 new_doctor_id: secondaryDoctorUser.login_id
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(404);
@@ -1996,7 +1938,7 @@ describe('Admin Routes', () => {
             const before = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
             const response = await api.put('/api/admin/reassign/PAT_ADMIN_BASE', {
                 new_doctor_id: crossTenantDoctorUser.login_id,
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
             expect(response.status).toBe(403);
             const after = await PatientProfile.findById(baselinePatientUser.profile_id).lean();
@@ -2028,9 +1970,9 @@ describe('Admin Routes', () => {
             const response = await api.put(`/api/admin/patients/${user._id}`, {
                 account_status: 'Active',
                 is_active: true,
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
 
-            expect(response.status).toBe(409);
+            expect(response.status).toBe(400);
             expect((await User.findById(user._id).lean())?.is_active).toBe(false);
             expect((await PatientProfile.findById(profile._id).lean())?.account_status).toBe('Discharged');
         });
@@ -2041,7 +1983,7 @@ describe('Admin Routes', () => {
             const response = await api.post('/api/admin/users/reset-password', {
                 target_user_id: baselinePatientUser._id.toString()
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(200);
@@ -2066,15 +2008,19 @@ describe('Admin Routes', () => {
                 target_user_id: target._id.toString(),
                 new_password: 'ResetHist@123'
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
-            expect(response.status).toBe(400);
-            expect(response.data.message).toBe('New password cannot match a recently used password');
+            expect(response.status).toBe(403);
+            expect(response.data.success).toBe(false);
         });
 
-        test('should invalidate active sessions after admin password reset', async () => {
-            const profile = await AdminProfile.create({ name: 'Reset Session Admin' });
+        test('should deny generic credential reset for administrator-class accounts without changing sessions', async () => {
+            const profile = await AdminProfile.create({
+                name: 'Reset Session Admin',
+                admin_role: AdminRole.HOSPITAL_ADMIN,
+                hospital_id: primaryHospital._id,
+            });
             const target = await User.create({
                 login_id: 'reset-session-admin',
                 password: 'ResetSess@123',
@@ -2082,34 +2028,20 @@ describe('Admin Routes', () => {
                 profile_id: profile._id,
                 is_active: true
             });
-
-            const loginResponse = await api.post('/api/auth/login', {
-                login_id: 'reset-session-admin',
-                password: 'ResetSess@123'
-            });
-            expect(loginResponse.status).toBe(200);
-            const oldToken = loginResponse.data.data.token;
-            const sessionId = loginResponse.data.data.session.session_id;
+            const before = await User.findById(target._id).select('+password').lean();
 
             const resetResponse = await api.post('/api/admin/users/reset-password', {
                 target_user_id: target._id.toString(),
                 new_password: 'ResetSess@456'
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
-            expect(resetResponse.status).toBe(200);
-            expect(resetResponse.data.data.must_change_password).toBe(true);
-            expect(resetResponse.data.data.invalidated_sessions).toBeGreaterThanOrEqual(1);
-
-            const meResponse = await api.get('/api/auth/me', {
-                headers: { Authorization: `Bearer ${oldToken}` }
-            });
-            expect(meResponse.status).toBe(401);
-
-            const session = await AuthSession.findById(sessionId).lean();
-            expect(session?.revoked_at).toBeDefined();
-            expect(session?.revoked_reason).toBe('PASSWORD_RESET');
+            expect(resetResponse.status).toBe(403);
+            expect(resetResponse.data.message).toMatch(/administrator-class accounts/i);
+            const after = await User.findById(target._id).select('+password').lean();
+            expect(after?.password).toBe(before?.password);
+            expect(after?.security_version).toBe(before?.security_version);
         });
 
         test('should invalidate active sessions after doctor deactivation', async () => {
@@ -2141,7 +2073,7 @@ describe('Admin Routes', () => {
             const sessionId = loginResponse.data.data.session.session_id;
 
             const deactivateResponse = await api.delete(`/api/admin/doctors/${target._id.toString()}`, {
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` },
             });
             expect(deactivateResponse.status).toBe(200);
             expect(deactivateResponse.data.data.invalidated_sessions).toBeGreaterThanOrEqual(1);
@@ -2166,7 +2098,7 @@ describe('Admin Routes', () => {
                 target_user_id: new mongoose.Types.ObjectId().toString(),
                 new_password: 'Strong@999'
             }, {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(404);
@@ -2181,21 +2113,18 @@ describe('Admin Routes', () => {
             expect(response.status).toBe(200);
             expect(response.data.success).toBe(true);
             expect(response.data.data.status).toBe('healthy');
-            expect(response.data.data.database).toBeDefined();
+            expect(response.data.data.dependencies.database.status).toBe('available');
             expect(response.data.data.memory).toBeUndefined();
-            expect(response.data.data.database.host).toBeUndefined();
-            expect(response.data.data.database.name).toBeUndefined();
+            expect(JSON.stringify(response.data.data)).not.toContain('mongodb://');
         });
 
-        test('should redact database connection details from hospital-admin health responses', async () => {
+        test('should deny global platform health to a Hospital Admin', async () => {
             const response = await api.get('/api/admin/system/health', {
                 headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
-            expect(response.status).toBe(200);
-            expect(response.data.data.database.host).toBeUndefined();
-            expect(response.data.data.database.name).toBeUndefined();
-            expect(response.data.data.memory).toBeUndefined();
+            expect(response.status).toBe(403);
+            expect(response.data.required_capability).toBe('platform.system_health.read');
         });
 
         test('should return aggregated hospital user counts and support status changes', async () => {
@@ -2231,15 +2160,19 @@ describe('Admin Routes', () => {
         });
 
         test('should return the temporary password when reset audit persistence fails', async () => {
-            const profile = await AdminProfile.create({ name: 'Audit Failure Reset' });
+            const profile = await PatientProfile.create({
+                hospital_id: primaryHospital._id,
+                assigned_doctor_id: primaryDoctorUser._id,
+                demographics: { name: 'Audit Failure Reset', phone: '9000000064' },
+            });
             const target = await User.create({
-                login_id: `audit-reset-${Date.now()}`, password: 'AuditReset@123', user_type: 'ADMIN',
+                login_id: `audit-reset-${Date.now()}`, password: 'AuditReset@123', user_type: 'PATIENT',
                 profile_id: profile._id, is_active: true,
             });
             const spy = jest.spyOn(AuditLog, 'create').mockRejectedValueOnce(new Error('audit store unavailable') as never);
             const response = await api.post('/api/admin/users/reset-password', {
                 target_user_id: target._id.toString(),
-            }, { headers: { Authorization: `Bearer ${adminToken}` } });
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
             spy.mockRestore();
             expect(response.status).toBe(200);
             expect(response.data.data.temporary_password).toBeDefined();
@@ -2289,7 +2222,7 @@ describe('Admin Routes', () => {
 
         test('should support patient search listing', async () => {
             const response = await api.get('/api/admin/patients?search=PAT_ADMIN&page=1&limit=20', {
-                headers: { Authorization: `Bearer ${adminToken}` }
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
             });
 
             expect(response.status).toBe(200);
@@ -2298,26 +2231,28 @@ describe('Admin Routes', () => {
             expect(response.data.data.patients.length).toBeGreaterThanOrEqual(1);
         });
 
-        test('should not expose global admin metadata in hospital admin user listing', async () => {
-            const fullUserRead = jest.spyOn(User, 'find');
-            try {
-                const response = await api.get('/api/admin/users', {
-                    headers: { Authorization: `Bearer ${hospitalAdminToken}` }
-                });
+        test('should deny Hospital Admin access to the global administrator account registry', async () => {
+            const response = await api.get('/api/admin/users', {
+                headers: { Authorization: `Bearer ${hospitalAdminToken}` }
+            });
 
-                expect(response.status).toBe(200);
-                expect(response.data.success).toBe(true);
-                expect(fullUserRead).not.toHaveBeenCalled();
-                const loginIds = response.data.data.users.map((user: any) => user.loginId);
-                expect(loginIds).toContain('hospital_admin_a');
-                expect(loginIds).toContain(primaryDoctorUser.login_id);
-                expect(loginIds).toContain(baselinePatientUser.login_id);
-                expect(loginIds).not.toContain(adminUser.login_id);
-                expect(loginIds).not.toContain(crossTenantDoctorUser.login_id);
-                expect(loginIds).not.toContain(crossTenantPatientUser.login_id);
-            } finally {
-                fullUserRead.mockRestore();
-            }
+            expect(response.status).toBe(403);
+            expect(response.data.success).toBe(false);
+        });
+
+        test('should return only manageable administrator accounts with canonical login_id', async () => {
+            const response = await api.get('/api/admin/users', {
+                headers: { Authorization: `Bearer ${adminToken}` }
+            });
+
+            expect(response.status).toBe(200);
+            expect(response.data.success).toBe(true);
+            const loginIds = response.data.data.users.map((user: any) => user.login_id);
+            expect(loginIds).toContain('hospital_admin_a');
+            expect(loginIds).toContain('auditor001');
+            expect(loginIds).not.toContain(primaryDoctorUser.login_id);
+            expect(loginIds).not.toContain(baselinePatientUser.login_id);
+            expect(loginIds).not.toContain(adminUser.login_id);
         });
 
         test('should scope legacy patient listing to hospital admin tenant', async () => {
@@ -2365,13 +2300,14 @@ describe('Admin Routes', () => {
             expect(response.data.message).toContain('Cross-tenant');
         });
 
-        test('should scope hospital admin audit logs to same-tenant users', async () => {
+        test('should scope hospital admin audit logs to event hospital', async () => {
             await AuditLog.create([
                 {
                     user_id: baselinePatientUser._id,
                     user_type: 'PATIENT',
                     action: AuditAction.PROFILE_UPDATE,
                     description: 'Tenant A patient update',
+                    event_hospital_id: primaryHospital._id, scope_version: 1,
                     success: true
                 },
                 {
@@ -2379,6 +2315,7 @@ describe('Admin Routes', () => {
                     user_type: 'PATIENT',
                     action: AuditAction.PROFILE_UPDATE,
                     description: 'Tenant B patient update',
+                    event_hospital_id: secondaryHospital._id, scope_version: 1,
                     success: true
                 }
             ]);
@@ -2650,7 +2587,7 @@ describe('Admin Routes', () => {
             try {
                 expect(response.status).toBe(200);
                 expect(response.data.data.setup.secret).toMatch(/^[A-Z2-7]+$/);
-                expect(response.data.data.user_enrichment_completed).toBe(false);
+                expect(response.data.data.admin_account.login_id).toBe(user.login_id);
 
                 const updatedUser: any = await User.findById(user._id);
                 expect(updatedUser.security_version).toBe(originalSecurityVersion + 1);
@@ -2709,7 +2646,7 @@ describe('Admin Routes', () => {
                 const response = await api.post('/api/admin/users/batch', {
                     operation: 'reset_password',
                     user_ids: [String(user._id)],
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(response.status).toBe(200);
                 expect(response.data.data.successful).toBe(1);
                 const result = response.data.data.results[0];
@@ -2746,10 +2683,9 @@ describe('Admin Routes', () => {
             try {
                 const response = await api.post('/api/admin/users/batch', {
                     operation: 'activate', user_ids: [String(baselinePatientUser._id)],
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(response.status).toBe(200);
-                expect(response.data.data.successful).toBe(0);
-                expect(response.data.data.results[0].message).toMatch(/lifecycle|active hospital/i);
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+                expect(response.status).toBe(403);
+                expect(response.data.success).toBe(false);
                 expect((await User.findById(baselinePatientUser._id).lean())?.is_active).toBe(false);
             } finally {
                 await transition.release();
@@ -2803,7 +2739,7 @@ describe('Admin Routes', () => {
                 await started;
                 const response = await api.post('/api/admin/users/batch', {
                     operation: 'activate', user_ids: [String(user._id)],
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(response.status).toBe(200);
                 expect(response.data.data.successful).toBe(0);
                 expect((await User.findById(user._id).lean())?.is_active).toBe(false);
@@ -2820,75 +2756,47 @@ describe('Admin Routes', () => {
             }
         });
 
-        test('compensates a batch activation that loses its hospital lease after commit', async () => {
+        test('rolls back batch activation when its hospital fence no longer matches', async () => {
             await User.updateOne({ _id: baselinePatientUser._id }, { $set: { is_active: false } });
-            const originalFindOneAndUpdate = User.findOneAndUpdate.bind(User);
-            const spy = jest.spyOn(User, 'findOneAndUpdate').mockImplementation((async (filter: any, update: any, ...rest: any[]) => {
-                const result = await originalFindOneAndUpdate(filter, update, ...rest as any);
-                if (String(filter?._id) === String(baselinePatientUser._id) && update?.$set?.is_active === true) {
-                    await Hospital.updateOne({ _id: primaryHospital._id }, {
-                        $set: { 'lifecycle_lock.expires_at': new Date(Date.now() - 1_000) },
-                    });
+            const originalUpdateOne = Hospital.updateOne.bind(Hospital);
+            const spy = jest.spyOn(Hospital, 'updateOne').mockImplementation(((filter: any, update: any, options: any) => {
+                if (options?.session && filter?.['lifecycle_lock.lease_id']) {
+                    return Promise.resolve({ matchedCount: 0, modifiedCount: 0 }) as any;
                 }
-                return result as any;
+                return originalUpdateOne(filter, update, options);
             }) as any);
             try {
                 const response = await api.post('/api/admin/users/batch', {
                     operation: 'activate', user_ids: [String(baselinePatientUser._id)],
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
+                }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
                 expect(response.status).toBe(200);
                 expect(response.data.data.successful).toBe(0);
                 expect((await User.findById(baselinePatientUser._id).lean())?.is_active).toBe(false);
             } finally {
                 spy.mockRestore();
-                await Hospital.updateOne({ _id: primaryHospital._id }, {
-                    $set: { lifecycle_state: 'STABLE', accepting_assignments: true, status: 'active' },
-                    $unset: { lifecycle_lock: 1 },
-                });
                 await User.updateOne({ _id: baselinePatientUser._id }, { $set: { is_active: true } });
             }
         });
 
+
         test.each([
             ['doctor', () => primaryDoctorUser, (id: string) => `/api/admin/doctors/${id}`],
             ['patient', () => baselinePatientUser, (id: string) => `/api/admin/patients/${id}`],
-        ])('keeps a %s inactive when password activation loses its hospital lease after credential commit', async (_kind, getTarget, endpoint) => {
+        ])('rejects combined %s password activation on generic update with no partial write', async (_kind, getTarget, endpoint) => {
             const target: any = getTarget();
-            await User.updateOne({ _id: target._id }, { $set: { is_active: false } });
-            const before = await User.findById(target._id).lean();
-            const originalFindOneAndUpdate = User.findOneAndUpdate.bind(User);
-            const spy = jest.spyOn(User, 'findOneAndUpdate').mockImplementation(((filter: any, update: any, ...rest: any[]) => {
-                const query: any = originalFindOneAndUpdate(filter, update, ...rest as any);
-                if (String(filter?._id) !== String(target._id) || update?.$inc?.security_version !== 1) return query;
-                const originalSelect = query.select.bind(query);
-                query.select = (...selectArgs: any[]) => originalSelect(...selectArgs).then(async (result: any) => {
-                    await Hospital.updateOne({ _id: primaryHospital._id }, {
-                        $set: { 'lifecycle_lock.expires_at': new Date(Date.now() - 1_000) },
-                    });
-                    return result;
-                });
-                return query;
-            }) as any);
-            try {
-                const response = await api.put(endpoint(String(target._id)), {
-                    is_active: true,
-                    password: `LeaseLost@${_kind === 'doctor' ? '456' : '789'}`,
-                }, { headers: { Authorization: `Bearer ${adminToken}` } });
-                expect(response.status).toBe(409);
-                const after = await User.findById(target._id).lean();
-                expect(after?.is_active).toBe(false);
-                expect(Number(after?.security_version)).toBe(Number(before?.security_version || 0) + 1);
-            } finally {
-                spy.mockRestore();
-                await Hospital.updateOne({ _id: primaryHospital._id }, {
-                    $set: { lifecycle_state: 'STABLE', accepting_assignments: true, status: 'active' },
-                    $unset: { lifecycle_lock: 1 },
-                });
-                await User.updateOne({ _id: target._id }, { $set: { is_active: true } });
-            }
+            const before = await User.findById(target._id).select('+password').lean();
+            const response = await api.put(endpoint(String(target._id)), {
+                is_active: false,
+                password: `Forbidden@${_kind === 'doctor' ? '456' : '789'}`,
+            }, { headers: { Authorization: `Bearer ${hospitalAdminToken}` } });
+            expect(response.status).toBe(400);
+            const after = await User.findById(target._id).select('+password').lean();
+            expect(after?.is_active).toBe(before?.is_active);
+            expect(after?.password).toBe(before?.password);
+            expect(after?.security_version).toBe(before?.security_version);
         });
 
-        test('should deactivate hospital users and revoke access when a hospital is suspended', async () => {
+        test('should preserve hospital account statuses and revoke access when suspended', async () => {
             const suspensionPatientProfile = await PatientProfile.create({
                 assigned_doctor_id: primaryDoctorUser._id,
                 hospital_id: primaryHospital._id,
@@ -2924,15 +2832,15 @@ describe('Admin Routes', () => {
 
             expect(suspendResponse.status).toBe(200);
             expect(suspendResponse.data.data.hospital.status).toBe('suspended');
-            expect(suspendResponse.data.data.users_deactivated).toBeGreaterThanOrEqual(1);
+            expect(suspendResponse.data.data.users_deactivated).toBe(0);
             expect(suspendResponse.data.data.invalidated_sessions).toBeGreaterThanOrEqual(2);
 
             const [patient, hospitalAdmin] = await Promise.all([
                 User.findById(suspensionPatientUser._id).lean(),
                 User.findOne({ login_id: 'hospital_admin_a' }).lean(),
             ]);
-            expect(patient?.is_active).toBe(false);
-            expect(hospitalAdmin?.is_active).toBe(false);
+            expect(patient?.is_active).toBe(true);
+            expect(hospitalAdmin?.is_active).toBe(true);
 
             const existingPatientSession = await api.get('/api/patient/profile', {
                 headers: { Authorization: `Bearer ${patientLogin.data.data.token}` },

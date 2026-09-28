@@ -11,7 +11,10 @@ describe('authentication challenge audit retention', () => {
     ['admin MFA', AdminMfaChallenge],
   ])('%s challenges expire by purge_at rather than validity expiry', (_label, model) => {
     const indexes = model.schema.indexes()
-    expect(indexes).toContainEqual([{ purge_at: 1 }, { expireAfterSeconds: 0 }])
+    expect(indexes).toContainEqual([
+      { purge_at: 1 },
+      expect.objectContaining({ expireAfterSeconds: 0 }),
+    ])
     expect(indexes.some(([keys, options]) =>
       keys.expires_at === 1 && options.expireAfterSeconds !== undefined,
     )).toBe(false)

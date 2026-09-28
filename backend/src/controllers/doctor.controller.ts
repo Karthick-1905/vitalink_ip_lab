@@ -263,10 +263,15 @@ export const getPatients = asyncHandler(async (req: Request, res: Response) => {
   const doctor = await getDoctorUserOrThrow(user_id, req.authUser)
   const doctorOwnershipIds = getDoctorOwnershipIds(doctor)
   const hospitalId = await getRequiredDoctorHospitalId(doctor)
-  const patientQuery: Record<string, unknown> = { assigned_doctor_id: { $in: doctorOwnershipIds } }
+  const patientQuery: Record<string, unknown> = {
+    assigned_doctor_id: { $in: doctorOwnershipIds },
+    account_status: 'Active',
+  }
   if (hospitalId) patientQuery.hospital_id = hospitalId
   // List payload only needs identity + INR criticality flags — skip heavy embeds
   // and never presign profile pictures (O(n) FileAsset + S3 work).
+  // Mutations already require Active; listing discharged/deceased assignees
+  // produced a 409 "assignment changed" on later edits.
   const patientProfiles = await PatientProfile.find(patientQuery)
     .select('demographics inr_history.test_date inr_history.is_critical hospital_id assigned_doctor_id createdAt')
     .lean()
@@ -551,6 +556,9 @@ export const reassignPatient = asyncHandler(async (
           try {
             await AuditLog.create({
               user_id: currentDoctorUser._id,
+              scope_version: 1,
+              event_hospital_id: patient.hospital_id,
+              resource_hospital_id: patient.hospital_id,
               user_type: currentDoctorUser.user_type,
               action: AuditAction.PATIENT_REASSIGN,
               description: 'Doctor reassignment entered assignment-conflict review',
@@ -589,6 +597,9 @@ export const reassignPatient = asyncHandler(async (
   try {
     await AuditLog.create({
       user_id: currentDoctorUser._id,
+      scope_version: 1,
+      event_hospital_id: patient.hospital_id,
+      resource_hospital_id: patient.hospital_id,
       user_type: currentDoctorUser.user_type,
       action: AuditAction.PATIENT_REASSIGN,
       description: 'Doctor reassigned patient successfully',
@@ -1135,6 +1146,7 @@ export const getDoctorNotifications = asyncHandler(async (
   const unreadCount = await Notification.countDocuments({
     user_id: doctorUser._id,
     is_read: false,
+    push_delivery_cancelled_at: { $exists: false },
   })
 
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Notifications fetched successfully', {
@@ -1150,6 +1162,7 @@ export const getDoctorNotificationsUnreadCount = asyncHandler(async (req: Reques
   const unreadCount = await Notification.countDocuments({
     user_id: doctorUser._id,
     is_read: false,
+    push_delivery_cancelled_at: { $exists: false },
   })
   res.status(StatusCodes.OK).json(new ApiResponse(
     StatusCodes.OK,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/auth/session_bootstrap_page.dart';
 import 'package:frontend/core/auth/session_route_guard.dart';
+import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/widgets/admin/admin_access_session.dart';
+import 'package:frontend/features/login/change_password_page.dart';
 import 'package:frontend/features/login/login_page.dart';
 import 'package:frontend/features/patient/patient_dashboard_shell_page.dart';
 import 'package:frontend/features/patient/patient_records_page.dart';
@@ -14,6 +17,7 @@ import 'package:frontend/features/admin/admin_dashboard_page.dart';
 class AppRoutes {
   static const String sessionBootstrap = '/session-bootstrap';
   static const String login = '/login';
+  static const String changePassword = '/change-password';
   static const String onboarding = '/onboarding';
   static const String patient = '/patient';
   static const String patientRecords = '/patient-records';
@@ -33,62 +37,98 @@ class AppRouter {
   static const String initialRoute = AppRoutes.sessionBootstrap;
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
+  static final AppRouteTracker routeTracker = AppRouteTracker();
 
   static final Map<String, WidgetBuilder> routes = {
     '/': (_) => const SessionBootstrapPage(),
     AppRoutes.sessionBootstrap: (_) => const SessionBootstrapPage(),
     AppRoutes.login: (_) => const LoginPage(),
+    AppRoutes.changePassword: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final forced = args is bool ? args : null;
+      return SessionRouteGuard(
+        access: RouteAccess.authenticated,
+        child: ChangePasswordPage(forced: forced),
+      );
+    },
     AppRoutes.onboarding: (_) => const SessionRouteGuard(
-          access: RouteAccess.patientOrDoctor,
-          child: OnboardingPage(),
-        ),
+      access: RouteAccess.patientOrDoctor,
+      child: OnboardingPage(),
+    ),
     AppRoutes.patient: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: PatientDashboardShellPage(initialTabIndex: 0),
-        ),
+      access: RouteAccess.patient,
+      child: PatientDashboardShellPage(initialTabIndex: 0),
+    ),
     AppRoutes.patientUpdateINR: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: PatientDashboardShellPage(initialTabIndex: 1),
-        ),
+      access: RouteAccess.patient,
+      child: PatientDashboardShellPage(initialTabIndex: 1),
+    ),
     AppRoutes.patientTakeDosage: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: PatientDashboardShellPage(initialTabIndex: 2),
-        ),
+      access: RouteAccess.patient,
+      child: PatientDashboardShellPage(initialTabIndex: 2),
+    ),
     AppRoutes.patientDosageCalendar: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: PatientDosageCalendarPage(),
-        ),
+      access: RouteAccess.patient,
+      child: PatientDosageCalendarPage(),
+    ),
     AppRoutes.patientHealthReports: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: PatientDashboardShellPage(initialTabIndex: 3),
-        ),
+      access: RouteAccess.patient,
+      child: PatientDashboardShellPage(initialTabIndex: 3),
+    ),
     AppRoutes.patientRecords: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: PatientRecordsPage(),
-        ),
+      access: RouteAccess.patient,
+      child: PatientRecordsPage(),
+    ),
     AppRoutes.patientProfile: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: PatientDashboardShellPage(initialTabIndex: 4),
-        ),
+      access: RouteAccess.patient,
+      child: PatientDashboardShellPage(initialTabIndex: 4),
+    ),
     AppRoutes.patientNotifications: (_) => const SessionRouteGuard(
-          access: RouteAccess.patient,
-          child: NotificationCenterPage(forDoctor: false),
-        ),
+      access: RouteAccess.patient,
+      child: NotificationCenterPage(forDoctor: false),
+    ),
     AppRoutes.doctorDashboard: (_) => const SessionRouteGuard(
-          access: RouteAccess.doctor,
-          child: DoctorDashboardPage(),
-        ),
+      access: RouteAccess.doctor,
+      child: DoctorDashboardPage(),
+    ),
     AppRoutes.doctorAddPatient: (_) => const SessionRouteGuard(
-          access: RouteAccess.doctor,
-          child: AddPatientPage(),
-        ),
+      access: RouteAccess.doctor,
+      child: AddPatientPage(),
+    ),
     AppRoutes.doctorNotifications: (_) => const SessionRouteGuard(
-          access: RouteAccess.doctor,
-          child: NotificationCenterPage(forDoctor: true),
-        ),
-    AppRoutes.adminDashboard: (_) => const SessionRouteGuard(
-          access: RouteAccess.admin,
-          child: AdminDashboardPage(),
-        ),
+      access: RouteAccess.doctor,
+      child: NotificationCenterPage(forDoctor: true),
+    ),
+    AppRoutes.adminDashboard: (_) => SessionRouteGuard(
+      access: RouteAccess.admin,
+      child: AdminAccessSession(
+        controller: AppDependencies.adminAccessController,
+        child: const AdminDashboardPage(),
+      ),
+    ),
   };
+}
+
+/// Tracks the active named route for session recovery handlers.
+class AppRouteTracker extends NavigatorObserver {
+  String? currentName;
+
+  void _remember(Route<dynamic>? route) {
+    currentName = route?.settings.name;
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _remember(route);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _remember(newRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _remember(previousRoute);
+  }
 }

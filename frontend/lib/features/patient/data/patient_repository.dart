@@ -1,17 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/core/network/api_client.dart';
-import 'package:frontend/core/storage/secure_storage.dart';
 import 'package:frontend/core/utils/inr_target_range.dart';
 
 class PatientRepository {
-  PatientRepository(
-      {required ApiClient apiClient, SecureStorage? secureStorage})
-      : _apiClient = apiClient,
-        _secureStorage = secureStorage ?? SecureStorage();
+  PatientRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final SecureStorage _secureStorage;
 
   /// Coalesces concurrent `GET /reports` callers into a single in-flight request.
   _InFlightReportLoad? _inFlightReport;
@@ -21,16 +16,18 @@ class PatientRepository {
   /// generation they require.
   int _reportGeneration = 0;
 
+  /// Patient self-service profile update.
+  ///
+  /// Backend [updateProfileSchema] is strict and only accepts [demographics]
+  /// (and optional medical_history). Do not send medical_config — therapy
+  /// fields are clinician-maintained and rejected with "Validation failed".
   Future<void> updateProfile({
     required Map<String, dynamic> demographics,
-    Map<String, dynamic>? medicalConfig,
   }) async {
     await _apiClient.put(
       '$_patientBasePath/profile',
       data: <String, dynamic>{
         'demographics': demographics,
-        if (medicalConfig != null && medicalConfig.isNotEmpty)
-          'medical_config': medicalConfig,
       },
     );
   }
@@ -39,46 +36,38 @@ class PatientRepository {
 
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _apiClient.getRaw('$_patientBasePath/profile');
-    final data = response['data'] is Map<String, dynamic>
-        ? response['data'] as Map<String, dynamic>
-        : response;
+    final data = _asStringKeyMap(response['data']) ?? response;
 
-    final patient = data['patient'];
-    if (patient is! Map<String, dynamic> || patient['profile_id'] == null) {
+    final patient = _asStringKeyMap(data['patient']);
+    if (patient == null || patient['profile_id'] == null) {
       throw Exception('Profile data is incomplete');
     }
 
-    final profile = patient['profile_id'] is Map<String, dynamic>
-        ? patient['profile_id'] as Map<String, dynamic>
-        : <String, dynamic>{};
-    final demographics = profile['demographics'] is Map<String, dynamic>
-        ? profile['demographics'] as Map<String, dynamic>
-        : <String, dynamic>{};
-    final medicalConfig = profile['medical_config'] is Map<String, dynamic>
-        ? profile['medical_config'] as Map<String, dynamic>
-        : <String, dynamic>{};
-    final targetInr = medicalConfig['target_inr'] is Map<String, dynamic>
-        ? medicalConfig['target_inr'] as Map<String, dynamic>
-        : <String, dynamic>{};
+    final profile = _asStringKeyMap(patient['profile_id']) ?? <String, dynamic>{};
+    final demographics =
+        _asStringKeyMap(profile['demographics']) ?? <String, dynamic>{};
+    final medicalConfig =
+        _asStringKeyMap(profile['medical_config']) ?? <String, dynamic>{};
+    final targetInr =
+        _asStringKeyMap(medicalConfig['target_inr']) ?? <String, dynamic>{};
 
     String doctorName = 'Unassigned';
     String doctorPhone = 'N/A';
-    final doctorUser = profile['assigned_doctor_id'];
-    if (doctorUser is Map<String, dynamic>) {
-      final doctorProfile = doctorUser['profile_id'];
-      if (doctorProfile is Map<String, dynamic>) {
+    final doctorUser = _asStringKeyMap(profile['assigned_doctor_id']);
+    if (doctorUser != null) {
+      final doctorProfile = _asStringKeyMap(doctorUser['profile_id']);
+      if (doctorProfile != null) {
         doctorName = doctorProfile['name']?.toString() ?? 'Unassigned';
         doctorPhone = doctorProfile['contact_number']?.toString() ?? 'N/A';
       }
     }
 
-    final nextOfKin = demographics['next_of_kin'] is Map<String, dynamic>
-        ? demographics['next_of_kin'] as Map<String, dynamic>
-        : <String, dynamic>{};
+    final nextOfKin =
+        _asStringKeyMap(demographics['next_of_kin']) ?? <String, dynamic>{};
 
-    final doctorUpdates = data['doctor_updates'] is Map<String, dynamic>
-        ? data['doctor_updates'] as Map<String, dynamic>
-        : null;
+    final doctorUpdates = _asStringKeyMap(data['doctor_updates']);
+
+    final healthLogs = normalizeHealthLogs(profile['health_logs']);
 
     return {
       'name': demographics['name'] ?? 'Patient',
@@ -92,17 +81,68 @@ class PatientRepository {
       'therapyStartDate': formatDate(medicalConfig['therapy_start_date']),
       'doctorName': doctorName,
       'doctorPhone': doctorPhone,
-      'caregiver': nextOfKin['name'] ?? 'N/A',
+      // Caregiver form field maps to next_of_kin.relation; kin name to .name.
+      'caregiver': nextOfKin['relation'] ?? 'N/A',
       'kinName': nextOfKin['name'] ?? 'N/A',
       'kinRelation': nextOfKin['relation'] ?? 'N/A',
       'kinPhone': nextOfKin['phone'] ?? 'N/A',
       'instructions': medicalConfig['instructions'] ?? [],
       'weeklyDosage': profile['weekly_dosage'] ?? {},
-      'healthLogs': profile['health_logs'] ?? [],
+      'healthLogs': healthLogs,
+      // Flatten latest log per type for home / monitoring cards.
+      'sideEffects':
+          healthLogDescription(healthLogs, 'SIDE_EFFECT') ?? 'None Reported',
+      'lifestyleChanges':
+          healthLogDescription(healthLogs, 'LIFESTYLE') ?? 'Stable',
+      'otherMedication':
+          healthLogDescription(healthLogs, 'OTHER_MEDS') ?? 'None',
+      'prolongedIllness':
+          healthLogDescription(healthLogs, 'ILLNESS') ?? 'None',
       'medicalHistory': profile['medical_history'] ?? [],
       'doctorUpdatesUnreadCount': doctorUpdates?['unread_count'] ?? 0,
       'latestDoctorUpdate': doctorUpdates?['latest'],
+      'profilePictureUrl': _nonEmptyString(profile['profile_picture_url']),
     };
+  }
+
+  static String? _nonEmptyString(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  /// Coerce API map payloads that may not be typed as [Map<String, dynamic>].
+  static Map<String, dynamic>? _asStringKeyMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
+  }
+
+  /// Normalize health_logs from profile payloads (list of typed entries).
+  static List<Map<String, dynamic>> normalizeHealthLogs(dynamic raw) {
+    if (raw is! List) return const [];
+    final logs = <Map<String, dynamic>>[];
+    for (final item in raw) {
+      final map = _asStringKeyMap(item);
+      if (map != null) logs.add(map);
+    }
+    return logs;
+  }
+
+  /// Latest description for a health-log type (backend keeps one entry per type).
+  static String? healthLogDescription(List<dynamic> logs, String type) {
+    for (final log in logs) {
+      final map = log is Map<String, dynamic>
+          ? log
+          : (log is Map ? Map<String, dynamic>.from(log) : null);
+      if (map == null) continue;
+      if (map['type']?.toString() != type) continue;
+      final description = map['description']?.toString().trim();
+      if (description != null && description.isNotEmpty) {
+        return description;
+      }
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>> getMissedDoses() async {
@@ -134,49 +174,18 @@ class PatientRepository {
       return;
     }
 
-    final token = await _secureStorage.readToken();
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: AppStrings.apiBaseUrl,
-        validateStatus: (status) => status != null && status < 500,
-      ),
-    );
-
     final formData = FormData.fromMap({
       'inr_value': inrValue,
       'test_date': testDate,
       'file': MultipartFile.fromBytes(fileBytes, filename: fileName),
     });
 
-    try {
-      final response = await dio.post<Map<String, dynamic>>(
-        '$_patientBasePath/reports',
-        data: formData,
-        options: Options(
-          headers: {
-            'Accept': 'application/json',
-            if (token != null && token.isNotEmpty)
-              'Authorization': 'Bearer $token',
-          },
-        ),
-      );
-
-      final body = response.data ?? <String, dynamic>{};
-      if ((response.statusCode ?? 500) >= 400 || body['success'] == false) {
-        throw _uploadException(
-          response.statusCode ?? 500,
-          body['message']?.toString(),
-        );
-      }
-      _invalidateReportFetch();
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final responseData = e.response?.data;
-      final message = responseData is Map<String, dynamic>
-          ? responseData['message']?.toString()
-          : null;
-      throw _uploadException(statusCode, message);
-    }
+    // Route through ApiClient so 401 → refresh → retry applies like other patient APIs.
+    await _apiClient.post(
+      '$_patientBasePath/reports',
+      data: formData,
+    );
+    _invalidateReportFetch();
   }
 
   Future<void> submitHealthLog({
@@ -209,7 +218,7 @@ class PatientRepository {
     int months = 3,
     String? startDate,
   }) async {
-    final queryParams = <String, dynamic>{'months': months};
+    final queryParams = <String, dynamic>{'months': months.clamp(1, 6).toInt()};
     if (startDate != null) {
       queryParams['start_date'] = startDate;
     }
@@ -641,69 +650,6 @@ class PatientRepository {
       }
     }
     return null;
-  }
-
-  ApiException _uploadException(int? statusCode, String? serverMessage) {
-    final message = serverMessage?.trim();
-    switch (statusCode) {
-      case 400:
-        return ApiException(
-          message?.isNotEmpty == true
-              ? message!
-              : 'Please check the INR value, date, and selected file.',
-          statusCode: statusCode,
-          kind: ApiErrorKind.badRequest,
-        );
-      case 401:
-        return ApiException(
-          message?.isNotEmpty == true
-              ? message!
-              : 'Your session has expired. Please sign in again.',
-          statusCode: statusCode,
-          kind: ApiErrorKind.unauthorized,
-        );
-      case 413:
-        return ApiException(
-          message?.isNotEmpty == true
-              ? message!
-              : 'The selected report is larger than the allowed upload size.',
-          statusCode: statusCode,
-          kind: ApiErrorKind.requestTooLarge,
-        );
-      case 423:
-        return ApiException(
-          message?.isNotEmpty == true
-              ? message!
-              : 'This account is temporarily locked. Try again later.',
-          statusCode: statusCode,
-          kind: ApiErrorKind.locked,
-        );
-      case 429:
-        return ApiException(
-          message?.isNotEmpty == true
-              ? message!
-              : 'Too many upload attempts. Please wait before trying again.',
-          statusCode: statusCode,
-          kind: ApiErrorKind.rateLimited,
-        );
-      default:
-        if (statusCode != null && statusCode >= 500) {
-          return ApiException(
-            message?.isNotEmpty == true
-                ? message!
-                : 'The server could not upload the report. Please try again.',
-            statusCode: statusCode,
-            kind: ApiErrorKind.server,
-          );
-        }
-        return ApiException(
-          message?.isNotEmpty == true
-              ? message!
-              : 'Unable to upload the report. Check your connection and try again.',
-          statusCode: statusCode,
-          kind: ApiErrorKind.network,
-        );
-    }
   }
 }
 

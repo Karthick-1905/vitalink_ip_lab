@@ -43,9 +43,21 @@ class _SessionRouteGuardState extends State<SessionRouteGuard> {
       final user = UserModel.fromJson(userJson);
       if (!user.isActive) return false;
 
+      final isKnownRole = user.isAdmin || user.isDoctor || user.isPatient;
+      if (!isKnownRole) return false;
+
+      // Clinical/admin destinations are blocked until password policy is
+      // satisfied. Mid-session expiry 403s refresh GET /auth/me and persist
+      // this flag via SessionPasswordChangeHandler. The change-password
+      // route uses [RouteAccess.authenticated].
+      if (user.mustChangePassword &&
+          widget.access != RouteAccess.authenticated) {
+        return false;
+      }
+
       switch (widget.access) {
         case RouteAccess.authenticated:
-          return user.isAdmin || user.isDoctor || user.isPatient;
+          return true;
         case RouteAccess.patient:
           return user.isPatient;
         case RouteAccess.doctor:
