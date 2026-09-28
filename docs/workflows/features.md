@@ -224,3 +224,9 @@ The administrator patient directory shows login account status separately from c
 ### Maintenance recovery
 
 The exact `/admin/access/me` bootstrap and `/admin/config` endpoints remain reachable during maintenance along with authentication, password/MFA recovery bootstrap, and health endpoints. Their normal authentication and authorization still apply. An Application Admin can sign in again, reload access, open configuration, and disable maintenance. Tenant application routes remain unavailable.
+
+## Administrator account and one-time credential dialogs
+
+Administrator invite and edit forms validate before submission, disable their controls during the request, and keep the dialog open until the request succeeds or fails. An edit that changes role or hospital scope previews the old and proposed access and warns that the administrator's active sessions will be revoked. After a successful edit, the page confirms completion and refreshes the account list. A successful invite presents any temporary password before refreshing the list, so a refresh failure cannot hide the one-time credential.
+
+Doctor registration, patient onboarding, and administrator invitation show a one-time password in a result dialog when the API returns one. The operator must acknowledge that they recorded it for secure delivery before Done is enabled. Outside taps cannot dismiss these result dialogs. A missing temporary password is reported as successful creation without inventing a credential.

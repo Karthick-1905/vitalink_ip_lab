@@ -3,6 +3,7 @@ import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/core/widgets/admin/admin_access_gate.dart';
 import 'package:frontend/core/widgets/admin/admin_access_scope.dart';
+import 'package:frontend/core/widgets/admin/admin_mutation_dialog.dart';
 import 'package:frontend/features/admin/admin_capabilities.dart';
 import 'package:frontend/features/admin/admin_console_components.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
@@ -227,10 +228,12 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     );
     var role = account?.role ?? AdminRole.hospitalAdmin;
     String? hospitalId = account?.hospital?.id;
+    var saving = false;
     final hospitalsFuture = _repository.getHospitals(status: 'active');
 
     await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) => FutureBuilder<Map<String, dynamic>>(
         future: hospitalsFuture,
         builder: (context, snapshot) {
@@ -242,7 +245,8 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
           // Include the account's current hospital even when it is no longer
           // active so DropdownButtonFormField never receives a missing value.
           final currentHospitalId = account?.hospital?.id;
-          final hasCurrentHospital = currentHospitalId != null &&
+          final hasCurrentHospital =
+              currentHospitalId != null &&
               hospitals.any(
                 (hospital) =>
                     '${hospital['id'] ?? hospital['_id']}' == currentHospitalId,
@@ -271,179 +275,213 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
           return StatefulBuilder(
             builder: (context, setDialogState) {
               final needsHospital = role == AdminRole.hospitalAdmin;
-              return AlertDialog(
-                title: Text(
-                  account == null
-                      ? 'Invite administrator'
-                      : 'Edit administrator',
-                ),
-                content: SizedBox(
-                  width: 460,
-                  child: Form(
-                    key: formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextFormField(
-                            key: const Key('admin-account-name'),
-                            controller: nameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Full name',
-                            ),
-                            validator: (value) =>
-                                value == null || value.trim().isEmpty
-                                ? 'Enter the administrator name.'
-                                : null,
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            key: const Key('admin-account-email'),
-                            controller: emailController,
-                            enabled: account == null,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              helperText:
-                                  'This email is also the administrator sign-in ID.',
-                            ),
-                            validator: (value) =>
-                                value == null ||
-                                    !RegExp(
-                                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                                    ).hasMatch(value.trim())
-                                ? 'Enter a valid email address.'
-                                : null,
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<AdminRole>(
-                            key: const Key('admin-account-role'),
-                            initialValue: role,
-                            decoration: const InputDecoration(
-                              labelText: 'Role',
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: AdminRole.hospitalAdmin,
-                                child: Text('Hospital Admin'),
+              final scopeChanged =
+                  account != null &&
+                  (role != account.role ||
+                      (role == AdminRole.hospitalAdmin &&
+                          hospitalId != account.hospital?.id));
+              return AdminMutationDialog(
+                busy: saving,
+                child: AlertDialog(
+                  title: Text(
+                    account == null
+                        ? 'Invite administrator'
+                        : 'Edit administrator',
+                  ),
+                  content: SizedBox(
+                    width: 460,
+                    child: Form(
+                      key: formKey,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFormField(
+                              key: const Key('admin-account-name'),
+                              controller: nameController,
+                              enabled: !saving,
+                              decoration: const InputDecoration(
+                                labelText: 'Full name',
                               ),
-                              DropdownMenuItem(
-                                value: AdminRole.auditor,
-                                child: Text('System Auditor'),
-                              ),
-                            ],
-                            onChanged: (value) => setDialogState(() {
-                              role = value ?? role;
-                              if (role == AdminRole.auditor) hospitalId = null;
-                            }),
-                          ),
-                          if (needsHospital) ...[
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
+                                  ? 'Enter the administrator name.'
+                                  : null,
+                            ),
                             const SizedBox(height: 12),
-                            DropdownButtonFormField<String>(
-                              key: const Key('admin-account-hospital'),
-                              initialValue: effectiveHospitalId,
-                              isExpanded: true,
-                              decoration: InputDecoration(
-                                labelText: 'Active hospital',
-                                helperText: hasCurrentHospital ||
-                                        account?.hospital == null
-                                    ? 'Hospital Admin access is limited to this hospital.'
-                                    : 'The currently assigned hospital is inactive. Select an active hospital to continue.',
-                                errorText: snapshot.hasError
-                                    ? 'Could not load active hospitals.'
+                            TextFormField(
+                              key: const Key('admin-account-email'),
+                              controller: emailController,
+                              enabled: account == null && !saving,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                helperText:
+                                    'This email is also the administrator sign-in ID.',
+                              ),
+                              validator: (value) =>
+                                  value == null ||
+                                      !RegExp(
+                                        r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                      ).hasMatch(value.trim())
+                                  ? 'Enter a valid email address.'
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<AdminRole>(
+                              key: const Key('admin-account-role'),
+                              initialValue: role,
+                              decoration: const InputDecoration(
+                                labelText: 'Role',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: AdminRole.hospitalAdmin,
+                                  child: Text('Hospital Admin'),
+                                ),
+                                DropdownMenuItem(
+                                  value: AdminRole.auditor,
+                                  child: Text('System Auditor'),
+                                ),
+                              ],
+                              onChanged: saving
+                                  ? null
+                                  : (value) => setDialogState(() {
+                                      role = value ?? role;
+                                      if (role == AdminRole.auditor) {
+                                        hospitalId = null;
+                                      }
+                                    }),
+                            ),
+                            if (needsHospital) ...[
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<String>(
+                                key: const Key('admin-account-hospital'),
+                                initialValue: effectiveHospitalId,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Active hospital',
+                                  helperText:
+                                      hasCurrentHospital ||
+                                          account?.hospital == null
+                                      ? 'Hospital Admin access is limited to this hospital.'
+                                      : 'The currently assigned hospital is inactive. Select an active hospital to continue.',
+                                  errorText: snapshot.hasError
+                                      ? 'Could not load active hospitals.'
+                                      : null,
+                                ),
+                                items: hospitals
+                                    .map((hospital) {
+                                      final id =
+                                          '${hospital['id'] ?? hospital['_id']}';
+                                      final status =
+                                          '${hospital['status'] ?? 'active'}';
+                                      final label =
+                                          '${hospital['name'] ?? hospital['code'] ?? id}';
+                                      return DropdownMenuItem(
+                                        value: id,
+                                        child: Text(
+                                          status == 'active'
+                                              ? label
+                                              : '$label (inactive)',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    })
+                                    .toList(growable: false),
+                                onChanged: snapshot.hasData && !saving
+                                    ? (value) => setDialogState(
+                                        () => hospitalId = value,
+                                      )
+                                    : null,
+                                validator: (value) =>
+                                    needsHospital &&
+                                        (value == null || value.isEmpty)
+                                    ? 'Select an active hospital.'
                                     : null,
                               ),
-                              items: hospitals
-                                  .map((hospital) {
-                                    final id =
-                                        '${hospital['id'] ?? hospital['_id']}';
-                                    final status =
-                                        '${hospital['status'] ?? 'active'}';
-                                    final label =
-                                        '${hospital['name'] ?? hospital['code'] ?? id}';
-                                    return DropdownMenuItem(
-                                      value: id,
-                                      child: Text(
-                                        status == 'active'
-                                            ? label
-                                            : '$label (inactive)',
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  })
-                                  .toList(growable: false),
-                              onChanged: snapshot.hasData
-                                  ? (value) =>
-                                        setDialogState(() => hospitalId = value)
-                                  : null,
-                              validator: (value) =>
-                                  needsHospital &&
-                                      (value == null || value.isEmpty)
-                                  ? 'Select an active hospital.'
-                                  : null,
-                            ),
+                            ],
+                            if (scopeChanged) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                'Access impact: ${adminRoleLabel(account.role)} (${account.hospitalDisplayLabel}) → ${adminRoleLabel(role)} (${role == AdminRole.auditor ? 'Global' : (hospitals.where((h) => '${h['id'] ?? h['_id']}' == hospitalId).map((h) => '${h['name'] ?? h['code'] ?? hospitalId}').firstOrNull ?? 'Select a hospital')}). All active sessions for this administrator will be revoked; they must sign in again under the new role and scope.',
+                              ),
+                            ],
                           ],
-                          if (account != null) ...[
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Changing this administrator’s role or hospital scope signs them out of all active sessions.',
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
+                  actions: [
+                    TextButton(
+                      onPressed: saving
+                          ? null
+                          : () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      key: const Key('save-admin-account'),
+                      onPressed: saving || (needsHospital && !snapshot.hasData)
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              setDialogState(() => saving = true);
+                              // System Auditors are global: omit hospital_id entirely.
+                              // Sending null fails backend Zod validation
+                              // (hospital_id is string|undefined, not null).
+                              final payload = <String, dynamic>{
+                                'name': nameController.text.trim(),
+                                'role': role.wireValue,
+                                if (role == AdminRole.hospitalAdmin)
+                                  'hospital_id': hospitalId,
+                                if (account == null)
+                                  'email': emailController.text.trim(),
+                              };
+                              try {
+                                final result = account == null
+                                    ? await _repository.createAdminAccount(
+                                        payload,
+                                      )
+                                    : await _repository.updateAdminAccount(
+                                        account.id,
+                                        payload,
+                                      );
+                                if (!dialogContext.mounted) return;
+                                Navigator.pop(dialogContext);
+                                if (account == null) {
+                                  await _showInvitationResult(
+                                    result.temporaryPassword,
+                                  );
+                                }
+                                if (mounted) await _load(silent: true);
+                                if (!mounted) return;
+                                if (account != null) {
+                                  ScaffoldMessenger.of(
+                                    this.context,
+                                  ).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Administrator updated.'),
+                                    ),
+                                  );
+                                }
+                              } catch (error) {
+                                if (dialogContext.mounted) {
+                                  _showSafeError(dialogContext, error);
+                                  setDialogState(() => saving = false);
+                                }
+                              }
+                            },
+                      child: saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(account == null ? 'Invite' : 'Save'),
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Cancel'),
-                  ),
-                  FilledButton(
-                    key: const Key('save-admin-account'),
-                    onPressed: needsHospital && !snapshot.hasData
-                        ? null
-                        : () async {
-                            if (!formKey.currentState!.validate()) return;
-                            // System Auditors are global: omit hospital_id entirely.
-                            // Sending null fails backend Zod validation
-                            // (hospital_id is string|undefined, not null).
-                            final payload = <String, dynamic>{
-                              'name': nameController.text.trim(),
-                              'role': role.wireValue,
-                              if (role == AdminRole.hospitalAdmin)
-                                'hospital_id': hospitalId,
-                              if (account == null)
-                                'email': emailController.text.trim(),
-                            };
-                            try {
-                              final result = account == null
-                                  ? await _repository.createAdminAccount(
-                                      payload,
-                                    )
-                                  : await _repository.updateAdminAccount(
-                                      account.id,
-                                      payload,
-                                    );
-                              if (!dialogContext.mounted) return;
-                              Navigator.pop(dialogContext);
-                              await _load();
-                              if (!mounted) return;
-                              if (account == null) {
-                                await _showInvitationResult(
-                                  result.temporaryPassword,
-                                );
-                              }
-                            } catch (error) {
-                              if (dialogContext.mounted) {
-                                _showSafeError(dialogContext, error);
-                              }
-                            }
-                          },
-                    child: Text(account == null ? 'Invite' : 'Save'),
-                  ),
-                ],
               );
             },
           );
@@ -523,25 +561,13 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
   }
 
   Future<void> _showInvitationResult(String? temporaryPassword) {
-    return showDialog<void>(
-      context: context,
-      // One-time secret: require an explicit dismiss so it is not lost to a
-      // barrier tap.
-      barrierDismissible: temporaryPassword == null,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Administrator invited'),
-        content: SelectableText(
-          temporaryPassword == null
-              ? 'The administrator must complete the required sign-in setup and change their password when prompted.'
-              : 'Share this temporary password securely. It is shown only now and must be changed at first sign-in:\n\n$temporaryPassword',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
+    return showAdminCredentialResult(
+      context,
+      title: 'Administrator invited',
+      successMessage: temporaryPassword == null
+          ? 'The administrator must complete the required sign-in setup and change their password when prompted.'
+          : 'Share this temporary password securely. It is shown only now and must be changed at first sign-in.',
+      temporaryPassword: temporaryPassword,
     );
   }
 
