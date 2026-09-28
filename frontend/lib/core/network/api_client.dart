@@ -135,16 +135,17 @@ class _RefreshRejected implements Exception {
 /// normalizes the backend's ApiResponse shape.
 class ApiClient {
   ApiClient({Dio? dio, SecureStorage? secureStorage, String? baseUrl})
-      : _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? AppStrings.apiBaseUrl,
-                connectTimeout: const Duration(seconds: 15),
-                sendTimeout: const Duration(seconds: 20),
-                receiveTimeout: const Duration(seconds: 20),
-              ),
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl ?? AppStrings.apiBaseUrl,
+              connectTimeout: const Duration(seconds: 15),
+              sendTimeout: const Duration(seconds: 20),
+              receiveTimeout: const Duration(seconds: 20),
             ),
-        _secureStorage = secureStorage ?? SecureStorage() {
+          ),
+      _secureStorage = secureStorage ?? SecureStorage() {
     _configureInterceptors();
   }
 
@@ -217,8 +218,9 @@ class ApiClient {
               handler.next(_refreshFailureAsDio(error, refreshError.cause));
               return;
             } on DioException catch (refreshError) {
-              if (refreshError.requestOptions.extra[
-                      _hasRetriedAfterRefreshExtra] ==
+              if (refreshError
+                      .requestOptions
+                      .extra[_hasRetriedAfterRefreshExtra] ==
                   true) {
                 if (refreshError.response?.statusCode == 401) {
                   await SessionExpiryHandler.clearSessionAndRedirectToLogin();
@@ -303,8 +305,8 @@ class ApiClient {
       final sessionMap = session is Map<String, dynamic>
           ? session
           : session is Map
-              ? Map<String, dynamic>.from(session)
-              : null;
+          ? Map<String, dynamic>.from(session)
+          : null;
       final saved = await _secureStorage.saveRefreshedTokensIfCurrent(
         expectedGeneration: generationBefore,
         token: token,
@@ -394,7 +396,8 @@ class ApiClient {
       try {
         return await send();
       } on DioException catch (e) {
-        final shouldRetry = retryOnFailure &&
+        final shouldRetry =
+            retryOnFailure &&
             attempt < _maxGetRetries &&
             _isTransientFailure(e);
         if (!shouldRetry) rethrow;
@@ -403,7 +406,9 @@ class ApiClient {
         final exponential = Duration(
           milliseconds: _retryBaseDelay.inMilliseconds * (1 << (attempt - 1)),
         );
-        final fromHeader = _parseRetryAfter(e.response?.headers.value('retry-after'));
+        final fromHeader = _parseRetryAfter(
+          e.response?.headers.value('retry-after'),
+        );
         // Prefer Retry-After when present, but never exceed exponential backoff cap * 4.
         final maxWait = Duration(milliseconds: exponential.inMilliseconds * 4);
         Duration wait = exponential;
@@ -440,6 +445,7 @@ class ApiClient {
     String path, {
     Object? data,
     bool authenticated = true,
+    Map<String, String>? extraHeaders,
   }) async {
     try {
       // FormData must not force application/json — Dio sets multipart boundary.
@@ -447,6 +453,7 @@ class ApiClient {
         includeAuth: authenticated,
         includeJsonContentType: data is! FormData,
       );
+      if (extraHeaders != null) headers.addAll(extraHeaders);
       final response = await _sendWithRetry(
         () => _dio.post<Map<String, dynamic>>(
           path,
@@ -493,9 +500,11 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? data,
     bool authenticated = true,
+    Map<String, String>? extraHeaders,
   }) async {
     try {
       final headers = await _buildHeaders(includeAuth: authenticated);
+      if (extraHeaders != null) headers.addAll(extraHeaders);
       _logDebug('PUT Request to: $path');
       final response = await _sendWithRetry(
         () => _dio.put<Map<String, dynamic>>(
@@ -597,9 +606,7 @@ class ApiClient {
     required bool includeAuth,
     bool includeJsonContentType = true,
   }) async {
-    final headers = <String, String>{
-      'Accept': 'application/json',
-    };
+    final headers = <String, String>{'Accept': 'application/json'};
     if (includeJsonContentType) {
       headers['Content-Type'] = 'application/json';
     }
@@ -658,7 +665,8 @@ class ApiClient {
     }
 
     final message = fallbackMessage ?? _extractMessage(e);
-    final isTimeout = e.type == DioExceptionType.connectionTimeout ||
+    final isTimeout =
+        e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.sendTimeout ||
         e.type == DioExceptionType.receiveTimeout;
 
@@ -686,7 +694,8 @@ class ApiClient {
       'x-api-supported-versions',
     );
     final retryAfter = _parseRetryAfter(response.headers.value('retry-after'));
-    final hasApiRouteHint = body['data'] is Map &&
+    final hasApiRouteHint =
+        body['data'] is Map &&
         ((body['data'] as Map).containsKey('current_base_path') ||
             (body['data'] as Map).containsKey('current_api_version'));
 
@@ -983,8 +992,9 @@ class ApiClient {
   }
 
   String _sanitizeServerMessage(String? raw) {
-    final message =
-        (raw == null || raw.trim().isEmpty) ? 'Request failed' : raw;
+    final message = (raw == null || raw.trim().isEmpty)
+        ? 'Request failed'
+        : raw;
 
     // Flutter Web often wraps CORS/TLS/DNS failures in this XHR onError text.
     if (_isBrowserXhrNetworkError(message)) {
@@ -999,7 +1009,8 @@ class ApiClient {
 
   bool _isConnectionFailure(DioException e) {
     final noResponse = e.response == null;
-    final isConnectionType = e.type == DioExceptionType.connectionError ||
+    final isConnectionType =
+        e.type == DioExceptionType.connectionError ||
         e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
         e.type == DioExceptionType.sendTimeout;

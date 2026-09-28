@@ -7,6 +7,7 @@ import 'package:frontend/features/admin/models/admin_access_model.dart';
 class _RecordingApiClient extends ApiClient {
   final List<String> requests = [];
   final List<Object?> bodies = [];
+  final List<Map<String, String>?> requestHeaders = [];
   Map<String, dynamic> response = const {};
 
   @override
@@ -25,9 +26,11 @@ class _RecordingApiClient extends ApiClient {
     String path, {
     Object? data,
     bool authenticated = true,
+    Map<String, String>? extraHeaders,
   }) async {
     requests.add('POST $path');
     bodies.add(data);
+    requestHeaders.add(extraHeaders);
     return response;
   }
 
@@ -36,14 +39,43 @@ class _RecordingApiClient extends ApiClient {
     String path, {
     Map<String, dynamic>? data,
     bool authenticated = true,
+    Map<String, String>? extraHeaders,
   }) async {
     requests.add('PUT $path');
     bodies.add(data);
+    requestHeaders.add(extraHeaders);
     return response;
   }
 }
 
 void main() {
+  test(
+    'administrator account mutations forward action verification headers',
+    () async {
+      final client = _RecordingApiClient();
+      final repository = AdminRepository(apiClient: client);
+      const stepUp = {
+        'x-step-up-password': 'secret',
+        'x-step-up-totp': '123456',
+      };
+
+      await repository.createAdminAccount({
+        'name': 'New Admin',
+      }, stepUp: stepUp);
+      await repository.updateAdminAccount('admin-1', {
+        'name': 'Updated Admin',
+      }, stepUp: stepUp);
+      await repository.resetAdminAccountMfa('admin-1', stepUp: stepUp);
+
+      expect(client.requests, [
+        'POST ${AppStrings.adminAccountsPath}',
+        'PUT ${AppStrings.adminAccountsPath}/admin-1',
+        'POST ${AppStrings.adminAccountsPath}/admin-1/mfa/reset',
+      ]);
+      expect(client.requestHeaders, [stepUp, stepUp, stepUp]);
+    },
+  );
+
   test('loads only V2 administrator accounts from the dedicated API', () async {
     final client = _RecordingApiClient()
       ..response = {
@@ -120,6 +152,10 @@ void main() {
         capabilities: capabilities,
         expectedVersion: 4,
         changeReason: 'Enable audit review',
+        stepUp: const {
+          'x-step-up-password': 'secret',
+          'x-step-up-totp': '123456',
+        },
       );
 
       expect(updated.policyVersion, 5);
@@ -130,6 +166,7 @@ void main() {
       final updateBody = client.bodies.last as Map<String, dynamic>;
       expect(updateBody['expected_version'], 4);
       expect(updateBody['change_reason'], 'Enable audit review');
+      expect(client.requestHeaders.last?['x-step-up-totp'], '123456');
     },
   );
 
@@ -179,6 +216,10 @@ void main() {
         revisionId: '507f1f77bcf86cd799439011',
         expectedVersion: 6,
         changeReason: 'Restore reviewed policy',
+        stepUp: const {
+          'x-step-up-password': 'secret',
+          'x-step-up-totp': '654321',
+        },
       );
 
       expect(restored.policyVersion, 7);
@@ -191,6 +232,7 @@ void main() {
         'expected_version': 6,
         'change_reason': 'Restore reviewed policy',
       });
+      expect(client.requestHeaders.last?['x-step-up-totp'], '654321');
     },
   );
 

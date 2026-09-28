@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
+import 'package:frontend/core/auth/session_expiry_handler.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/core/widgets/admin/admin_access_gate.dart';
 import 'package:frontend/features/admin/admin_console_components.dart';
@@ -31,6 +32,64 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
   bool _hasAttemptedLoad = false;
   Object? _loadError;
   DateTime? _statusLoadedAt;
+  List<Map<String, dynamic>> _sessions = const [];
+  bool _sessionsLoading = false;
+  Object? _sessionsError;
+
+  Future<void> _loadSessions() async {
+    if (_sessionsLoading) return;
+    setState(() {
+      _sessionsLoading = true;
+      _sessionsError = null;
+    });
+    try {
+      final sessions = await _repository.getOwnSessions();
+      if (mounted) setState(() => _sessions = sessions);
+    } catch (error) {
+      if (mounted) setState(() => _sessionsError = error);
+    } finally {
+      if (mounted) setState(() => _sessionsLoading = false);
+    }
+  }
+
+  Future<void> _revokeSession(Map<String, dynamic> session) async {
+    final current = session['current'] == true;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          current ? 'Sign out this session?' : 'Revoke this session?',
+        ),
+        content: Text(
+          current
+              ? 'You will need to sign in again.'
+              : 'That device will need to sign in again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(current ? 'Sign out' : 'Revoke'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _repository.revokeOwnSession(session['id'] as String);
+      if (!mounted) return;
+      if (current) {
+        await SessionExpiryHandler.clearSessionAndRedirectToLogin();
+      } else {
+        await _loadSessions();
+      }
+    } catch (error) {
+      if (mounted) _showError(error, 'Could not revoke the session.');
+    }
+  }
 
   @override
   void dispose() {
@@ -143,6 +202,7 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
       builder: (context) {
         if (!_hasAttemptedLoad && !_isLoading) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _loadStatus());
+          WidgetsBinding.instance.addPostFrameCallback((_) => _loadSessions());
         }
         final content = ListView(
           padding: const EdgeInsets.all(16),
@@ -192,6 +252,67 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
                   ),
                 ],
               ),
+            const SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Active sessions',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _sessionsLoading ? null : _loadSessions,
+                          tooltip: 'Refresh sessions',
+                          icon: const Icon(Icons.refresh_rounded),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Review devices signed in to your account. Revoke any session you do not recognize.',
+                    ),
+                    if (_sessionsLoading) const LinearProgressIndicator(),
+                    if (_sessionsError != null)
+                      Text('Could not load sessions. Try refreshing.'),
+                    if (!_sessionsLoading &&
+                        _sessionsError == null &&
+                        _sessions.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 16),
+                        child: Text('No active sessions found.'),
+                      ),
+                    for (final session in _sessions)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.devices_outlined),
+                        title: Text(
+                          session['current'] == true
+                              ? 'This session'
+                              : (session['user_agent'] as String? ??
+                                    'Unknown device'),
+                        ),
+                        subtitle: Text(
+                          'Last used: ${session['last_used_at'] ?? 'Unknown'}\nIP: ${session['ip_address'] ?? 'Unknown'}',
+                        ),
+                        isThreeLine: true,
+                        trailing: TextButton(
+                          onPressed: () => _revokeSession(session),
+                          child: Text(
+                            session['current'] == true ? 'Sign out' : 'Revoke',
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ],
         );
         return adminPageScaffold(context, 'Personal Security', content);

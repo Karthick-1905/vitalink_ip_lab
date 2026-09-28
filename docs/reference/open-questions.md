@@ -85,3 +85,7 @@ No implementation claim in this site depends on the following unknowns. Each ite
 ## Lifecycle and audit rollout verification, 2026-09-28
 
 The fixes are local source changes. Live deployment, creation of the audit scope index in production, and recovery of accounts disabled by historical hospital suspensions have not been verified. No shared database migration was run. Historical audit hospital scope cannot be established from current membership and remains unclassified. The maintenance HTTP regression exercises fresh login and bootstrap; a browser reload through the Flutter portal remains a separate end-to-end check.
+
+## Session visibility and step-up rollout verification, 2026-09-29
+
+The local backend tests cover session revocation and request-local verification. Production gateway and observability configuration have not been inspected for redaction of `X-Step-Up-Password` and `X-Step-Up-Totp`. A deployed Flutter web flow with CORS, real authenticator devices, and multi-device sign-out remains unverified.

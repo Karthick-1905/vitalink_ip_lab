@@ -5,6 +5,7 @@ import 'package:frontend/core/widgets/admin/admin_access_gate.dart';
 import 'package:frontend/core/widgets/admin/admin_access_scope.dart';
 import 'package:frontend/features/admin/admin_capabilities.dart';
 import 'package:frontend/features/admin/admin_console_components.dart';
+import 'package:frontend/features/admin/admin_step_up_dialog.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/admin_access_model.dart';
 import 'package:frontend/features/admin/models/admin_policy_ui_models.dart';
@@ -46,13 +47,17 @@ class _AccessControlPageState extends State<AccessControlPage> {
             final history = await _repository.getRolePolicyHistory(policy.role);
             return MapEntry(policy.role, history);
           } catch (_) {
-            return MapEntry(policy.role, const <AdminRolePolicyRevisionModel>[]);
+            return MapEntry(
+              policy.role,
+              const <AdminRolePolicyRevisionModel>[],
+            );
           }
         }),
       );
-      final histories = Map<AdminRole, List<AdminRolePolicyRevisionModel>>.fromEntries(
-        historyEntries,
-      );
+      final histories =
+          Map<AdminRole, List<AdminRolePolicyRevisionModel>>.fromEntries(
+            historyEntries,
+          );
       if (!mounted) return;
       setState(() {
         _policies = policies;
@@ -135,14 +140,15 @@ class _AccessControlPageState extends State<AccessControlPage> {
       );
     }
 
-    final manageablePolicies = _policies
-        .where(
-          (policy) =>
-              policy.role == AdminRole.hospitalAdmin ||
-              policy.role == AdminRole.auditor,
-        )
-        .toList()
-      ..sort((a, b) => a.role.index.compareTo(b.role.index));
+    final manageablePolicies =
+        _policies
+            .where(
+              (policy) =>
+                  policy.role == AdminRole.hospitalAdmin ||
+                  policy.role == AdminRole.auditor,
+            )
+            .toList()
+          ..sort((a, b) => a.role.index.compareTo(b.role.index));
 
     if (manageablePolicies.isEmpty) {
       return const Center(
@@ -240,12 +246,18 @@ class _AccessControlPageState extends State<AccessControlPage> {
         confirmLabel: 'Apply policy',
       );
       if (reason == null || !mounted) return;
+      final stepUp = await requestAdminStepUp(
+        context,
+        action: 'access policy update',
+      );
+      if (stepUp == null || !mounted) return;
       try {
         await _repository.updateRolePolicyV2(
           role: policy.role,
           capabilities: draft,
           expectedVersion: policy.policyVersion,
           changeReason: reason,
+          stepUp: stepUp,
         );
         if (!mounted) return;
         setState(() {
@@ -301,12 +313,18 @@ class _AccessControlPageState extends State<AccessControlPage> {
         confirmLabel: 'Restore as new version',
       );
       if (reason == null || !mounted) return;
+      final stepUp = await requestAdminStepUp(
+        context,
+        action: 'access policy restore',
+      );
+      if (stepUp == null || !mounted) return;
       try {
         await _repository.restoreRolePolicy(
           role: policy.role,
           revisionId: revision.id,
           expectedVersion: policy.policyVersion,
           changeReason: reason,
+          stepUp: stepUp,
         );
         if (!mounted) return;
         await AdminAccessScope.of(

@@ -24,6 +24,8 @@ import {
   loginController,
   logoutController,
   getMeController,
+  listSessionsController,
+  revokeSessionController,
   refreshTokenController,
   revokeTokenController,
   verifyLoginTotpController,
@@ -52,6 +54,10 @@ router.post("/revoke", validate(revokeTokenSchema), revokeTokenController);
 router.post("/logout", authenticate, logoutController);
 
 router.get("/me", authenticate, getMeController);
+
+router.get("/sessions", authenticate, listSessionsController);
+
+router.delete("/sessions/:id", authenticate, revokeSessionController);
 
 router.post("/change-password", authenticate, validate(changePasswordSchema), changePasswordController);
 

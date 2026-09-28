@@ -7,6 +7,7 @@ import {
   OtpChallengeStatus,
 } from '@alias/models/otpchallenge.model'
 import { AuthSessionRevocationReason } from '@alias/models/authsession.model'
+import { listOwnAuthSessions, revokeOwnAuthSession } from '@alias/services/auth-session.service'
 import { AuditAction } from '@alias/models/auditlog.model'
 import { AdminMfaChallengeStatus } from '@alias/models/adminmfachallenge.model'
 import { comparePasswords } from '@alias/utils'
@@ -1202,3 +1203,28 @@ export const activateAdminTotpController = asyncHandler(
     }))
   }
 )
+/** GET /api/auth/sessions */
+export const listSessionsController = asyncHandler(async (req: Request, res: Response) => {
+  const sessions = await listOwnAuthSessions(req.user!.user_id)
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Active sessions retrieved', {
+    sessions: sessions.map(session => ({
+      id: String(session._id),
+      current: String(session._id) === req.user!.session_id,
+      created_at: session.createdAt,
+      last_used_at: session.last_used_at,
+      expires_at: session.expires_at,
+      ip_address: session.ip_address,
+      user_agent: session.user_agent,
+    })),
+  }))
+})
+
+/** DELETE /api/auth/sessions/:id */
+export const revokeSessionController = asyncHandler(async (req: Request, res: Response) => {
+  const session = await revokeOwnAuthSession(req.user!.user_id, req.params.id)
+  if (!session) throw new ApiError(StatusCodes.NOT_FOUND, 'Active session not found')
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Session revoked', {
+    revoked_session_id: String(session._id),
+    current: String(session._id) === req.user!.session_id,
+  }))
+})

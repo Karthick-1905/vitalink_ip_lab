@@ -7,7 +7,7 @@ The catalog covers every Mongoose model exported by `backend/src/models/index.ts
 <!-- model: User -->
 ### `User` / `users`
 
-Authentication identity for every role. Key fields are unique `login_id`, hashed `password` and per-user `salt`, `user_type`, unique role-specific `profile_id`, active/security/password/lockout state, doctor-operation lease/fence, password history, and encrypted administrator TOTP state. Timestamps are enabled. Indexes cover login/profile uniqueness and `locked_until`.
+Authentication identity for every role. Key fields are unique `login_id`, hashed `password` and per-user `salt`, `user_type`, unique role-specific `profile_id`, active/security/password/lockout state, doctor-operation lease/fence, password history, and encrypted administrator TOTP state. The TOTP subdocument tracks separate login and sensitive-action replay time steps. Timestamps are enabled. Indexes cover login/profile uniqueness and `locked_until`.
 
 <!-- model: AdminProfile -->
 ### `AdminProfile` / `adminprofiles`
@@ -30,6 +30,8 @@ Primary clinical document. It embeds demographics and next of kin, medical confi
 ### `AuthSession` / `authsessions`
 
 Revocable session family with user/type/security generation, unique access token ID, unique current refresh hash, hidden refresh-hash history for reuse detection, sliding access expiry, absolute refresh expiry, revocation metadata, IP/user-agent, and usage time. TTL removes rows at `expires_at`.
+
+The authenticated owner can list active rows and revoke one by ID. The API projects only device, activity, expiry, and current-session metadata; it never exposes token hashes.
 
 <!-- model: OtpChallenge -->
 ### `OtpChallenge` / `otpchallenges`

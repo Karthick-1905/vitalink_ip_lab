@@ -12,6 +12,21 @@ class AdminRepository {
 
   final ApiClient _apiClient;
 
+  Future<List<Map<String, dynamic>>> getOwnSessions() async {
+    final response = await _apiClient.get(
+      '${AppStrings.apiPathPrefix}/auth/sessions',
+    );
+    final data = _extractData(response);
+    return (data['sessions'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map((session) => Map<String, dynamic>.from(session))
+        .toList();
+  }
+
+  Future<void> revokeOwnSession(String id) async {
+    await _apiClient.delete('${AppStrings.apiPathPrefix}/auth/sessions/$id');
+  }
+
   Map<String, dynamic> _extractData(Map<String, dynamic> response) {
     final data = response['data'];
     if (data is Map<String, dynamic>) {
@@ -265,28 +280,38 @@ class AdminRepository {
   }
 
   Future<AdminAccountMutationResult> createAdminAccount(
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    Map<String, String>? stepUp,
+  }) async {
     final response = await _apiClient.post(
       AppStrings.adminAccountsPath,
       data: data,
+      extraHeaders: stepUp,
     );
     return AdminAccountMutationResult.fromJson(response);
   }
 
   Future<AdminAccountMutationResult> updateAdminAccount(
     String id,
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    Map<String, String>? stepUp,
+  }) async {
     final response = await _apiClient.put(
       '${AppStrings.adminAccountsPath}/$id',
       data: data,
+      extraHeaders: stepUp,
     );
     return AdminAccountMutationResult.fromJson(response);
   }
 
-  Future<Map<String, dynamic>> resetAdminAccountMfa(String id) {
-    return _apiClient.post('${AppStrings.adminAccountsPath}/$id/mfa/reset');
+  Future<Map<String, dynamic>> resetAdminAccountMfa(
+    String id, {
+    Map<String, String>? stepUp,
+  }) {
+    return _apiClient.post(
+      '${AppStrings.adminAccountsPath}/$id/mfa/reset',
+      extraHeaders: stepUp,
+    );
   }
 
   // ─── V2 Administrator Role Policies ───
@@ -323,6 +348,7 @@ class AdminRepository {
     required Map<String, bool> capabilities,
     required int expectedVersion,
     required String changeReason,
+    Map<String, String>? stepUp,
   }) async {
     final response = await _apiClient.put(
       '${AppStrings.adminRolePoliciesPath}/${role.wireValue}',
@@ -331,6 +357,7 @@ class AdminRepository {
         'expected_version': expectedVersion,
         'change_reason': changeReason,
       },
+      extraHeaders: stepUp,
     );
     return AdminRolePolicyModel.fromJson(_normalizePolicy(response));
   }
@@ -371,6 +398,7 @@ class AdminRepository {
     required String revisionId,
     required int expectedVersion,
     required String changeReason,
+    Map<String, String>? stepUp,
   }) async {
     final response = await _apiClient.post(
       '${AppStrings.adminRolePoliciesPath}/${role.wireValue}/restore',
@@ -379,6 +407,7 @@ class AdminRepository {
         'expected_version': expectedVersion,
         'change_reason': changeReason,
       },
+      extraHeaders: stepUp,
     );
     return AdminRolePolicyModel.fromJson(_normalizePolicy(response));
   }

@@ -1,3 +1,9 @@
+// Lifecycle scenarios use the existing controller contract; step-up is exercised
+// with a real authenticator in admin-critical-regressions.test.ts.
+jest.mock('@alias/middlewares/admin-step-up.middleware', () => ({
+  requireAdminStepUp: (_req: unknown, _res: unknown, next: () => void) => next(),
+}))
+
 import axios, { AxiosInstance } from 'axios';
 import { startMongoReplicaSet, MongoReplicaSetHarness } from './setup/mongo-replica-set';
 import mongoose from 'mongoose';

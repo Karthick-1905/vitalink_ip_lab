@@ -89,6 +89,7 @@ const UserSchema = new mongoose.Schema({
       activated_at: { type: Date },
       last_verified_at: { type: Date },
       last_verified_time_step: { type: Number },
+      last_step_up_time_step: { type: Number },
       last_verified_challenge_id: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminMfaChallenge' },
       factor_generation: { type: Number, default: 0, min: 0 },
     },
