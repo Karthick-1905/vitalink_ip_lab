@@ -47,6 +47,21 @@ class _Repo extends AdminRepository {
 
   @override
   Future<List<AdminAccountModel>> getAdminAccounts() async => const [];
+
+  @override
+  Future<SystemHealthModel> getSystemHealth() async =>
+      SystemHealthModel.fromJson({
+        'status': 'healthy',
+        'uptime_seconds': 12345,
+        'database': {'status': 'healthy'},
+        'redis': {'status': 'healthy'},
+        'services': {'status': 'healthy'},
+      });
+
+  @override
+  Future<Map<String, dynamic>> getHospitalOperationsHealth() async => {
+        'status': 'healthy',
+      };
 }
 
 AdminAccessModel _appAdminAccess() {
