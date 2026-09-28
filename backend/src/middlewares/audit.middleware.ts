@@ -258,14 +258,14 @@ export function auditLogger(req: Request, res: Response, next: NextFunction): vo
       : undefined
     const hasResourceScope = responseData?.hospital !== undefined || responseData?.admin_account !== undefined
     const eventHospital = success
-      ? req.adminAccess?.hospitalId ?? res.locals.auditEventHospitalId ?? resourceHospital
+      ? req.adminAccess?.hospitalId ?? res.locals?.auditEventHospitalId ?? resourceHospital
       : undefined
     const auditPayload = {
       scope_version: 1,
       event_hospital_id: eventHospital,
       resource_hospital_id: hasResourceScope ? resourceHospital : eventHospital,
-      actor_hospital_id: req.adminAccess ? req.adminAccess.hospitalId : res.locals.auditActor?.hospital_id,
-      actor_role: req.adminAccess?.role ?? res.locals.auditActor?.role,
+      actor_hospital_id: req.adminAccess ? req.adminAccess.hospitalId : res.locals?.auditActor?.hospital_id,
+      actor_role: req.adminAccess?.role ?? res.locals?.auditActor?.role,
       user_id: req.user.user_id,
       user_type: req.user.user_type,
       action,

@@ -75,3 +75,5 @@ Maintenance was verified through HTTP enable, fresh login, authenticated bootstr
 ## Backend dependency compatibility, 2026-09-28
 
 After pinning Mongoose 8.24.4, `npm.cmd run build` and six focused unit suites passed (51 tests). `npm.cmd audit --omit=dev --audit-level=high` reported zero vulnerabilities. Documentation validation, the strict MkDocs build, and OpenAPI lint passed; OpenAPI lint retained 104 pre-existing warnings. The full backend suite could not complete because Docker Desktop's Linux engine was unavailable to Testcontainers. Database-backed runtime compatibility remains unverified in this run. Mermaid and Structurizr inputs did not change.
+
+With Docker Desktop's Linux engine available, the full backend suite passed: 42 suites and 649 tests using `npm.cmd test -- --runInBand` from `backend/`. The backend TypeScript build also passed. The follow-up fixes made audit middleware tolerate a response without `locals` and made the challenge-retention test assert the TTL index contract without depending on Mongoose's default `background` option.
