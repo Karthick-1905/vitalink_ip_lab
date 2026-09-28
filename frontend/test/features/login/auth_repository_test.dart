@@ -27,6 +27,7 @@ class _FakeApiClient extends ApiClient {
     String path, {
     Object? data,
     bool authenticated = true,
+    Map<String, String>? extraHeaders,
   }) async {
     calls.add(_ApiCall(path, data, authenticated));
     return responses[path] ?? <String, dynamic>{};

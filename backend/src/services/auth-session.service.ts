@@ -310,6 +310,28 @@ export const revokeAuthSessionById = async (
   )
 }
 
+export const listOwnAuthSessions = async (userId: string) => {
+  return AuthSession.find({
+    user_id: userId,
+    revoked_at: { $exists: false },
+    expires_at: { $gt: new Date() },
+  }).select('_id createdAt last_used_at expires_at access_expires_at ip_address user_agent')
+    .sort({ last_used_at: -1 }).limit(100).lean()
+}
+
+export const revokeOwnAuthSession = async (userId: string, sessionId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(sessionId)) return null
+  return AuthSession.findOneAndUpdate({
+    _id: sessionId,
+    user_id: userId,
+    revoked_at: { $exists: false },
+    expires_at: { $gt: new Date() },
+  }, { $set: {
+    revoked_at: new Date(),
+    revoked_reason: AuthSessionRevocationReason.USER_REVOKED,
+  } }, { new: true })
+}
+
 export const revokeActiveAuthSessionsForUser = async (
   userId: string,
   reason: AuthSessionRevocationReason = AuthSessionRevocationReason.USER_REVOKED

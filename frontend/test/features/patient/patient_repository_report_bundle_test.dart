@@ -276,6 +276,7 @@ class _DelayedReportsApiClient extends ApiClient {
     String path, {
     Object? data,
     bool authenticated = true,
+    Map<String, String>? extraHeaders,
   }) async {
     if (!allowPost) {
       throw StateError('POST not expected');

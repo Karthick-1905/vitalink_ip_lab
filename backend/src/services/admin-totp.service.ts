@@ -37,6 +37,7 @@ type TotpSlot = {
   pending_secret_auth_tag?: string
   status?: string
   last_verified_time_step?: number
+  last_step_up_time_step?: number
   enrolled_at?: Date
   activated_at?: Date
   last_verified_at?: Date
@@ -160,6 +161,30 @@ const findMatchingTimeStep = (secret: string, code: string): number | null => {
 }
 
 const getTotpSlot = (user: any): TotpSlot => user.admin_mfa?.totp || {}
+
+/** Consume one authenticator time step for a sensitive request. */
+export const verifyAdminTotpForStepUp = async (user: any, code: string): Promise<boolean> => {
+  if (!isAdminTotpEnabled(user)) return false
+  const totp = getTotpSlot(user)
+  const matchingStep = findMatchingTimeStep(getActiveSecret(user), code)
+  if (matchingStep === null) return false
+  const updated = await User.findOneAndUpdate({
+    _id: user._id,
+    user_type: UserType.ADMIN,
+    is_active: true,
+    security_version: Number(user.security_version || 0),
+    'admin_mfa.totp.factor_generation': Number(totp.factor_generation || 0),
+    'admin_mfa.totp.secret_ciphertext': totp.secret_ciphertext,
+    $or: [
+      { 'admin_mfa.totp.last_step_up_time_step': { $exists: false } },
+      { 'admin_mfa.totp.last_step_up_time_step': { $lt: matchingStep } },
+    ],
+  }, { $set: {
+    'admin_mfa.totp.last_verified_at': new Date(),
+    'admin_mfa.totp.last_step_up_time_step': matchingStep,
+  } })
+  return Boolean(updated)
+}
 
 const exactOptional = (path: string, value: unknown) =>
   value === undefined || value === null ? { [path]: { $exists: false } } : { [path]: value }
@@ -356,6 +381,7 @@ export const createAdminTotpBootstrapEnrollment = async (user: any) => {
         'admin_mfa.totp.last_verified_at': '',
         'admin_mfa.totp.last_verified_time_step': '',
         'admin_mfa.totp.last_verified_challenge_id': '',
+        'admin_mfa.totp.last_step_up_time_step': '',
       },
     },
   )
@@ -415,6 +441,7 @@ export const replaceAdminTotpForRecovery = async (user: any) => {
         'admin_mfa.totp.last_verified_at': '',
         'admin_mfa.totp.last_verified_time_step': '',
         'admin_mfa.totp.last_verified_challenge_id': '',
+        'admin_mfa.totp.last_step_up_time_step': '',
       },
     }
   )

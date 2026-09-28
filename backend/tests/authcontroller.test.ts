@@ -1,3 +1,9 @@
+// MFA challenge races are tested here; request-local step-up is covered with
+// real credentials in admin-critical-regressions.test.ts.
+jest.mock('@alias/middlewares/admin-step-up.middleware', () => ({
+  requireAdminStepUp: (_req: unknown, _res: unknown, next: () => void) => next(),
+}))
+
 import axios, { AxiosInstance } from 'axios';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
 import mongoose from 'mongoose';

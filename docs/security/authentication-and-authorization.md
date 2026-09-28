@@ -23,9 +23,11 @@ Changing a primary phone resets verification to `PENDING`; a new OTP is required
 
 ### Administrator TOTP
 
-Administrator secrets are generated locally and encrypted at rest with `ADMIN_TOTP_ENCRYPTION_KEY`. Pending and active secret material use separate encrypted slots. Challenges bind the account security generation and factor generation, and the last verified time step provides a replay boundary.
+Administrator secrets are generated locally and encrypted at rest with `ADMIN_TOTP_ENCRYPTION_KEY`. Pending and active secret material use separate encrypted slots. Challenges bind the account security generation and factor generation. Separate last-used time steps prevent replay within login challenges and within sensitive-action verification.
 
 Production/staging policy can require an unenrolled administrator to complete password-bound setup and activation before a session is issued. Flutter login consumes `TOTP_ENROLLMENT_REQUIRED`, calls the unauthenticated enrollment setup and activate routes, and stores the issued session. Authenticated setup/status/activate endpoints support normal in-session account-security management.
+
+Sensitive administrator writes require action-local step-up verification. Creating or updating an administrator account, resetting its authenticator, and writing or restoring a role policy require `X-Step-Up-Password` and `X-Step-Up-Totp` on the mutation request, including compatibility aliases. The server checks the current password, account lockout, and active authenticator factor, then atomically consumes the TOTP time step before the write handler runs. A code cannot approve a later request or a second write. Failed checks count toward account lockout. An administrator without an enabled authenticator must enroll it before using these writes.
 
 ## Session design
 
@@ -35,6 +37,8 @@ Production/staging policy can require an unenrolled administrator to complete pa
 4. Every protected request verifies the JWT and then checks the current user, exact active session, security generation, access/absolute expiry, role, account state, hospital state, and password policy.
 5. Refresh rotates both the access token ID and refresh hash atomically. Reuse of a previous hash revokes the current family.
 6. Logout, credential change/reset, MFA reset, account disablement, and security-version changes revoke or invalidate sessions.
+
+`GET /auth/sessions` returns up to 100 active sessions owned by the caller, with the current session identified. `DELETE /auth/sessions/{id}` revokes only an active session owned by the caller. The Personal Security screen shows device, last use, and IP details and can revoke a selected session. Revoking the current session clears local authentication state and returns to sign-in.
 
 The code does not explicitly pin a JWT algorithm in `jwt.sign`/`jwt.verify`; that is recorded as a recommended hardening item rather than described as an implemented pin.
 

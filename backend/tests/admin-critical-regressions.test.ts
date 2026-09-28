@@ -11,6 +11,7 @@ import { getAuditLogs, performBatchOperation, setDoctorAccountStatus, setPatient
 import { hasActiveHospitalAccess } from '@alias/services/hospital-access.service'
 import logger from '@alias/utils/logger'
 import { createAuthSession } from '@alias/services/auth-session.service'
+import { activateAdminTotpEnrollment, createAdminTotpEnrollment, generateTotpCode } from '@alias/services/admin-totp.service'
 import { safeRequestUrl } from '@alias/utils/request-log'
 import { isControlPlaneRequest } from '@alias/middlewares/systemConfig.middleware'
 import { startMongoReplicaSet, MongoReplicaSetHarness } from './setup/mongo-replica-set'
@@ -173,18 +174,60 @@ test('actual patient search and unmatched requests do not log search terms or id
 })
 
 test('administrator transfer records source event scope and destination resource scope', async () => {
-  const auth = await login(platform)
+  const setup = await createAdminTotpEnrollment(platform)
+  await activateAdminTotpEnrollment(platform, generateTotpCode(setup.secret))
+  const refreshedPlatform = await User.findById(platform._id)
+  const session = await createAuthSession({ user: refreshedPlatform! })
+  expect(session).not.toBeNull()
+  const timeStep = Math.floor(Date.now() / 30_000)
+  const auth = { headers: {
+    Authorization: `Bearer ${session!.token}`,
+    'X-Step-Up-Password': secret,
+    'X-Step-Up-Totp': generateTotpCode(setup.secret, timeStep),
+  } }
+  expect((await api.put(`/api/admin/admin-accounts/${admin._id}`, { hospital_id: String(other._id) }, { headers: { Authorization: auth.headers.Authorization } })).status).toBe(403)
+  expect((await api.post(`/api/admin/admin-accounts/${admin._id}/mfa/reset`, {}, {
+    headers: { Authorization: auth.headers.Authorization },
+  })).status).toBe(403)
+  expect((await api.put('/api/admin/role-policies/hospital_admin', {
+    capabilities: DEFAULT_ADMIN_ROLE_POLICIES.hospital_admin,
+    expected_version: 1,
+    change_reason: 'Review policy verification',
+  }, { headers: { Authorization: auth.headers.Authorization } })).status).toBe(403)
+  expect((await api.put(`/api/admin/admin-accounts/${admin._id}`, { hospital_id: String(other._id) }, {
+    headers: { ...auth.headers, 'X-Step-Up-Password': 'Wrong@1234' },
+  })).status).toBe(403)
   const result = await api.put(`/api/admin/admin-accounts/${admin._id}`, { hospital_id: String(other._id) }, auth)
   expect(result.status).toBe(200)
+  expect((await api.put(`/api/admin/admin-accounts/${admin._id}`, { role: 'auditor' }, auth)).status).toBe(403)
   const row = await AuditLog.findOne({ user_id: platform._id, action: AuditAction.ADMIN_SCOPE_CHANGE }).sort({ createdAt: -1 })
   expect(String(row?.event_hospital_id)).toBe(String(hospital._id))
   expect(String(row?.resource_hospital_id)).toBe(String(other._id))
   expect(row?.actor_role).toBe('app_admin')
   await AuditLog.updateOne({ _id: row!._id }, { $set: { event_hospital_id: other._id } })
   expect(String((await AuditLog.findById(row!._id))?.event_hospital_id)).toBe(String(hospital._id))
-  const globalRole = await api.put(`/api/admin/admin-accounts/${admin._id}`, { role: 'auditor' }, auth)
+  const globalRole = await api.put(`/api/admin/admin-accounts/${admin._id}`, { role: 'auditor' }, {
+    headers: { ...auth.headers, 'X-Step-Up-Totp': generateTotpCode(setup.secret, timeStep + 1) },
+  })
   expect(globalRole.status).toBe(200)
   const roleEvent = await AuditLog.findOne({ user_id: platform._id, action: AuditAction.ADMIN_ROLE_ASSIGN }).sort({ createdAt: -1 })
   expect(String(roleEvent?.event_hospital_id)).toBe(String(other._id))
   expect(roleEvent?.resource_hospital_id).toBeUndefined()
+})
+
+test('session inventory is caller-owned and selective revocation invalidates one token', async () => {
+  const first = await login(admin)
+  const second = await login(admin)
+  const inventory = await api.get('/api/auth/sessions', second)
+  expect(inventory.status).toBe(200)
+  const sessions = inventory.data.data.sessions as Array<{ id: string; current: boolean }>
+  const current = sessions.find(session => session.current)
+  const otherSession = sessions.find(session => !session.current)
+  expect(current).toBeDefined()
+  expect(otherSession).toBeDefined()
+  expect(sessions.every(session => !('refresh_token_hash' in session))).toBe(true)
+  expect((await api.delete(`/api/auth/sessions/${otherSession!.id}`, second)).status).toBe(200)
+  expect((await api.get('/api/auth/me', first)).status).toBe(401)
+  expect((await api.get('/api/auth/me', second)).status).toBe(200)
+  expect((await api.delete(`/api/auth/sessions/${current!.id}`, first)).status).toBe(401)
 })

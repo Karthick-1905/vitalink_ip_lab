@@ -43,6 +43,22 @@ class _FakeAdminRepository extends AdminRepository {
   AdminRolePolicyModel? latestPolicy;
   List<AdminRolePolicyRevisionModel> revisions = const [];
   List<AdminAccountModel> accounts = const [];
+  List<Map<String, dynamic>> sessions = const [];
+  int sessionListCalls = 0;
+  final List<String> revokedSessionIds = [];
+
+  @override
+  Future<List<Map<String, dynamic>>> getOwnSessions() async {
+    sessionListCalls++;
+    return sessions;
+  }
+
+  @override
+  Future<void> revokeOwnSession(String id) async {
+    revokedSessionIds.add(id);
+    sessions = sessions.where((session) => session['id'] != id).toList();
+  }
+
   Map<String, dynamic>? createdAccountPayload;
   Object? previewPolicyError;
   Object? updatePolicyError;
@@ -117,6 +133,7 @@ class _FakeAdminRepository extends AdminRepository {
     required Map<String, bool> capabilities,
     required int expectedVersion,
     required String changeReason,
+    Map<String, String>? stepUp,
   }) async {
     updatePolicyCalls++;
     policyMutationEvents.add('update');
@@ -158,6 +175,7 @@ class _FakeAdminRepository extends AdminRepository {
     required String revisionId,
     required int expectedVersion,
     required String changeReason,
+    Map<String, String>? stepUp,
   }) async {
     restorePolicyCalls++;
     policyMutationEvents.add('restore');
@@ -196,8 +214,9 @@ class _FakeAdminRepository extends AdminRepository {
 
   @override
   Future<AdminAccountMutationResult> createAdminAccount(
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    Map<String, String>? stepUp,
+  }) async {
     createAccountCalls++;
     createdAccountPayload = Map<String, dynamic>.from(data);
     return const AdminAccountMutationResult(payload: {});
@@ -206,14 +225,18 @@ class _FakeAdminRepository extends AdminRepository {
   @override
   Future<AdminAccountMutationResult> updateAdminAccount(
     String id,
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    Map<String, String>? stepUp,
+  }) async {
     updateAccountCalls++;
     return const AdminAccountMutationResult(payload: {});
   }
 
   @override
-  Future<Map<String, dynamic>> resetAdminAccountMfa(String id) async {
+  Future<Map<String, dynamic>> resetAdminAccountMfa(
+    String id, {
+    Map<String, String>? stepUp,
+  }) async {
     resetAccountMfaCalls++;
     return const {};
   }
@@ -501,7 +524,9 @@ void main() {
         child: AccessControlPage(repository: directRepo),
       );
       expect(
-        find.textContaining('Access policies are only available to System Administrators'),
+        find.textContaining(
+          'Access policies are only available to System Administrators',
+        ),
         findsOneWidget,
       );
       expect(directRepo.policyReadCalls, 0);
@@ -570,6 +595,15 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('confirm-policy-change')));
     await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Current password'),
+      'Secret@123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Authenticator code'),
+      '123456',
+    );
+    await tester.tap(find.text('Verify and continue'));
     await tester.pump();
 
     expect(find.textContaining('Server version 2 is newer'), findsOneWidget);
@@ -616,6 +650,15 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('confirm-policy-change')));
     await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Current password'),
+      'Secret@123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Authenticator code'),
+      '123456',
+    );
+    await tester.tap(find.text('Verify and continue'));
     await tester.pump();
 
     expect(repository.policyMutationEvents, ['preview', 'update']);
@@ -686,6 +729,15 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('confirm-policy-change')));
     await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Current password'),
+      'Secret@123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Authenticator code'),
+      '123456',
+    );
+    await tester.tap(find.text('Verify and continue'));
     await tester.pump();
 
     expect(repository.policyMutationEvents, ['preview', 'update']);
@@ -733,6 +785,15 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('confirm-policy-change')));
     await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Current password'),
+      'Secret@123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Authenticator code'),
+      '123456',
+    );
+    await tester.tap(find.text('Verify and continue'));
     await tester.pump();
 
     expect(repository.policyMutationEvents, ['restore-preview', 'restore']);
@@ -782,6 +843,15 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('save-admin-account')));
     await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Current password'),
+      'Secret@123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Authenticator code'),
+      '123456',
+    );
+    await tester.tap(find.text('Verify and continue'));
     await tester.pump();
 
     expect(repository.createdAccountPayload?['role'], 'auditor');
@@ -829,6 +899,15 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('save-admin-account')));
     await tester.pump();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Current password'),
+      'Secret@123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Authenticator code'),
+      '123456',
+    );
+    await tester.tap(find.text('Verify and continue'));
     await tester.pump();
 
     expect(repository.createAccountCalls, 1);
@@ -880,10 +959,37 @@ void main() {
 
     expect(find.text('Personal Security'), findsOneWidget);
     expect(repository.mfaStatusCalls, 1);
+    expect(repository.sessionListCalls, 1);
     expect(repository.configCalls, 0);
     expect(repository.healthCalls, 0);
     expect(repository.operationsHealthCalls, 0);
   });
+
+  testWidgets(
+    'personal security lists and selectively revokes another session',
+    (tester) async {
+      final repository = _FakeAdminRepository()
+        ..sessions = [
+          {'id': 'current', 'current': true, 'user_agent': 'Current browser'},
+          {'id': 'other', 'current': false, 'user_agent': 'Other browser'},
+        ];
+      await _pumpWithAccess(
+        tester,
+        access: _access(AdminRole.hospitalAdmin, const []),
+        child: SystemConfigPage(repository: repository),
+      );
+      await tester.pump();
+      expect(find.text('This session'), findsOneWidget);
+      expect(find.text('Other browser'), findsOneWidget);
+      await tester.tap(find.text('Revoke'));
+      await tester.pump();
+      await tester.tap(find.text('Revoke').last);
+      await tester.pump();
+      await tester.pump();
+      expect(repository.revokedSessionIds, ['other']);
+      expect(find.text('Other browser'), findsNothing);
+    },
+  );
 
   testWidgets(
     'platform configuration is separate and read-only without manage',

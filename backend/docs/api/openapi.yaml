@@ -398,6 +398,62 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /auth/sessions:
+    get:
+      tags: [Authentication]
+      summary: List active sessions for the authenticated user
+      description: Returns at most 100 active sessions, newest activity first. The current session is marked current; refresh tokens and access token IDs are never returned.
+      responses:
+        "200":
+          description: Active session inventory
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponseBase"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          sessions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id: { type: string }
+                                current: { type: boolean }
+                                created_at: { type: string, format: date-time }
+                                last_used_at: { type: string, format: date-time }
+                                expires_at: { type: string, format: date-time }
+                                ip_address: { type: string }
+                                user_agent: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/sessions/{id}:
+    delete:
+      tags: [Authentication]
+      summary: Revoke one of the authenticated user's active sessions
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Session revoked, including the current session when selected
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponseBase"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          revoked_session_id: { type: string }
+                          current: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /auth/change-password:
     post:
       tags: [Authentication]
@@ -1316,6 +1372,8 @@ paths:
       description: Application Admin-only compare-and-swap update. Only hospital_admin and auditor are editable; the body is a complete normalized map with expected_version and change_reason.
       parameters:
         - $ref: "#/components/parameters/AdminRoleKeyPath"
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       requestBody:
         required: true
         content:
@@ -1432,6 +1490,8 @@ paths:
       description: Application Admin-only audited restore. History is never rewound; the selected map is written as a new monotonic policy version.
       parameters:
         - $ref: "#/components/parameters/AdminRoleKeyPath"
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       requestBody:
         required: true
         content:
@@ -1779,6 +1839,9 @@ paths:
       operationId: createAdminAccount
       summary: Create a Hospital Admin or System Auditor account
       description: Application Admin-only. hospital_admin requires an active hospital; auditor forbids a hospital; app_admin cannot be created through the portal.
+      parameters:
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       requestBody:
         required: true
         content:
@@ -1808,6 +1871,8 @@ paths:
       description: Application Admin-only. Role, hospital scope, or state changes bump security_version and revoke sessions. Application Admin targets are denied.
       parameters:
         - $ref: "#/components/parameters/IdPath"
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       requestBody:
         required: true
         content:
@@ -1838,6 +1903,8 @@ paths:
       description: Application Admin-only supervised recovery for an active Hospital Admin or System Auditor. Returns the replacement TOTP setup secret once.
       parameters:
         - $ref: "#/components/parameters/IdPath"
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       responses:
         "200":
           description: Administrator authenticator reset
@@ -1878,6 +1945,9 @@ paths:
       summary: Create an administrator account through the compatibility alias
       deprecated: true
       description: Compatibility alias for POST /admin/admin-accounts; only hospital_admin and auditor are accepted.
+      parameters:
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       requestBody:
         required: true
         content:
@@ -1911,6 +1981,8 @@ paths:
       description: Compatibility alias for PUT /admin/admin-accounts/{id}.
       parameters:
         - $ref: "#/components/parameters/IdPath"
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       requestBody:
         required: true
         content:
@@ -2584,6 +2656,8 @@ paths:
       description: Compatibility alias for POST /admin/admin-accounts/{id}/mfa/reset.
       parameters:
         - $ref: "#/components/parameters/IdPath"
+        - $ref: "#/components/parameters/StepUpPassword"
+        - $ref: "#/components/parameters/StepUpTotp"
       responses:
         "200":
           description: Administrator authenticator reset
@@ -2932,6 +3006,18 @@ components:
         type: string
 
   parameters:
+    StepUpPassword:
+      in: header
+      name: X-Step-Up-Password
+      required: true
+      schema: { type: string, format: password }
+      description: Current administrator password, verified for this mutation request only.
+    StepUpTotp:
+      in: header
+      name: X-Step-Up-Totp
+      required: true
+      schema: { type: string, pattern: '^\d{6}$' }
+      description: Fresh, single-use authenticator code for this mutation request.
     IdPath:
       in: path
       name: id

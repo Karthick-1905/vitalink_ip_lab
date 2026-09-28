@@ -13,5 +13,6 @@ These records use MADR headings. They document important decisions already embod
 | [0007](0007-blue-green-deployment.md) | Accepted for checked-in EC2 path | Nginx blue-green API slots on Docker Compose |
 | [0008](0008-single-use-sse-tickets.md) | Accepted, retrospective | Short-lived, single-use, session-bound SSE tickets for EventSource |
 | [0009](0009-lifecycle-and-event-audit-boundaries.md) | Accepted | Transactional account status, independent hospital access, and immutable audit event scope |
+| [0010](0010-action-local-admin-step-up.md) | Accepted | Request-local password and TOTP verification for sensitive admin writes, plus caller-owned session revocation |
 
 Future architecture changes should add a new decision or explicitly supersede an existing record. Historical accepted records should not be rewritten to imply a decision was never made.

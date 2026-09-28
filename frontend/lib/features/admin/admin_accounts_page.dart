@@ -6,6 +6,7 @@ import 'package:frontend/core/widgets/admin/admin_access_scope.dart';
 import 'package:frontend/core/widgets/admin/admin_mutation_dialog.dart';
 import 'package:frontend/features/admin/admin_capabilities.dart';
 import 'package:frontend/features/admin/admin_console_components.dart';
+import 'package:frontend/features/admin/admin_step_up_dialog.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/models/admin_access_model.dart';
 import 'package:frontend/features/admin/models/admin_account_model.dart';
@@ -426,6 +427,13 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                           ? null
                           : () async {
                               if (!formKey.currentState!.validate()) return;
+                              final stepUp = await requestAdminStepUp(
+                                dialogContext,
+                                action: account == null
+                                    ? 'administrator invitation'
+                                    : 'administrator account changes',
+                              );
+                              if (stepUp == null) return;
                               setDialogState(() => saving = true);
                               // System Auditors are global: omit hospital_id entirely.
                               // Sending null fails backend Zod validation
@@ -442,10 +450,12 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                                 final result = account == null
                                     ? await _repository.createAdminAccount(
                                         payload,
+                                        stepUp: stepUp,
                                       )
                                     : await _repository.updateAdminAccount(
                                         account.id,
                                         payload,
+                                        stepUp: stepUp,
                                       );
                                 if (!dialogContext.mounted) return;
                                 Navigator.pop(dialogContext);
@@ -516,10 +526,15 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    final stepUp = await requestAdminStepUp(
+      context,
+      action: '$action administrator account',
+    );
+    if (stepUp == null || !mounted) return;
     try {
       await _repository.updateAdminAccount(account.id, {
         'is_active': !account.isActive,
-      });
+      }, stepUp: stepUp);
       await _load();
     } catch (error) {
       if (mounted) _showSafeError(context, error);
@@ -547,8 +562,16 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    final stepUp = await requestAdminStepUp(
+      context,
+      action: 'authenticator reset',
+    );
+    if (stepUp == null || !mounted) return;
     try {
-      final result = await _repository.resetAdminAccountMfa(account.id);
+      final result = await _repository.resetAdminAccountMfa(
+        account.id,
+        stepUp: stepUp,
+      );
       if (!mounted) return;
       final setup = result['setup'] is Map
           ? Map<String, dynamic>.from(result['setup'] as Map)

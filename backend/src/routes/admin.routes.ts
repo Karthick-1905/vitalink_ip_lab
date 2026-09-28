@@ -4,6 +4,7 @@ import { UserType } from '@alias/validators'
 import { captureAdminAuditScope } from '@alias/middlewares/audit-scope.middleware'
 import auditLogger from '@alias/middlewares/audit.middleware'
 import { requireAdminCapability } from '@alias/middlewares/adminPermission.middleware'
+import { requireAdminStepUp } from '@alias/middlewares/admin-step-up.middleware'
 import { registerAdminRoute } from '@alias/authorization/admin-route-policy'
 import { getCurrentAdminAccess } from '@alias/controllers/admin-access.controller'
 import {
@@ -79,10 +80,10 @@ registerAdminRoute(router, {
 }, validate(previewAdminRolePolicyRestoreSchema), previewAdminRolePolicyRestore)
 registerAdminRoute(router, {
   method: 'post', path: '/role-policies/:roleKey/restore', capability: 'platform.role_policy.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(restoreAdminRolePolicySchema), restoreAdminRolePolicy)
+}, validate(restoreAdminRolePolicySchema), requireAdminStepUp, restoreAdminRolePolicy)
 registerAdminRoute(router, {
   method: 'put', path: '/role-policies/:roleKey', capability: 'platform.role_policy.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(updateAdminRolePolicySchema), updateAdminRolePolicy)
+}, validate(updateAdminRolePolicySchema), requireAdminStepUp, updateAdminRolePolicy)
 registerAdminRoute(router, {
   method: 'get', path: '/role-policies/:roleKey', capability: 'platform.role_policy.read', scope: 'global', mutation: false, surface: 'admin',
 }, validate(adminRolePolicyParamsSchema), getAdminRolePolicy)
@@ -152,13 +153,13 @@ registerAdminRoute(router, {
 }, listAdminAccounts)
 registerAdminRoute(router, {
   method: 'post', path: '/admin-accounts', capability: 'platform.admin_accounts.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(createAdminAccountSchema), createAdminAccount)
+}, validate(createAdminAccountSchema), requireAdminStepUp, createAdminAccount)
 registerAdminRoute(router, {
   method: 'post', path: '/admin-accounts/:id/mfa/reset', capability: 'platform.admin_accounts.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(resetAdminAccountMfaSchema), resetAdminAccountMfa)
+}, validate(resetAdminAccountMfaSchema), requireAdminStepUp, resetAdminAccountMfa)
 registerAdminRoute(router, {
   method: 'put', path: '/admin-accounts/:id', capability: 'platform.admin_accounts.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(updateAdminAccountSchema), updateAdminAccount)
+}, validate(updateAdminAccountSchema), requireAdminStepUp, updateAdminAccount)
 
 // ─── Compatibility Administrator Account Endpoints ───
 registerAdminRoute(router, {
@@ -166,13 +167,13 @@ registerAdminRoute(router, {
 }, listUsers)
 registerAdminRoute(router, {
   method: 'post', path: '/users', capability: 'platform.admin_accounts.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(inviteAdminUserSchema), inviteUser)
+}, validate(inviteAdminUserSchema), requireAdminStepUp, inviteUser)
 registerAdminRoute(router, {
   method: 'post', path: '/users/:id/mfa/reset', capability: 'platform.admin_accounts.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(userIdParamSchema), resetUserAuthenticator)
+}, validate(userIdParamSchema), requireAdminStepUp, resetUserAuthenticator)
 registerAdminRoute(router, {
   method: 'put', path: '/users/:id', capability: 'platform.admin_accounts.manage', scope: 'global', mutation: true, surface: 'admin',
-}, validate(updateAdminUserSchema), updateUser)
+}, validate(updateAdminUserSchema), requireAdminStepUp, updateUser)
 
 // ─── Doctor Management ───
 registerAdminRoute(router, {
