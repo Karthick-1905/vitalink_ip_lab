@@ -1997,6 +1997,35 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /admin/doctors/assignment-options:
+    get:
+      operationId: searchAdminDoctorAssignmentOptions
+      x-required-capabilities: [tenant.patients.manage, tenant.patients.assign]
+      x-admin-scope: tenant
+      x-admin-roles: [hospital_admin]
+      tags: [Admin]
+      summary: Search eligible doctors for patient assignment
+      description: Returns minimal identity for active doctors in the administrator's hospital. This read-only lookup is authorized by the patient-manage or patient-assign capability required by the corresponding action.
+      parameters:
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+        - in: query
+          name: search
+          schema: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: Eligible doctor options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDoctorAssignmentOptionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /admin/doctors:
     get:
       x-required-capability: tenant.doctors.read
@@ -5162,6 +5191,28 @@ components:
                   type: array
                   items:
                     $ref: "#/components/schemas/User"
+                pagination:
+                  $ref: "#/components/schemas/Pagination"
+
+    AdminDoctorAssignmentOptionsResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                doctors:
+                  type: array
+                  items:
+                    type: object
+                    required: [_id, login_id, name, eligible]
+                    properties:
+                      _id: { type: string }
+                      login_id: { type: string }
+                      name: { type: string }
+                      department: { type: string }
+                      eligible: { type: boolean, enum: [true] }
                 pagination:
                   $ref: "#/components/schemas/Pagination"
 

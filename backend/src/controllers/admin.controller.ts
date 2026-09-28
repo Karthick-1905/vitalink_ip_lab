@@ -92,6 +92,12 @@ export const getAllDoctors = asyncHandler(async (req: Request, res: Response) =>
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Doctors retrieved successfully', result))
 })
 
+export const getDoctorAssignmentOptions = asyncHandler(async (req: Request, res: Response) => {
+  const { page, limit, search } = (req.validatedQuery ?? req.query) as any
+  const result = await adminService.getDoctorAssignmentOptions(search, { page: Number(page), limit: Number(limit) }, accessContext(req))
+  res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, 'Doctor assignment options retrieved successfully', result))
+})
+
 export const updateDoctor = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
   const result = await adminService.updateDoctor(id, req.body, accessContext(req))

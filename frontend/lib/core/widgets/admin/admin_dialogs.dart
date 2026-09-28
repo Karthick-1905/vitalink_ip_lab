@@ -581,6 +581,42 @@ Future<bool> showAddPatientDialog(
   bool doctorsRequested = !doctorsLoading;
   String? doctorsError;
   bool loading = false;
+  final doctorSearch = TextEditingController();
+  var doctorSearchSequence = 0;
+  var doctorHasMore = false;
+  var doctorPage = 1;
+
+  Future<void> loadDoctors(StateSetter setState, BuildContext ctx, {bool reset = false}) async {
+    final sequence = ++doctorSearchSequence;
+    final requestedPage = reset ? 1 : doctorPage + 1;
+    await Future<void>.delayed(Duration.zero);
+    if (!ctx.mounted || sequence != doctorSearchSequence) return;
+    setState(() {
+      doctorsLoading = true;
+      doctorsError = null;
+    });
+    try {
+      final response = await _repo.getDoctorAssignmentOptions(
+        page: requestedPage,
+        search: doctorSearch.text,
+      );
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      final items = (response['doctors'] as List? ?? []).cast<Map<String, dynamic>>();
+      final pagination = response['pagination'] as Map<String, dynamic>? ?? {};
+      setState(() {
+        doctorList = reset ? items : [...doctorList, ...items];
+        doctorPage = requestedPage;
+      doctorHasMore = pagination['hasNext'] == true || items.length == 20;
+        doctorsLoading = false;
+      });
+    } catch (e) {
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      setState(() {
+        doctorsError = _errorMessage(e);
+        doctorsLoading = false;
+      });
+    }
+  }
 
   final result = await showDialog<Object?>(
     context: context,
@@ -589,22 +625,7 @@ Future<bool> showAddPatientDialog(
         // Fetch doctors on first build if list is empty
         if (!doctorsRequested) {
           doctorsRequested = true;
-          _repo.getAllDoctors(limit: 100, isActive: 'true').then((response) {
-            final items = response['doctors'] as List? ?? [];
-            if (ctx.mounted) {
-              setState(() {
-                doctorList = items.cast<Map<String, dynamic>>();
-                doctorsLoading = false;
-              });
-            }
-          }).catchError((e) {
-            if (ctx.mounted) {
-              setState(() {
-                doctorsError = _errorMessage(e);
-                doctorsLoading = false;
-              });
-            }
-          });
+          loadDoctors(setState, ctx, reset: true);
         }
 
         return AlertDialog(
@@ -660,17 +681,27 @@ Future<bool> showAddPatientDialog(
                         style: TextStyle(color: Colors.red[700], fontSize: 12),
                       ),
                     )
-                  else
+                  else ...[
+                    TextField(
+                      controller: doctorSearch,
+                      decoration: InputDecoration(
+                        labelText: 'Search doctors',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: doctorSearch.text.isEmpty ? null : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () { doctorSearch.clear(); loadDoctors(setState, ctx, reset: true); },
+                        ),
+                      ),
+                      onChanged: (_) => loadDoctors(setState, ctx, reset: true),
+                    ),
+                    const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: 'Assigned Doctor',
                         prefixIcon: Icon(Icons.medical_services_rounded),
                       ),
                       items: doctorList.map((d) {
-                        final profile =
-                            d['profile_id'] as Map<String, dynamic>? ?? {};
-                        final dName = profile['name'] as String? ??
-                            d['name'] as String? ??
+                        final dName = d['name'] as String? ??
                             d['login_id'] as String? ??
                             'Unknown';
                         return DropdownMenuItem(
@@ -681,6 +712,13 @@ Future<bool> showAddPatientDialog(
                       onChanged: (v) => setState(() => selectedDoctorId = v),
                       validator: (v) => v == null ? 'Required' : null,
                     ),
+                    if (doctorHasMore)
+                      TextButton.icon(
+                        onPressed: doctorsLoading ? null : () => loadDoctors(setState, ctx),
+                        icon: const Icon(Icons.expand_more),
+                        label: const Text('Load more doctors'),
+                      ),
+                  ],
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -832,8 +870,10 @@ Future<bool> showAddPatientDialog(
       ),
     );
     onSuccess?.call();
+    doctorSearch.dispose();
     return true;
   }
+  doctorSearch.dispose();
   return false;
 }
 
@@ -1262,6 +1302,35 @@ Future<bool> showReassignPatientDialog(
   bool doctorsRequested = !doctorsLoading;
   String? doctorsError;
   bool loading = false;
+  final doctorSearch = TextEditingController();
+  var doctorSearchSequence = 0;
+  var doctorHasMore = false;
+  var doctorPage = 1;
+
+  Future<void> loadDoctors(StateSetter setState, BuildContext ctx, {bool reset = false}) async {
+    final sequence = ++doctorSearchSequence;
+    final requestedPage = reset ? 1 : doctorPage + 1;
+    await Future<void>.delayed(Duration.zero);
+    setState(() { doctorsLoading = true; doctorsError = null; });
+    try {
+      final response = await _repo.getDoctorAssignmentOptions(
+        page: requestedPage,
+        search: doctorSearch.text,
+      );
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      final items = (response['doctors'] as List? ?? []).cast<Map<String, dynamic>>();
+      final pagination = response['pagination'] as Map<String, dynamic>? ?? {};
+      setState(() {
+        doctorList = reset ? items : [...doctorList, ...items];
+        doctorPage = requestedPage;
+        doctorHasMore = pagination['hasNext'] == true || items.length == 20;
+        doctorsLoading = false;
+      });
+    } catch (e) {
+      if (!ctx.mounted || sequence != doctorSearchSequence) return;
+      setState(() { doctorsError = _errorMessage(e); doctorsLoading = false; });
+    }
+  }
 
   final result = await showDialog<bool>(
     context: context,
@@ -1270,22 +1339,7 @@ Future<bool> showReassignPatientDialog(
         // Fetch doctors on first build if list is empty
         if (!doctorsRequested) {
           doctorsRequested = true;
-          _repo.getAllDoctors(limit: 100, isActive: 'true').then((response) {
-            final items = response['doctors'] as List? ?? [];
-            if (ctx.mounted) {
-              setState(() {
-                doctorList = items.cast<Map<String, dynamic>>();
-                doctorsLoading = false;
-              });
-            }
-          }).catchError((e) {
-            if (ctx.mounted) {
-              setState(() {
-                doctorsError = e.toString();
-                doctorsLoading = false;
-              });
-            }
-          });
+          loadDoctors(setState, ctx, reset: true);
         }
 
         return AlertDialog(
@@ -1320,7 +1374,20 @@ Future<bool> showReassignPatientDialog(
                     style: TextStyle(color: Colors.red[700]),
                   ),
                 )
-              else
+              else ...[
+                TextField(
+                  controller: doctorSearch,
+                  decoration: InputDecoration(
+                    labelText: 'Search doctors',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: doctorSearch.text.isEmpty ? null : IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () { doctorSearch.clear(); loadDoctors(setState, ctx, reset: true); },
+                    ),
+                  ),
+                  onChanged: (_) => loadDoctors(setState, ctx, reset: true),
+                ),
+                const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   initialValue: doctorList.any(
                     (d) => (d['_id'] ?? d['id']) == selectedDoctorId,
@@ -1332,10 +1399,7 @@ Future<bool> showReassignPatientDialog(
                     prefixIcon: Icon(Icons.medical_services_rounded),
                   ),
                   items: doctorList.map((d) {
-                    final profile =
-                        d['profile_id'] as Map<String, dynamic>? ?? {};
-                    final dName = profile['name'] as String? ??
-                        d['name'] as String? ??
+                    final dName = d['name'] as String? ??
                         d['login_id'] as String? ??
                         'Unknown';
                     return DropdownMenuItem(
@@ -1345,6 +1409,13 @@ Future<bool> showReassignPatientDialog(
                   }).toList(),
                   onChanged: (v) => setState(() => selectedDoctorId = v),
                 ),
+                if (doctorHasMore)
+                  TextButton.icon(
+                    onPressed: doctorsLoading ? null : () => loadDoctors(setState, ctx),
+                    icon: const Icon(Icons.expand_more),
+                    label: const Text('Load more doctors'),
+                  ),
+              ],
             ],
           ),
           actions: [
@@ -1400,5 +1471,6 @@ Future<bool> showReassignPatientDialog(
     );
     onSuccess?.call();
   }
+  doctorSearch.dispose();
   return result ?? false;
 }

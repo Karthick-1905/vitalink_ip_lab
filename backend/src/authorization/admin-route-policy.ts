@@ -21,6 +21,8 @@ export type AdminRoutePolicy = {
   anyOfCapabilities?: readonly AdminCapability[]
   scope: AdminRouteScope
   mutation: boolean
+  /** Explicitly permits a read-only lookup to be authorized by write capabilities it supports. */
+  allowMutationCapabilityForRead?: boolean
   surface: 'admin' | 'statistics'
 }
 
@@ -46,7 +48,7 @@ function validateRoutePolicy(policy: AdminRoutePolicy): void {
   const declared = hasSingle
     ? [policy.capability as AdminCapability]
     : [...(policy.anyOfCapabilities || [])]
-  if (!policy.mutation) {
+  if (!policy.mutation && !policy.allowMutationCapabilityForRead) {
     if (declared.some(isMutationAdminCapability)) {
       throw new Error('Read route policy cannot require a mutation capability')
     }

@@ -36,7 +36,9 @@ jest.mock('@alias/middlewares/adminAccess.middleware', () => ({
       return
     }
     const disabledCapability = String(req.headers['x-test-disabled-capability'] || '')
-    if (disabledCapability) context.permissions[disabledCapability] = false
+    if (disabledCapability) {
+      for (const capability of disabledCapability.split(',')) context.permissions[capability] = false
+    }
     const requestedVersion = Number(req.headers['x-test-policy-version'])
     if (Number.isSafeInteger(requestedVersion) && requestedVersion > 0) context.policyVersion = requestedVersion
     req.adminAccess = context
@@ -123,6 +125,11 @@ describe('RBAC V2 typed route enforcement', () => {
       scope: 'tenant', mutation: false, surface: 'admin',
     }, (req, res) => res.status(200).json({ role: req.adminAccess?.role }))
     registerAdminRoute(router, {
+      method: 'get', path: '/assignment-options',
+      anyOfCapabilities: ['tenant.patients.manage', 'tenant.patients.assign'],
+      scope: 'tenant', mutation: false, allowMutationCapabilityForRead: true, surface: 'admin',
+    }, (req, res) => res.status(200).json({ role: req.adminAccess?.role }))
+    registerAdminRoute(router, {
       method: 'post', path: '/platform-write', capability: 'platform.hospitals.manage',
       scope: 'global', mutation: true, surface: 'admin',
     }, (req, res) => res.status(200).json({ role: req.adminAccess?.role }))
@@ -175,6 +182,32 @@ describe('RBAC V2 typed route enforcement', () => {
 
     await expect(request('get', '/platform-read', 'auditor')).resolves.toMatchObject({ status: 200 })
     await expect(request('get', '/tenant-read', 'auditor')).resolves.toMatchObject({ status: 403 })
+  })
+
+  test('authorizes assignment options by patient action without doctor-read capability', async () => {
+    const allowed = await api.get('/probe/assignment-options', {
+      headers: {
+        'x-test-admin-role': 'hospital_admin',
+        'x-test-disabled-capability': 'tenant.doctors.read',
+      },
+    })
+    expect(allowed.status).toBe(200)
+
+    const denied = await api.get('/probe/assignment-options', {
+      headers: {
+        'x-test-admin-role': 'hospital_admin',
+        'x-test-disabled-capability': 'tenant.patients.manage',
+      },
+    })
+    expect(denied.status).toBe(200) // patient-assign remains enabled
+
+    const fullyDenied = await api.get('/probe/assignment-options', {
+      headers: {
+        'x-test-admin-role': 'hospital_admin',
+        'x-test-disabled-capability': 'tenant.patients.manage,tenant.patients.assign',
+      },
+    })
+    expect(fullyDenied.status).toBe(403)
   })
 
   test('hard-denies Auditor mutation even when a malformed snapshot grants the capability', async () => {

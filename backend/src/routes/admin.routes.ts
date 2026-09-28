@@ -15,7 +15,7 @@ import {
   restoreAdminRolePolicy, updateAdminRolePolicy,
 } from '@alias/controllers/admin-role-policy.controller'
 import {
-  createDoctor, getAllDoctors, updateDoctor, deactivateDoctor, updateDoctorStatus, resetDoctorCredentials,
+  createDoctor, getAllDoctors, getDoctorAssignmentOptions, updateDoctor, deactivateDoctor, updateDoctorStatus, resetDoctorCredentials,
   createPatient, getAllPatients, updatePatient, deactivatePatient, updatePatientStatus, resetPatientCredentials,
   reassignPatient, assignPatient, getAuditLogs, getSystemConfig, updateSystemConfig,
   broadcastNotification, performBatchOperation, getSystemHealth,
@@ -28,7 +28,7 @@ import {
 } from '@alias/controllers/admin.controller'
 import {
   createDoctorSchema, updateDoctorSchema, getDoctorsSchema,
-  createPatientSchema, updatePatientSchema, getUsersSchema,
+  createPatientSchema, updatePatientSchema, getUsersSchema, doctorAssignmentOptionsSchema,
   reassignPatientSchema, patientAssignmentSchema, doctorStatusSchema, patientStatusSchema,
   operationalCredentialsResetSchema, userIdParamSchema, updateSystemConfigSchema,
   broadcastNotificationSchema, batchOperationSchema, resetPasswordSchema,
@@ -181,6 +181,9 @@ registerAdminRoute(router, {
 registerAdminRoute(router, {
   method: 'get', path: '/doctors', capability: 'tenant.doctors.read', scope: 'tenant', mutation: false, surface: 'admin',
 }, validate(getDoctorsSchema), getAllDoctors)
+registerAdminRoute(router, {
+  method: 'get', path: '/doctors/assignment-options', anyOfCapabilities: ['tenant.patients.manage', 'tenant.patients.assign'], scope: 'tenant', mutation: false, allowMutationCapabilityForRead: true, surface: 'admin',
+}, validate(doctorAssignmentOptionsSchema), getDoctorAssignmentOptions)
 registerAdminRoute(router, {
   method: 'put', path: '/doctors/:id', capability: 'tenant.doctors.manage', scope: 'tenant', mutation: true, surface: 'admin',
 }, validate(updateDoctorSchema), updateDoctor)

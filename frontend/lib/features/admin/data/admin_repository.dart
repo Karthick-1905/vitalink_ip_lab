@@ -45,6 +45,22 @@ class AdminRepository {
     return _extractData(response);
   }
 
+  Future<Map<String, dynamic>> getDoctorAssignmentOptions({
+    int page = 1,
+    int limit = 20,
+    String? search,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'limit': limit};
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
+    final response = await _apiClient.getRaw(
+      AppStrings.adminDoctorAssignmentOptionsPath,
+      queryParameters: params,
+    );
+    return _extractData(response);
+  }
+
   Future<Map<String, dynamic>> updateDoctor(
     String id,
     Map<String, dynamic> data,

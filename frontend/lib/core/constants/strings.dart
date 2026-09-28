@@ -76,6 +76,8 @@ class AppStrings {
       '$apiPathPrefix/admin/role-policies';
   static const String adminAccountsPath = '$apiPathPrefix/admin/admin-accounts';
   static const String adminDoctorsPath = '$apiPathPrefix/admin/doctors';
+  static const String adminDoctorAssignmentOptionsPath =
+      '$adminDoctorsPath/assignment-options';
   static const String adminPatientsPath = '$apiPathPrefix/admin/patients';
   static const String adminHospitalsPath = '$apiPathPrefix/admin/hospitals';
   static const String adminRolesPath = '$apiPathPrefix/admin/roles';
