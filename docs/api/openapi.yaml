@@ -5216,6 +5216,33 @@ components:
                 pagination:
                   $ref: "#/components/schemas/Pagination"
 
+    AdminPatientDirectoryEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        _id: { type: string }
+        login_id: { type: string }
+        is_active: { type: boolean }
+        assigned_doctor_name: { type: string }
+        profile_id:
+          type: object
+          additionalProperties: false
+          properties:
+            _id: { type: string }
+            hospital_id: { type: string }
+            assigned_doctor_id: { type: string }
+            account_status:
+              type: string
+              enum: [Active, Discharged, Deceased, AssignmentConflict]
+            demographics:
+              type: object
+              additionalProperties: false
+              properties:
+                name: { type: string }
+                age: { type: integer }
+                gender: { type: string }
+                phone: { type: string }
+
     AdminPatientListResponse:
       allOf:
         - $ref: "#/components/schemas/ApiResponseBase"
@@ -5227,8 +5254,8 @@ components:
                 patients:
                   type: array
                   items:
-                    $ref: "#/components/schemas/User"
-                  description: Patient user records include profile_id.account_status, profile_id.assigned_doctor_id, and assigned_doctor_name when the assigned doctor record is available.
+                    $ref: "#/components/schemas/AdminPatientDirectoryEntry"
+                  description: Minimal directory records; clinical configuration and histories are excluded.
                 pagination:
                   $ref: "#/components/schemas/Pagination"
 

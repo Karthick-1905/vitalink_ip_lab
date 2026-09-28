@@ -81,3 +81,7 @@ With Docker Desktop's Linux engine available, the full backend suite passed: 42 
 ## Account mutation dialogs, 2026-09-29
 
 The administrator account edit and invitation dialogs, doctor registration, and patient onboarding were checked in the local Flutter tree. The focused administrator permission UI suite passed 21 tests, and the new one-time credential acknowledgment widget test passed. `dart analyze` reported no issues for the changed widgets and test. The Impeccable detector returned no findings for the changed Flutter widgets. `python scripts/docs/validate_docs.py` passed with 53 local links, 115 matching API operations, 18 matching models, and identical OpenAPI copies. `mkdocs build --strict` passed. OpenAPI lint reported a valid description with 104 existing warnings. Structurizr validation passed. Mermaid extraction and CLI rendering passed for all 27 diagrams. These are local checks; no live administrator, doctor, or patient account was created.
+
+## Patient directory projection, 2026-09-29
+
+The admin patient directory now returns a field-allowlisted profile. The focused database-backed `admincontroller` pagination and projection test passed (1 test), as did the backend TypeScript build, `python scripts/docs/validate_docs.py` (115 routes, 18 models, identical OpenAPI copies), `mkdocs build --strict`, OpenAPI lint (valid, 104 warnings), Mermaid extraction and rendering (27 diagrams), Structurizr validation, and `git diff --check`. The broader backend suite was not run for this scoped change.

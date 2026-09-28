@@ -1873,12 +1873,28 @@ export async function getAllPatients(
     { $lookup: { from: PatientProfile.collection.name, localField: 'profile_id', foreignField: '_id', as: 'profile' } },
     { $unwind: '$profile' },
     { $match: profileQuery },
-    { $set: { profile_id: '$profile' } },
-    // Aggregation bypasses User#toJSON, so explicitly preserve its sensitive-field contract.
-    { $unset: [...USER_AGGREGATION_SENSITIVE_UNSET] },
     {
       $facet: {
-        patients: [{ $sort: { createdAt: -1, _id: -1 } }, { $skip: skip }, { $limit: limit }],
+        patients: [
+          { $sort: { createdAt: -1, _id: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+          { $project: {
+            _id: 1, login_id: 1, is_active: 1,
+            profile_id: {
+              _id: '$profile._id',
+              hospital_id: '$profile.hospital_id',
+              demographics: {
+                name: '$profile.demographics.name',
+                age: '$profile.demographics.age',
+                gender: '$profile.demographics.gender',
+                phone: '$profile.demographics.phone',
+              },
+              assigned_doctor_id: '$profile.assigned_doctor_id',
+              account_status: '$profile.account_status',
+            },
+          } },
+        ],
         total: [{ $count: 'count' }],
       },
     },
