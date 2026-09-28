@@ -86,4 +86,4 @@ Open <http://127.0.0.1:7357>. Keep the backend and Flutter terminals running whi
 
 ## Demo accounts
 
-The local credentials are in the per-machine ignored file `LOCAL_DEV_CREDENTIALS.md` at the repository root. The App Admin can open Analytics, Personal Security, and Platform Configuration. The Hospital Admin can open Hospital Operations Health and Personal Security. A fresh database starts without analytics or operations records, so those screens initially show empty values.
+The local credentials are in the per-machine ignored file `LOCAL_DEV_CREDENTIALS.md` at the repository root. The App Admin can open Analytics, Access Control, and Platform Configuration. The Hospital Admin can open Hospital Operations Health. Platform Health is displayed directly on the Administrator Dashboard. Broadcast notifications support targeting all users, user roles (doctors, patients), or specific individual doctors and patients. A fresh database starts without analytics or operations records, so those screens initially show empty values.
