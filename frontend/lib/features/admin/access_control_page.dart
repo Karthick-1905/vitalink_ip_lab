@@ -30,6 +30,7 @@ class _AccessControlPageState extends State<AccessControlPage> {
   bool _isLoading = false;
   bool _hasLoaded = false;
   AdminRole? _busyRole;
+  AdminRole _selectedRole = AdminRole.hospitalAdmin;
 
   Future<void> _load({bool preserveDrafts = true}) async {
     if (_isLoading) return;
@@ -91,10 +92,10 @@ class _AccessControlPageState extends State<AccessControlPage> {
   Widget build(BuildContext context) {
     return AdminAccessGate(
       anyCapabilities: const [AdminCapabilities.platformRolePolicyRead],
-      roles: const {AdminRole.appAdmin, AdminRole.auditor},
+      roles: const {AdminRole.appAdmin},
       scope: AdminScope.global,
       deniedMessage:
-          'Access policies are available to Application Admins and configured System Auditors. Hospital Admins cannot view or change global role policy.',
+          'Access policies are only available to System Administrators. Hospital Admins cannot view or change global role policy.',
       builder: (context) {
         if (!_hasLoaded && !_isLoading) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _load());
@@ -104,20 +105,11 @@ class _AccessControlPageState extends State<AccessControlPage> {
             access.role == AdminRole.appAdmin &&
             !access.readOnly &&
             access.can(AdminCapabilities.platformRolePolicyManage);
-        final content = AdminListShell(
-          title: 'Access Control',
-          subtitle:
-              'Review fixed administrator policy. Doctor and Patient clinical access is not editable here.',
-          actions: [
-            IconButton(
-              onPressed: _isLoading ? null : () => _load(),
-              tooltip: 'Refresh access policies',
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-          ],
-          child: _buildBody(canManage),
+        return adminPageScaffold(
+          context,
+          'Access Control',
+          _buildBody(canManage),
         );
-        return adminPageScaffold(context, 'Access Control', content);
       },
     );
   }
@@ -143,47 +135,88 @@ class _AccessControlPageState extends State<AccessControlPage> {
       );
     }
 
-    final ordered = [..._policies]
+    final manageablePolicies = _policies
+        .where(
+          (policy) =>
+              policy.role == AdminRole.hospitalAdmin ||
+              policy.role == AdminRole.auditor,
+        )
+        .toList()
       ..sort((a, b) => a.role.index.compareTo(b.role.index));
+
+    if (manageablePolicies.isEmpty) {
+      return const Center(
+        child: Text('No configurable administrator roles found.'),
+      );
+    }
+
+    final activeRole = manageablePolicies.any((p) => p.role == _selectedRole)
+        ? _selectedRole
+        : manageablePolicies.first.role;
+
+    final selectedPolicy = manageablePolicies.firstWhere(
+      (p) => p.role == activeRole,
+    );
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const _RoleHierarchyCard(),
-          const SizedBox(height: 16),
-          if (!canManage) const _PolicyReadOnlyNotice(),
-          if (!canManage) const SizedBox(height: 16),
-          for (final policy in ordered) ...[
-            _PolicyCard(
-              policy: policy,
-              draft: _drafts[policy.role],
-              conflict: _serverConflicts[policy.role],
-              canEdit:
-                  canManage &&
-                  (policy.role == AdminRole.hospitalAdmin ||
-                      policy.role == AdminRole.auditor),
-              isBusy: _busyRole == policy.role,
-              revisions: _history[policy.role] ?? const [],
-              onCapabilityChanged: (capability, enabled) {
-                final current = Map<String, bool>.from(
-                  _drafts[policy.role] ?? policy.capabilities,
-                );
-                setState(() {
-                  current[capability] = enabled;
-                  _drafts[policy.role] = current;
-                });
-              },
-              onDiscardDraft: () => setState(() {
-                _drafts.remove(policy.role);
-                _serverConflicts.remove(policy.role);
-              }),
-              onPreview: () => _previewAndSave(policy),
-              onRestore: (revision) => _previewAndRestore(policy, revision),
+          if (manageablePolicies.length > 1) ...[
+            Center(
+              child: SegmentedButton<AdminRole>(
+                segments: const [
+                  ButtonSegment<AdminRole>(
+                    value: AdminRole.hospitalAdmin,
+                    icon: Icon(Icons.local_hospital_outlined),
+                    label: Text('Hospital Admin'),
+                  ),
+                  ButtonSegment<AdminRole>(
+                    value: AdminRole.auditor,
+                    icon: Icon(Icons.visibility_outlined),
+                    label: Text('System Auditor'),
+                  ),
+                ],
+                selected: {activeRole},
+                onSelectionChanged: (selected) {
+                  if (selected.isNotEmpty) {
+                    setState(() => _selectedRole = selected.first);
+                  }
+                },
+              ),
             ),
             const SizedBox(height: 16),
           ],
-          const _FixedClinicalRolesCard(),
+          if (!canManage) const _PolicyReadOnlyNotice(),
+          if (!canManage) const SizedBox(height: 16),
+          _PolicyCard(
+            policy: selectedPolicy,
+            draft: _drafts[selectedPolicy.role],
+            conflict: _serverConflicts[selectedPolicy.role],
+            canEdit:
+                canManage &&
+                (selectedPolicy.role == AdminRole.hospitalAdmin ||
+                    selectedPolicy.role == AdminRole.auditor),
+            isBusy: _busyRole == selectedPolicy.role,
+            revisions: _history[selectedPolicy.role] ?? const [],
+            onCapabilityChanged: (capability, enabled) {
+              final current = Map<String, bool>.from(
+                _drafts[selectedPolicy.role] ?? selectedPolicy.capabilities,
+              );
+              setState(() {
+                current[capability] = enabled;
+                _drafts[selectedPolicy.role] = current;
+              });
+            },
+            onDiscardDraft: () => setState(() {
+              _drafts.remove(selectedPolicy.role);
+              _serverConflicts.remove(selectedPolicy.role);
+            }),
+            onPreview: () => _previewAndSave(selectedPolicy),
+            onRestore: (revision) =>
+                _previewAndRestore(selectedPolicy, revision),
+          ),
           const SizedBox(height: 48),
         ],
       ),
@@ -723,75 +756,6 @@ class _PreviewChanges extends StatelessWidget {
   }
 }
 
-class _RoleHierarchyCard extends StatelessWidget {
-  const _RoleHierarchyCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Fixed administrator hierarchy',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            const Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _HierarchyRole(
-                  icon: Icons.shield_outlined,
-                  title: 'Application Admin',
-                  subtitle: 'Global platform authority; policy is locked',
-                ),
-                _HierarchyRole(
-                  icon: Icons.local_hospital_outlined,
-                  title: 'Hospital Admin',
-                  subtitle: 'One-hospital operational authority',
-                ),
-                _HierarchyRole(
-                  icon: Icons.visibility_outlined,
-                  title: 'System Auditor',
-                  subtitle: 'Global and always read-only',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HierarchyRole extends StatelessWidget {
-  const _HierarchyRole({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 240,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: Text(subtitle),
-      ),
-    );
-  }
-}
-
 class _PolicyReadOnlyNotice extends StatelessWidget {
   const _PolicyReadOnlyNotice();
 
@@ -810,45 +774,6 @@ class _PolicyReadOnlyNotice extends StatelessWidget {
               child: Text(
                 'Read-only policy review. System Auditors can inspect policy and history but cannot edit, preview, save, or restore.',
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FixedClinicalRolesCard extends StatelessWidget {
-  const _FixedClinicalRolesCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Fixed clinical roles',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Doctor and Patient authorization is fixed by clinical relationships and ownership rules. It is intentionally not editable in administrator RBAC.',
-            ),
-            const SizedBox(height: 8),
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.medical_services_outlined),
-              title: Text('Doctor'),
-              subtitle: Text('Fixed clinical permissions'),
-            ),
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.person_outline),
-              title: Text('Patient'),
-              subtitle: Text('Fixed self-service permissions'),
             ),
           ],
         ),

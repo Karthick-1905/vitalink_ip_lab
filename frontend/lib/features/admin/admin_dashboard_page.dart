@@ -9,7 +9,6 @@ import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/core/widgets/common/api_error_state.dart';
 import 'package:frontend/core/widgets/common/page_skeleton.dart';
 import 'package:frontend/features/admin/access_control_page.dart';
-import 'package:frontend/features/admin/account_security_page.dart';
 import 'package:frontend/features/admin/admin_accounts_page.dart';
 import 'package:frontend/features/admin/admin_capabilities.dart';
 import 'package:frontend/features/admin/analytics_dashboard_page.dart';
@@ -156,7 +155,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       readCapabilities: const [AdminCapabilities.platformRolePolicyRead],
       actionCapability: AdminCapabilities.platformRolePolicyManage,
       allowedScope: AdminScope.global,
-      allowedRoles: const {AdminRole.appAdmin, AdminRole.auditor},
+      allowedRoles: const {AdminRole.appAdmin},
       builder: (_) => AccessControlPage(repository: _repository),
     ),
     AdminDestination(
@@ -201,13 +200,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
     ),
     AdminDestination(
-      id: 'personal-security',
-      label: 'Personal Security',
-      icon: Icons.phonelink_lock_outlined,
-      selectedIcon: Icons.phonelink_lock_rounded,
-      builder: (_) => AccountSecurityPage(repository: _repository),
-    ),
-    AdminDestination(
       id: 'platform-configuration',
       label: 'Platform Configuration',
       icon: Icons.tune_outlined,
@@ -217,16 +209,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       allowedScope: AdminScope.global,
       allowedRoles: const {AdminRole.appAdmin},
       builder: (_) => PlatformConfigurationPage(repository: _repository),
-    ),
-    AdminDestination(
-      id: 'platform-health',
-      label: 'Platform Health',
-      icon: Icons.monitor_heart_outlined,
-      selectedIcon: Icons.monitor_heart_rounded,
-      readCapabilities: const [AdminCapabilities.platformSystemHealthRead],
-      allowedScope: AdminScope.global,
-      allowedRoles: const {AdminRole.appAdmin, AdminRole.auditor},
-      builder: (_) => PlatformHealthPage(repository: _repository),
     ),
     AdminDestination(
       id: 'operations-health',
@@ -546,31 +528,20 @@ class _PlatformHealthSummary extends StatelessWidget {
         queryFn: repository.getSystemHealth,
       ),
       builder: (context, query) {
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
                 const Icon(Icons.monitor_heart_outlined),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Platform health',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(
-                        query.isLoading
-                            ? 'Loading service status…'
-                            : query.isError
-                            ? 'Health is temporarily unavailable. Other dashboard widgets are unaffected.'
-                            : 'Status: ${query.data?.status ?? 'unknown'}',
-                      ),
-                    ],
+                const SizedBox(width: 8),
+                Text(
+                  'Platform Health',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const Spacer(),
                 IconButton(
                   onPressed: query.refetch,
                   tooltip: 'Refresh platform health',
@@ -578,7 +549,20 @@ class _PlatformHealthSummary extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 8),
+            if (query.isLoading && query.data == null)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else
+              SystemHealthSection(
+                health: query.data,
+                healthUnavailable: query.isError,
+              ),
+          ],
         );
       },
     );

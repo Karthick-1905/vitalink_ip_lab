@@ -414,7 +414,7 @@ void main() {
       expect(find.text('Operations Health'), findsOneWidget);
       expect(find.text('Administrator Accounts'), findsNothing);
       expect(find.text('Access Control'), findsNothing);
-      expect(find.text('Personal Security'), findsOneWidget);
+      expect(find.text('Personal Security'), findsNothing);
     },
   );
 
@@ -483,25 +483,32 @@ void main() {
         find.textContaining('System Auditor read-only mode'),
         findsOneWidget,
       );
-      expect(find.text('Access Control'), findsOneWidget);
+      expect(find.text('Access Control'), findsNothing);
       expect(find.text('Platform Health'), findsOneWidget);
       expect(find.text('Administrator Accounts'), findsNothing);
       expect(find.text('Platform Configuration'), findsNothing);
       expect(find.text('Notifications'), findsNothing);
       expect(find.text('Doctors'), findsNothing);
 
-      await tester.tap(find.text('Access Control'));
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
 
-      expect(find.textContaining('Read-only policy review'), findsOneWidget);
-      expect(find.byType(Switch), findsNothing);
-      expect(find.text('Preview changes'), findsNothing);
-      expect(find.text('Restore'), findsNothing);
-      expect(repository.previewPolicyCalls, 0);
-      expect(repository.updatePolicyCalls, 0);
-      expect(repository.restorePreviewCalls, 0);
-      expect(repository.restorePolicyCalls, 0);
+      final directRepo = _FakeAdminRepository();
+      await _pumpWithAccess(
+        tester,
+        access: _access(AdminRole.auditor, const [
+          AdminCapabilities.platformRolePolicyRead,
+        ]),
+        child: AccessControlPage(repository: directRepo),
+      );
+      expect(
+        find.textContaining('Access policies are only available to System Administrators'),
+        findsOneWidget,
+      );
+      expect(directRepo.policyReadCalls, 0);
+      expect(directRepo.previewPolicyCalls, 0);
+      expect(directRepo.updatePolicyCalls, 0);
+      expect(directRepo.restorePreviewCalls, 0);
+      expect(directRepo.restorePolicyCalls, 0);
     },
   );
 
@@ -983,17 +990,17 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Access Control'), findsWidgets);
+    expect(find.text('Hospital Admin'), findsWidgets);
     expect(tester.takeException(), isNull);
 
     tester.view.physicalSize = const Size(700, 900);
     await tester.pump();
-    expect(find.text('Access Control'), findsWidgets);
+    expect(find.text('Hospital Admin'), findsWidgets);
     expect(tester.takeException(), isNull);
 
     tester.view.physicalSize = const Size(1200, 900);
     await tester.pump();
-    expect(find.text('Access Control'), findsWidgets);
+    expect(find.text('Hospital Admin'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
