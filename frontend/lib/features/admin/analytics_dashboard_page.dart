@@ -27,7 +27,9 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
   Future<_AnalyticsDashboardAggregate> _fetchDashboardAggregate(
     AdminAccessModel access,
   ) async {
-    final canLoadDashboardStats = access.canAny(AdminCapabilities.dashboardRead);
+    final canLoadDashboardStats = access.canAny(
+      AdminCapabilities.dashboardRead,
+    );
     final canLoadAnalytics = access.canAny(AdminCapabilities.analyticsRead);
 
     final statsFuture = canLoadDashboardStats
@@ -57,6 +59,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
       complianceDenied: compliance.denied,
       workload: workload.value,
       workloadDenied: workload.denied,
+      loadedAt: DateTime.now(),
     );
   }
 
@@ -104,11 +107,17 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
             queryFn: () => _fetchDashboardAggregate(access),
           ),
           builder: (context, aggregateQuery) {
-            if (aggregateQuery.isLoading) {
+            if (aggregateQuery.isLoading && aggregateQuery.data == null) {
               return const PageSkeleton(cardCount: 4);
             }
 
             final aggregate = aggregateQuery.data;
+            if (aggregateQuery.isError && aggregate == null) {
+              return _AnalyticsLoadError(
+                error: aggregateQuery.error,
+                onRetry: aggregateQuery.refetch,
+              );
+            }
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: LayoutBuilder(
@@ -119,14 +128,23 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                   final chartHeight = isDesktop
                       ? 350.0
                       : isTablet
-                          ? 330.0
-                          : 300.0;
+                      ? 330.0
+                      : 300.0;
 
                   return Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (aggregateQuery.isError || aggregateQuery.isLoading)
+                          _AnalyticsStaleBanner(
+                            error: aggregateQuery.error,
+                            loadedAt: aggregate?.loadedAt,
+                            onRetry: aggregateQuery.refetch,
+                            isRefreshing: aggregateQuery.isLoading,
+                          ),
+                        if (aggregateQuery.isError || aggregateQuery.isLoading)
+                          const SizedBox(height: 16),
                         if (!showPageScaffold)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
@@ -231,10 +249,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
 }
 
 class _AuthLoadResult<T> {
-  const _AuthLoadResult._({
-    this.value,
-    this.denied = false,
-  });
+  const _AuthLoadResult._({this.value, this.denied = false});
 
   const _AuthLoadResult.ok(T value) : this._(value: value);
   const _AuthLoadResult.failed({required bool denied}) : this._(denied: denied);
@@ -254,6 +269,7 @@ class _AnalyticsDashboardAggregate {
     required this.complianceDenied,
     required this.workload,
     required this.workloadDenied,
+    required this.loadedAt,
   });
 
   final AdminStatsModel? stats;
@@ -264,6 +280,82 @@ class _AnalyticsDashboardAggregate {
   final bool complianceDenied;
   final DoctorWorkloadStats? workload;
   final bool workloadDenied;
+  final DateTime loadedAt;
+}
+
+class _AnalyticsLoadError extends StatelessWidget {
+  const _AnalyticsLoadError({required this.error, required this.onRetry});
+
+  final Object? error;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = error is ApiException
+        ? (error as ApiException).message
+        : 'Analytics could not be loaded.';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnalyticsStaleBanner extends StatelessWidget {
+  const _AnalyticsStaleBanner({
+    required this.error,
+    required this.loadedAt,
+    required this.onRetry,
+    this.isRefreshing = false,
+  });
+
+  final Object? error;
+  final DateTime? loadedAt;
+  final Future<void> Function() onRetry;
+  final bool isRefreshing;
+
+  @override
+  Widget build(BuildContext context) {
+    final material = MaterialLocalizations.of(context);
+    final timestamp = loadedAt == null
+        ? 'Previously loaded data is shown.'
+        : 'Showing data from ${material.formatShortDate(loadedAt!.toLocal())} ${material.formatTimeOfDay(TimeOfDay.fromDateTime(loadedAt!.toLocal()))}.';
+    final failure = isRefreshing
+        ? 'Refreshing analytics.'
+        : error is ApiException
+        ? (error as ApiException).message
+        : 'The latest refresh failed.';
+    return Card(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(child: Text('$timestamp $failure')),
+            if (!isRefreshing)
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _PeriodSelector extends StatelessWidget {
@@ -525,8 +617,9 @@ class _TrendsChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 30,
-                interval:
-                    data.length > 7 ? (data.length / 7).ceilToDouble() : 1,
+                interval: data.length > 7
+                    ? (data.length / 7).ceilToDouble()
+                    : 1,
                 getTitlesWidget: (v, _) {
                   final i = v.toInt();
                   if (i >= 0 && i < data.length) {
@@ -751,7 +844,8 @@ class _WorkloadChart extends StatelessWidget {
                                 getTitlesWidget: (v, _) {
                                   final i = v.toInt();
                                   if (i >= 0 && i < top.length) {
-                                    final name = top[i].doctorName?.trim() ?? '';
+                                    final name =
+                                        top[i].doctorName?.trim() ?? '';
                                     final shortLabel = _shortDoctorLabel(name);
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 8),
@@ -848,19 +942,10 @@ class _GlobalWorkloadSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final rows = <(String, String)>[
-      (
-        'Doctors with patients',
-        '${stats.doctorsWithActivePatients ?? 0}',
-      ),
-      (
-        'Active assignments',
-        '${stats.activePatientAssignments ?? 0}',
-      ),
+      ('Doctors with patients', '${stats.doctorsWithActivePatients ?? 0}'),
+      ('Active assignments', '${stats.activePatientAssignments ?? 0}'),
       if (stats.maximumAssignmentsPerDoctor != null)
-        (
-          'Max per doctor',
-          '${stats.maximumAssignmentsPerDoctor}',
-        ),
+        ('Max per doctor', '${stats.maximumAssignmentsPerDoctor}'),
       if (stats.averageAssignmentsPerDoctor != null)
         (
           'Average per doctor',

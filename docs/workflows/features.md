@@ -205,6 +205,10 @@ flowchart LR
     API --> Audit["Audit CONFIG_UPDATE outcome"]
 ```
 
+### Administrator data loading states
+
+Analytics, personal MFA, platform configuration, and hospital operations health distinguish a first-load failure from an empty result. A failed first load shows an error and an explicit retry. When a refresh fails after data loaded successfully, the page keeps that data visible, labels it as stale with its last successful load time, and shows the refresh error with a retry action. Configuration does not schedule another initial request after a failure; the administrator retries explicitly. Analytics section-level authorization denials remain distinct from request failures, and empty charts are shown only after the aggregate query succeeds.
+
 ### Lifecycle commit and recovery
 
 Individual Doctor/Patient status routes, legacy deactivation routes, and batch activation/deactivation share one transition service. A MongoDB transaction commits `User.is_active`, `User.security_version`, patient `account_status`, and conflict-metadata cleanup. Expected account, hospital, assignment, and profile state must still match. Hospital and doctor lease documents participate in the transaction to reject superseded owners. Patient activation also excludes purged/purging profiles and requires an active same-hospital doctor. Deceased patients cannot be restored or discharged.

@@ -13,3 +13,7 @@ For every future Codex task:
 7. Run the documentation checks described in `docs/reference/validation.md`. At minimum run `python scripts/docs/validate_docs.py`, `mkdocs build --strict`, OpenAPI linting, Mermaid validation, and Structurizr validation when their inputs change.
 
 Application code and documentation are one review unit. A behavior-changing task is incomplete until the affected documentation and validation evidence are updated.
+
+## Local visualization stack
+
+For the local Flutter and backend stack used to preview administrator screens, follow [docs/operations/local-development-runbook.md](docs/operations/local-development-runbook.md). The per-machine demo credentials are in the ignored root file `LOCAL_DEV_CREDENTIALS.md`. Override `backend/.env` as shown in the runbook; its database settings may point to shared services.

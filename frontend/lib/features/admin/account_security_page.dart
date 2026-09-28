@@ -28,6 +28,9 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
   bool _isStarting = false;
   bool _isActivating = false;
   bool _hasLoaded = false;
+  bool _hasAttemptedLoad = false;
+  Object? _loadError;
+  DateTime? _statusLoadedAt;
 
   @override
   void dispose() {
@@ -37,12 +40,17 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
 
   Future<void> _loadStatus() async {
     if (_isLoading) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
     try {
       final status = await _repository.getAdminTotpStatus();
       if (!mounted) return;
       setState(() {
         _status = status;
+        _loadError = null;
+        _statusLoadedAt = DateTime.now();
         if (status.isEnabled) {
           _enrollment = null;
           _codeController.clear();
@@ -50,12 +58,15 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
         _hasLoaded = true;
       });
     } catch (error) {
-      if (mounted) _showError(error, 'Could not load your MFA status.');
+      if (mounted) {
+        setState(() => _loadError = error);
+        if (_hasLoaded) _showError(error, 'Could not refresh your MFA status.');
+      }
     } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _hasLoaded = true;
+          _hasAttemptedLoad = true;
         });
       }
     }
@@ -130,40 +141,126 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
   Widget build(BuildContext context) {
     return AdminAccessGate(
       builder: (context) {
-        if (!_hasLoaded && !_isLoading) {
+        if (!_hasAttemptedLoad && !_isLoading) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _loadStatus());
         }
         final content = ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const AdminPageHeader(
+            AdminPageHeader(
               title: 'Personal Security',
               subtitle:
                   'This authenticator belongs to your own administrator account. It is separate from platform configuration and health access.',
+              actions: [
+                IconButton(
+                  onPressed: _isLoading ? null : _loadStatus,
+                  tooltip: 'Refresh MFA status',
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             if (_isLoading && !_hasLoaded)
               const Center(child: CircularProgressIndicator())
+            else if (_loadError != null && !_hasLoaded)
+              _MfaStatusLoadError(error: _loadError!, onRetry: _loadStatus)
             else
-              AccountSecurityMfaSection(
-                formKey: _formKey,
-                codeController: _codeController,
-                enrollment: _enrollment,
-                status: _status,
-                isStartingTotp: _isStarting,
-                isActivatingTotp: _isActivating,
-                onStartSetup: _startSetup,
-                onActivate: _activate,
-                onCancelSetup: () => setState(() {
-                  _enrollment = null;
-                  _codeController.clear();
-                }),
-                onCopySetupValue: _copy,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_loadError != null)
+                    _MfaStatusStaleBanner(
+                      error: _loadError!,
+                      loadedAt: _statusLoadedAt,
+                      onRetry: _loadStatus,
+                    ),
+                  if (_loadError != null) const SizedBox(height: 12),
+                  AccountSecurityMfaSection(
+                    formKey: _formKey,
+                    codeController: _codeController,
+                    enrollment: _enrollment,
+                    status: _status,
+                    isStartingTotp: _isStarting,
+                    isActivatingTotp: _isActivating,
+                    onStartSetup: _startSetup,
+                    onActivate: _activate,
+                    onCancelSetup: () => setState(() {
+                      _enrollment = null;
+                      _codeController.clear();
+                    }),
+                    onCopySetupValue: _copy,
+                  ),
+                ],
               ),
           ],
         );
         return adminPageScaffold(context, 'Personal Security', content);
       },
+    );
+  }
+}
+
+class _MfaStatusLoadError extends StatelessWidget {
+  const _MfaStatusLoadError({required this.error, required this.onRetry});
+
+  final Object error;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = error is ApiException
+        ? (error as ApiException).message
+        : 'Could not load your MFA status.';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MfaStatusStaleBanner extends StatelessWidget {
+  const _MfaStatusStaleBanner({
+    required this.error,
+    required this.loadedAt,
+    required this.onRetry,
+  });
+
+  final Object error;
+  final DateTime? loadedAt;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final timestamp = loadedAt == null
+        ? 'Previously loaded MFA status is shown.'
+        : 'Showing MFA status loaded ${MaterialLocalizations.of(context).formatFullDate(loadedAt!.toLocal())} at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(loadedAt!.toLocal()))}.';
+    final message = error is ApiException
+        ? (error as ApiException).message
+        : 'The latest refresh failed.';
+    return Card(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(child: Text('$timestamp $message')),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
     );
   }
 }

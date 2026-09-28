@@ -97,6 +97,7 @@ nav:
   - Quality:
       - Testing strategy: quality/testing.md
   - Operations:
+      - Local development runbook: operations/local-development-runbook.md
       - Monitoring and logging: operations/monitoring-and-logging.md
       - Deployment runbook: operations/deployment-runbook.md
       - Rollback runbook: operations/rollback-runbook.md

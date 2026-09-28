@@ -26,6 +26,7 @@ class _PlatformHealthPageState extends State<PlatformHealthPage> {
   bool _isLoading = false;
   bool _hasLoaded = false;
   Object? _error;
+  DateTime? _loadedAt;
   Timer? _timer;
 
   @override
@@ -44,6 +45,7 @@ class _PlatformHealthPageState extends State<PlatformHealthPage> {
         _health = health;
         _error = null;
         _hasLoaded = true;
+        _loadedAt = DateTime.now();
       });
       // Only poll while this page is the active route. IndexedStack keeps visited
       // destinations mounted, so a permanent timer would leak background traffic.
@@ -74,7 +76,11 @@ class _PlatformHealthPageState extends State<PlatformHealthPage> {
       _timer = null;
     } else if (_hasLoaded && _timer == null && !_isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !TickerMode.valuesOf(context).enabled || _timer != null) return;
+        if (!mounted ||
+            !TickerMode.valuesOf(context).enabled ||
+            _timer != null) {
+          return;
+        }
         _timer = Timer.periodic(const Duration(seconds: 30), (_) {
           if (!mounted || !TickerMode.valuesOf(context).enabled) return;
           _load();
@@ -111,11 +117,19 @@ class _PlatformHealthPageState extends State<PlatformHealthPage> {
               const Center(child: CircularProgressIndicator())
             else if (_error != null && _health == null)
               _HealthLoadError(error: _error!, onRetry: _load)
-            else
+            else ...[
+              if (_error != null)
+                _StaleHealthBanner(
+                  error: _error!,
+                  loadedAt: _loadedAt,
+                  onRetry: _load,
+                ),
+              if (_error != null) const SizedBox(height: 12),
               SystemHealthSection(
                 health: _health,
                 healthUnavailable: _error != null,
               ),
+            ],
           ],
         );
         return adminPageScaffold(context, 'Platform Health', body);
@@ -142,6 +156,7 @@ class _HospitalOperationsHealthPageState
   bool _isLoading = false;
   bool _hasLoaded = false;
   Object? _error;
+  DateTime? _loadedAt;
   Timer? _timer;
 
   @override
@@ -160,6 +175,7 @@ class _HospitalOperationsHealthPageState
         _health = health;
         _error = null;
         _hasLoaded = true;
+        _loadedAt = DateTime.now();
       });
       _timer?.cancel();
       _timer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -185,7 +201,11 @@ class _HospitalOperationsHealthPageState
       _timer = null;
     } else if (_hasLoaded && _timer == null && !_isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !TickerMode.valuesOf(context).enabled || _timer != null) return;
+        if (!mounted ||
+            !TickerMode.valuesOf(context).enabled ||
+            _timer != null) {
+          return;
+        }
         _timer = Timer.periodic(const Duration(seconds: 30), (_) {
           if (!mounted || !TickerMode.valuesOf(context).enabled) return;
           _load();
@@ -226,7 +246,14 @@ class _HospitalOperationsHealthPageState
               const Center(child: CircularProgressIndicator())
             else if (_error != null && _health == null)
               _HealthLoadError(error: _error!, onRetry: _load)
-            else
+            else ...[
+              if (_error != null)
+                _StaleHealthBanner(
+                  error: _error!,
+                  loadedAt: _loadedAt,
+                  onRetry: _load,
+                ),
+              if (_error != null) const SizedBox(height: 12),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(18),
@@ -256,10 +283,45 @@ class _HospitalOperationsHealthPageState
                   ),
                 ),
               ),
+            ],
           ],
         );
         return adminPageScaffold(context, 'Hospital Operations Health', body);
       },
+    );
+  }
+}
+
+class _StaleHealthBanner extends StatelessWidget {
+  const _StaleHealthBanner({
+    required this.error,
+    required this.loadedAt,
+    required this.onRetry,
+  });
+
+  final Object error;
+  final DateTime? loadedAt;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final timestamp = loadedAt == null
+        ? 'Previously loaded health data is shown.'
+        : 'Showing data loaded ${MaterialLocalizations.of(context).formatFullDate(loadedAt!.toLocal())} at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(loadedAt!.toLocal()))}.';
+    final message = error is ApiException
+        ? (error as ApiException).message
+        : 'The latest refresh failed.';
+    return Card(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(child: Text('$timestamp $message')),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
     );
   }
 }

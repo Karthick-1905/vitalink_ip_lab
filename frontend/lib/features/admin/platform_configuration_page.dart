@@ -32,6 +32,7 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
   bool _hasLoaded = false;
   bool _hasUnsavedChanges = false;
   Object? _error;
+  DateTime? _loadedAt;
 
   @override
   void dispose() {
@@ -98,6 +99,7 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
                 'notifications_enabled': true,
               };
         _hasLoaded = true;
+        _loadedAt = DateTime.now();
         _hasUnsavedChanges = false;
       });
     } catch (error) {
@@ -192,7 +194,7 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
       deniedMessage:
           'Global runtime configuration is available only to an Application Admin with platform configuration access.',
       builder: (context) {
-        if (!_hasLoaded && !_isLoading) {
+        if (!_hasLoaded && !_isLoading && _error == null) {
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => _load(discardDraft: true),
           );
@@ -255,7 +257,11 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Could not load platform configuration.'),
+                Text(
+                  _error is ApiException
+                      ? (_error as ApiException).message
+                      : 'Could not load platform configuration.',
+                ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: _isLoading
@@ -281,6 +287,13 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
           ),
         ),
       if (!canManage) const SizedBox(height: 12),
+      if (_error != null && _hasLoaded)
+        _ConfigurationStaleBanner(
+          error: _error!,
+          loadedAt: _loadedAt,
+          onRetry: () => _load(),
+        ),
+      if (_error != null && _hasLoaded) const SizedBox(height: 12),
       if (_hasUnsavedChanges)
         const Padding(
           padding: EdgeInsets.only(bottom: 12),
@@ -301,6 +314,40 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
         }),
       ),
     ];
+  }
+}
+
+class _ConfigurationStaleBanner extends StatelessWidget {
+  const _ConfigurationStaleBanner({
+    required this.error,
+    required this.loadedAt,
+    required this.onRetry,
+  });
+
+  final Object error;
+  final DateTime? loadedAt;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final timestamp = loadedAt == null
+        ? 'Previously loaded configuration is shown.'
+        : 'Showing configuration loaded ${MaterialLocalizations.of(context).formatFullDate(loadedAt!.toLocal())} at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(loadedAt!.toLocal()))}.';
+    final message = error is ApiException
+        ? (error as ApiException).message
+        : 'The latest refresh failed.';
+    return Card(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(child: Text('$timestamp $message')),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
+    );
   }
 }
 
