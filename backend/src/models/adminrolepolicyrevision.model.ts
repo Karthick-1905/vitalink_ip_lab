@@ -129,7 +129,8 @@ AdminRolePolicyRevisionSchema.pre('validate', function () {
 
 export interface AdminRolePolicyRevisionDocument extends mongoose.InferSchemaType<typeof AdminRolePolicyRevisionSchema> {}
 
-const AdminRolePolicyRevision = mongoose.models.AdminRolePolicyRevision
-  || mongoose.model<AdminRolePolicyRevisionDocument>('AdminRolePolicyRevision', AdminRolePolicyRevisionSchema)
+const AdminRolePolicyRevision: mongoose.Model<AdminRolePolicyRevisionDocument> =
+  (mongoose.models.AdminRolePolicyRevision as mongoose.Model<AdminRolePolicyRevisionDocument> | undefined)
+  ?? mongoose.model<AdminRolePolicyRevisionDocument>('AdminRolePolicyRevision', AdminRolePolicyRevisionSchema)
 
 export default AdminRolePolicyRevision

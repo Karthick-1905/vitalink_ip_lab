@@ -2,6 +2,8 @@
 
 Mongoose schema declarations are the current model source of truth. Existing MongoDB documents are not automatically rewritten when a TypeScript default changes, so compatibility and explicit migrations matter.
 
+The backend pins Mongoose 8.24.4. The previous 9.10.2 dependency did not compile against the repository's model and test types; the older 9.1.6 release compiled but carried a known security advisory. This dependency change does not alter stored document shapes or require a data migration. Run the backend build and database-backed test suites before deploying a dependency upgrade.
+
 ## Tracked migration commands
 
 | Command | Script | Purpose/notes from source |

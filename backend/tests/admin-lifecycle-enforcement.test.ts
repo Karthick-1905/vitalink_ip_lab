@@ -564,12 +564,13 @@ describe('dedicated administrator account lifecycle', () => {
 
     // Restore attempted once only; never a second force-disable CAS.
     expect(userUpdateOne).toHaveBeenCalledTimes(1)
-    expect(userUpdateOne.mock.calls[0][1]).toEqual(expect.objectContaining({
+    const updateCalls = userUpdateOne.mock.calls as unknown as Array<[unknown, unknown]>
+    expect(updateCalls[0][1]).toEqual(expect.objectContaining({
       $set: { is_active: true },
       $inc: { security_version: 1 },
     }))
     // No disable payload on any User.updateOne call.
-    for (const call of userUpdateOne.mock.calls) {
+    for (const call of updateCalls) {
       expect(call[1]).not.toEqual(expect.objectContaining({
         $set: expect.objectContaining({ is_active: false }),
       }))

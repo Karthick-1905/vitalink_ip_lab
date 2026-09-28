@@ -71,3 +71,7 @@ Validated local working-tree changes for findings B1-B5. Database tests used dis
 The new regressions cover patient-write rollback, expected-state rejection, shared individual/batch transitions, doctor security-version changes, cleanup failure after commit, tenant audit visibility after actor transfer, immutable event scope, platform hospital and administrator-transfer events, suspension/reactivation without restoring independently disabled accounts, stale login snapshot rejection, authenticated maintenance recovery, and omission of patient searches/identifiers from real HTTP access logs.
 
 Maintenance was verified through HTTP enable, fresh login, authenticated bootstrap, configuration read, disable, and normal route recovery. Flutter access/navigation tests passed separately. A complete browser reload through the deployed portal and production index/migration rollout remain unverified; see [open questions](open-questions.md#lifecycle-and-audit-rollout-verification-2026-09-28).
+
+## Backend dependency compatibility, 2026-09-28
+
+After pinning Mongoose 8.24.4, `npm.cmd run build` and six focused unit suites passed (51 tests). `npm.cmd audit --omit=dev --audit-level=high` reported zero vulnerabilities. Documentation validation, the strict MkDocs build, and OpenAPI lint passed; OpenAPI lint retained 104 pre-existing warnings. The full backend suite could not complete because Docker Desktop's Linux engine was unavailable to Testcontainers. Database-backed runtime compatibility remains unverified in this run. Mermaid and Structurizr inputs did not change.

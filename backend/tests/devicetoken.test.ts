@@ -151,7 +151,7 @@ describe('Device token ownership', () => {
     ])
 
     // Stale send path still lists the token under user A after ownership moved to B.
-    jest.spyOn(DeviceToken, 'find').mockImplementation((query: any) => ({
+    jest.spyOn(DeviceToken, 'find').mockImplementation(((query: any) => ({
       lean: async () => {
         if (String(query.user_id) === 'user-a' && query.is_active === true) {
           return [{ fcm_token: 'physical-token' }]
@@ -160,7 +160,7 @@ describe('Device token ownership', () => {
           .filter(record => String(record.user_id) === String(query.user_id) && record.is_active)
           .map(record => ({ fcm_token: record.fcm_token }))
       },
-    }) as any)
+    })) as any)
 
     ;(jest.spyOn(DeviceToken, 'updateOne') as any).mockImplementation(async (query: any, update: any) => {
       const record = records.get(query.fcm_token)
@@ -234,7 +234,10 @@ describe('Device token ownership', () => {
   })
 
   test('declares a globally unique FCM token index', () => {
-    expect(DeviceToken.schema.indexes()).toContainEqual([{ fcm_token: 1 }, { unique: true }])
+    expect(DeviceToken.schema.indexes()).toContainEqual([
+      { fcm_token: 1 },
+      expect.objectContaining({ unique: true }),
+    ])
   })
 
   test('rechecks pause after the final recipient eligibility read', async () => {
