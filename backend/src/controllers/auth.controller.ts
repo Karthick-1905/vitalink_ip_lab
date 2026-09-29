@@ -569,7 +569,7 @@ export const loginController = asyncHandler(async (req: Request<{}, {}, LoginInp
     }
   }
 
-  if (user.user_type === UserType.ADMIN) {
+  if (user.user_type === UserType.ADMIN && !config.disableAdminMfa) {
     if (isAdminTotpEnabled(user)) {
       const challenge = await createAdminMfaLoginChallenge(user)
       await auditIssuedLoginChallenge(

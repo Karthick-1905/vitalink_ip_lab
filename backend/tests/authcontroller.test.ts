@@ -18,6 +18,7 @@ import { createAdminTotpEnrollment, generateTotpCode, replaceAdminTotpForRecover
 import { updateSystemConfig } from '@alias/services/config.service';
 import { setUserPasswordWithPolicy } from '@alias/services/password.service';
 import { ensureAuthGenerationDefaults, ensureChallengeAuditRetention } from '@alias/config/db';
+import { config } from '@alias/config';
 
 var mockStartVerification: jest.Mock;
 var mockCheckVerification: jest.Mock;
@@ -548,6 +549,22 @@ describe('Auth Routes', () => {
 
             const challenge = await AdminMfaChallenge.findById(loginResponse.data.data.challenge.challenge_id);
             expect(challenge?.status).toBe(AdminMfaChallengeStatus.VERIFIED);
+        });
+
+        test('should allow direct login when disableAdminMfa is true', async () => {
+            (config as any).disableAdminMfa = true;
+            try {
+                const loginResponse = await api.post('/api/auth/login', {
+                    login_id: 'mfa-admin',
+                    password: 'testpassword123',
+                });
+                expect(loginResponse.status).toBe(200);
+                expect(loginResponse.data.data.token).toBeDefined();
+                expect(loginResponse.data.data.challenge).toBeUndefined();
+                expect(loginResponse.data.data.user.login_id).toBe('mfa-admin');
+            } finally {
+                (config as any).disableAdminMfa = false;
+            }
         });
 
         test('should reject failed and replayed admin TOTP login verification', async () => {

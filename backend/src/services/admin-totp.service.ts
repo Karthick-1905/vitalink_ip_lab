@@ -46,7 +46,7 @@ type TotpSlot = {
 }
 
 export const isAdminTotpRequiredForUnenrolledAdmins = () =>
-  ['production', 'staging'].includes(config.nodeEnv)
+  !config.disableAdminMfa && ['production', 'staging'].includes(config.nodeEnv)
 
 const getEncryptionKey = (): Buffer => {
   const configured = config.adminTotpEncryptionKey?.trim()
@@ -226,6 +226,7 @@ const getPendingSecret = (user: any): string => {
 }
 
 export const isAdminTotpEnabled = (user: any): boolean => {
+  if (config.disableAdminMfa) return false
   const totp = getTotpSlot(user)
   return totp.status === 'ENABLED' && Boolean(totp.secret_ciphertext && totp.secret_iv && totp.secret_auth_tag)
 }

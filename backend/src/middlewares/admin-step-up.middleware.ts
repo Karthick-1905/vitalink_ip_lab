@@ -2,11 +2,16 @@ import type { RequestHandler } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { User } from '@alias/models'
 import { comparePasswords } from '@alias/utils'
+import { config } from '@alias/config'
 import { verifyAdminTotpForStepUp } from '@alias/services/admin-totp.service'
 import { recordFailedLoginAttempt } from '@alias/services/login-lockout.service'
 
 /** The credentials are checked for this request only. No reusable grant is issued. */
 export const requireAdminStepUp: RequestHandler = async (req, res, next) => {
+  if (config.disableAdminMfa) {
+    next()
+    return
+  }
   try {
     const password = req.header('x-step-up-password')
     const code = req.header('x-step-up-totp')
