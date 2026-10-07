@@ -26,11 +26,9 @@ The active server listens on HTTP. Redirect and TLS blocks are commented, althou
 
 ## INC-04: Multiple health definitions
 
-The backend Dockerfile healthcheck calls `/`, while Compose and CD use `/health/ready`.
+**Resolution, 2026-10-07:** the backend Dockerfile now calls `/health/ready`, matching both Compose paths and CD. `/health/live` remains the process liveness probe.
 
-**Impact:** a standalone image can be marked healthy without MongoDB/config/provider-worker readiness.
-
-**Recommended improvement:** use `/health/ready` for deployment readiness and reserve `/health/live` for liveness consistently.
+**Historical impact:** the standalone image could be marked healthy without MongoDB/config/provider-worker readiness.
 
 ## INC-05: Migrations are outside CD
 

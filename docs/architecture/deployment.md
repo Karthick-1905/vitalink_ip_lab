@@ -1,5 +1,19 @@
 # Deployment architecture
 
+## Standalone backend with MongoDB Atlas
+
+`backend/compose.yaml` defines one backend container built from `backend/Dockerfile` and one `redis:7-alpine` container. The backend reads the ignored `backend/.env.docker` at runtime, binds host localhost port 3000 (or `BACKEND_HOST_PORT`) to container port 3000, and connects to MongoDB Atlas through `MONGO_URI`. Compose overrides `REDIS_URL` with `redis://redis:6379` and starts the backend only after Redis is healthy. Redis has no published host port and persists append-only state in the `redis-data` named volume. The frontend and provider services remain outside this stack. Notification delivery defaults on in the starter configuration; FCM defaults off until credentials are provided.
+
+The shared backend image uses Node 24 Alpine, production npm dependencies, a non-root user, direct Node startup, and a readiness healthcheck. Standalone Compose adds an init process and a 30-second graceful-stop window. Upgrading the single backend instance has downtime and no blue-green rollback slot. Follow the [backend Docker runbook](../operations/backend-docker-runbook.md) and [ADR-0012](../decisions/0012-containerized-redis-for-standalone-backend.md). An Atlas ping succeeded from the local host; actual container connectivity and rollout remain unverified.
+
+```mermaid
+flowchart LR
+    Client["Separately running frontend / host client"] --> API["Backend container<br/>localhost :3000 mapping"]
+    API --> Atlas["Hosted MongoDB Atlas"]
+    API --> Redis["Redis container :6379<br/>no host port"]
+    Redis --> Volume["redis-data named volume<br/>append-only persistence"]
+```
+
 ## Checked-in EC2/Docker design
 
 ```mermaid
@@ -22,9 +36,9 @@ Docker Compose defines `redis`, `app-blue`, `app-green`, and `nginx` on one brid
 
 | Probe | Meaning | Used by |
 | --- | --- | --- |
-| `/` | HTTP process/API index only | Backend Dockerfile healthcheck |
+| `/` | HTTP process/API index only | Manual API inspection |
 | `/health/live` | Express process is live | Manual/environment guidance |
-| `/health/ready` | MongoDB, Firebase state, worker state, and required configuration are ready | Compose, deployment verification, runbooks |
+| `/health/ready` | MongoDB, Firebase state, worker state, and required configuration are ready | Backend Dockerfile healthcheck, both Compose paths, deployment verification, runbooks |
 | `/nginx-health` | Nginx process responds | Edge/load-balancer candidate |
 
 ## Transport status

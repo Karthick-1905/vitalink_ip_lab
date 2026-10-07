@@ -2,6 +2,8 @@
 
 This runbook describes the checked-in EC2/Docker path. It does not assert that EC2 is the current hosted production path.
 
+For one backend instance and a Redis container using hosted MongoDB Atlas, follow the [backend Docker runbook](backend-docker-runbook.md).
+
 ## Preconditions
 
 1. Confirm the intended environment and active provider accounts.

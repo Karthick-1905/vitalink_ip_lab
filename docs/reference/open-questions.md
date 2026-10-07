@@ -52,7 +52,7 @@ No implementation claim in this site depends on the following unknowns. Each ite
 
 ## OQ-07: Is malware scanning required in each environment?
 
-**Assumption:** it is optional and defaults off; enabling it makes upload failures fail closed.
+**Implemented behavior:** scanning defaults on in production/staging, and readiness requires the enabled flag and an HTTPS scanner URL. Development/test defaults off; when enabled, upload failures fail closed.
 
 **Inspected:** `malware-scan.service.ts`, file upload/asset services, config and environment examples, tests.
 
@@ -89,3 +89,7 @@ The fixes are local source changes. Live deployment, creation of the audit scope
 ## Session visibility and step-up rollout verification, 2026-09-29
 
 The local backend tests cover session revocation and request-local verification. Production gateway and observability configuration have not been inspected for redaction of `X-Step-Up-Password` and `X-Step-Up-Totp`. A deployed Flutter web flow with CORS, real authenticator devices, and multi-device sign-out remains unverified.
+
+## Standalone Docker and Atlas verification, 2026-10-07
+
+The standalone backend Compose path is source configuration. After the initial checks, user-supplied development settings were saved to ignored `backend/.env.docker` with mode 0600. An authenticated Atlas read-only ping succeeded from the local host; Firebase JSON/private-key parsing and local messaging initialization also succeeded without sending notifications. The supplied Render-style internal Redis hostname did not resolve from this host. The user subsequently requested a Redis container; Compose now defines persistent Redis, gates backend startup on its healthcheck, and overrides `REDIS_URL` with `redis://redis:6379`. The ignored runtime file was also updated to that URL with notification delivery enabled. No shared database migration, seeding, or application startup against Atlas was performed. Docker daemon access is denied to this session; image build, actual Redis startup/persistence, container-to-Atlas connectivity, runtime readiness, and graceful container shutdown remain unverified. Hosted Redis state was not migrated. The Node 24 image also affects future EC2 blue-green builds; no live rollout was performed.

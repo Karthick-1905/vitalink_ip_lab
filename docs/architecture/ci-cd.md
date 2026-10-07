@@ -44,6 +44,8 @@ flowchart TD
 
 Backend CD skips the SSH deploy steps cleanly when any of `EC2_HOST`, `EC2_USER`, or `EC2_SSH_KEY` is unset, so missing production credentials do not fail the workflow.
 
+Backend CI and CD build/test jobs use Node 24, matching the shared Docker image and the locked Firebase Admin dependency's Node >=22 requirement. The standalone `backend/compose.yaml` path is operated manually through the [Atlas Docker runbook](../operations/backend-docker-runbook.md); backend CD continues to target the EC2 blue-green stack.
+
 ## Release limitations
 
 - Backend CD runs `git reset --hard origin/main` on the remote deployment checkout by design; it assumes `/opt/vitalink` is a dedicated deploy clone.

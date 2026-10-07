@@ -91,3 +91,51 @@ The admin patient directory now returns a field-allowlisted profile. The focused
 The local backend build passed. The final full backend run passed 42 suites and 651 tests. The database-backed regression tests include missing or incorrect step-up rejection, single-use TOTP for account transfers, denial of MFA reset and policy writes without verification, caller-owned session inventory, and selective revocation. The Flutter administrator permission suite passed 22 tests, including the verification prompt and session list/revoke flow. The administrator repository, login repository, and patient repository suites passed another 22 tests, including verification-header forwarding. Dart analysis reported no issues in the changed application and administrator test files. The Impeccable detector returned no findings for the changed administrator UI files.
 
 Documentation checks passed: `python scripts/docs/validate_docs.py` found 117 matching implemented and documented operations, 18 matching models, and byte-identical OpenAPI copies; `mkdocs build --strict` succeeded; OpenAPI lint found a valid contract with 106 non-blocking quality warnings; Mermaid extraction and rendering completed for 27 diagrams; Structurizr validation succeeded; `git diff --check` found no whitespace errors. Production gateway header redaction and live multi-device behavior remain unverified; see [open questions](open-questions.md#session-visibility-and-step-up-rollout-verification-2026-09-29).
+
+## Backend-only Docker with Atlas, 2026-10-07
+
+Initially validated the standalone Compose path before the Redis-container follow-up below, shared image configuration, Node 24 CI/CD runtime, and affected deployment documentation locally. No Atlas application startup, shared migration, or administrator seeding was performed.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Compose configuration | Pass | Docker Compose 5.5.1 rendered the template with synthetic values: exactly one backend service, Atlas URI, raw dollar signs/quotes/Firebase JSON retained in the generated configuration, fixed container port 3000, localhost host ports 3000 and 3001, init process and 30-second stop grace period. Missing `.env.docker` was rejected. Temporary synthetic runtime files were removed |
+| Backend build | Pass | `npm run build --prefix backend`; TypeScript and alias rewriting also passed under Node 24.21.0 using `npx --package=node@24` |
+| Focused configuration tests | Pass | Node 24 Jest run: `fileassetconfig`, `firebaseconfig`, and `twilioconfig`; 3 suites, 16 tests |
+| Runtime dependency smoke check | Pass | Node 24 imported Firebase Admin, MongoDB, Mongoose, Express, and native bcrypt; bcrypt hash/compare succeeded on the local Linux host |
+| Image health command | Pass locally | The exact Dockerfile probe was executed under Node 24 against a disposable local HTTP server: `/health/ready` HTTP 200 exited 0, HTTP 503 exited 1, and refused connection exited 1 |
+| Documentation contract | Pass | `python scripts/docs/validate_docs.py`: 71 local links, 117 matching API operations, 18 matching models, identical OpenAPI copies, 6 workflow YAML files |
+| MkDocs strict build | Pass | `mkdocs build --strict` using the repository documentation requirements in an isolated temporary virtual environment |
+| OpenAPI lint | Pass with warnings | `npm run lint:openapi --prefix backend`: valid contract, 106 existing quality warnings |
+| Mermaid | Pass | All 27 diagrams extracted and rendered with Mermaid CLI 12.0.0 and local Chromium using the repository headless flags |
+| Structurizr | Pass | Structurizr CLI 2025.11.09 `validate -workspace docs/architecture/workspace.dsl`; downloaded release CLI used directly with a checksum-verified temporary Java 21 runtime because Docker access was unavailable |
+| Whitespace integrity | Pass | `git diff --check` |
+| Docker image build and live Atlas readiness | Unverified | `docker build --target runtime -t vitalink-backend:validation backend` failed before building because this session cannot access `/var/run/docker.sock`. No populated backend/deployment environment file was present at this initial check |
+
+Local dependency imports do not validate Alpine native binaries or actual container shutdown. Those checks require building and running the image with the intended Atlas and provider settings; see [open questions](open-questions.md#standalone-docker-and-atlas-verification-2026-10-07) and the [backend Docker runbook](../operations/backend-docker-runbook.md).
+
+### Supplied development configuration follow-up
+
+User-supplied environment values were saved only to the ignored `backend/.env.docker` file with mode 0600. Development mode, administrator MFA flag, FCM, and notification-delivery flags were preserved. The JWT inline comment was removed for raw env-file compatibility; a CORS origin's trailing slash was removed to match browser origins; `TRUST_PROXY=false` was selected for direct localhost HTTP access.
+
+`docker compose -f backend/compose.yaml config --quiet` passed with the populated file. Under Node 24, the compiled backend configuration loaded with no missing development requirements; Firebase JSON/private-key parsing and local messaging initialization passed. The native MongoDB client authenticated and executed only `{ping: 1}` against the configured Atlas database, then closed. Atlas SRV lookup returned three records. No application server, schedulers, migrations, seeds, or push deliveries were run. The supplied Render-style Redis internal hostname failed local DNS lookup; no external URL has been supplied or verified. Docker daemon access remains denied, so container runtime verification is still pending.
+
+The documentation contract and strict MkDocs build passed again after adding environment-conversion and Render Redis guidance. OpenAPI, Mermaid, and Structurizr inputs did not change in this follow-up.
+
+### Container Redis follow-up
+
+The user requested Redis as a container. The standalone stack now defines `backend` and `redis`, with Redis append-only data on a named volume and backend startup gated on Redis health. Compose overrides `REDIS_URL` with `redis://redis:6379`. Only the Redis URL and notification-delivery setting were updated in the ignored development runtime file; Atlas/provider credentials and mode 0600 were retained. ADR-0012 supersedes the earlier external-Redis placement without rewriting ADR-0011's history.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Compose configuration | Pass | Docker Compose 5.5.1 rendered exactly `backend` and `redis`; verified internal Redis URL, preserved Atlas/development/FCM settings, enabled delivery, `service_healthy` dependency, Redis ping probe, append-only/every-second fsync/noeviction command, named `/data` volume, common network, no published Redis port, no backend secrets injected into Redis, and API host ports 3000/3001 |
+| Hosted Redis override | Pass | A temporary env-file override supplied a stale hosted Redis URL; Compose still selected the container URL. Temporary files were removed |
+| Runtime file isolation | Pass | `backend/.env.docker` remains Git-ignored, uses container Redis, enables delivery, and has mode 0600 |
+| Documentation contract | Pass | `python scripts/docs/validate_docs.py`: 77 local links, 117 matching API operations, 18 matching models, identical OpenAPI copies, 6 workflow YAML files |
+| MkDocs strict build | Pass | `mkdocs build --strict` |
+| OpenAPI lint | Pass with warnings | Valid contract; 106 existing warnings. API inputs unchanged |
+| Mermaid | Pass | All 28 diagrams extracted and rendered, including the standalone backend/Redis/Atlas deployment |
+| Structurizr | Pass | Structurizr CLI 2025.11.09 validated the updated standalone Redis deployment model using the temporary Java 21 runtime |
+| Whitespace integrity | Pass | `git diff --check` |
+| Stack startup | Unverified | `docker compose -f backend/compose.yaml up --build -d --wait --wait-timeout 120` failed before container creation because `/var/run/docker.sock` access is denied. Non-interactive sudo also requires a password |
+
+No application source, API payload, model schema, or index changed. Redis runtime connectivity/persistence, actual queue processing, container-to-Atlas connectivity, and full readiness remain unverified. No shared Redis state or Atlas data was migrated, and no background delivery was started by these local checks.
