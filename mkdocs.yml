@@ -117,6 +117,7 @@ nav:
       - "ADR-0010: Admin step-up verification": decisions/0010-action-local-admin-step-up.md
       - "ADR-0011: Backend Docker with Atlas": decisions/0011-backend-only-atlas-compose.md
       - "ADR-0012: Redis container for standalone backend": decisions/0012-containerized-redis-for-standalone-backend.md
+      - "ADR-0013: Development dependency audit exception": decisions/0013-time-limited-development-audit-exception.md
   - Reference:
       - Environments: environments.md
       - Source evidence: reference/source-evidence.md

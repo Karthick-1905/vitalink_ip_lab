@@ -1,0 +1,210 @@
+{
+  "$schema": "https://raw.githubusercontent.com/IBM/audit-ci/main/docs/schema.json",
+  "high": true,
+  "allowlist": [
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/console>jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/environment>@jest/fake-timers>jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/expect>jest-snapshot>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/fake-timers>jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/globals>@jest/expect>jest-snapshot>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/reporters>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/test-result>@jest/console>jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/test-sequencer>jest-haste-map>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|@types/jest>expect>jest-message-util>micromatch>braces": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|create-jest>jest-config>babel-jest>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|expect>jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|globby>fast-glob>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-circus>jest-runtime>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-cli>@jest/core>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-config>babel-jest>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-environment-node>@jest/environment>@jest/fake-timers>jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-haste-map>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-resolve-dependencies>jest-snapshot>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-resolve>jest-haste-map>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-runner>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-runtime>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-snapshot>@jest/transform>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest-watcher>@jest/test-result>@jest/console>jest-message-util>micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|jest>@jest/core>micromatch>braces": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|micromatch>braces>": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|nodemon>chokidar>braces": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    },
+    {
+      "GHSA-vfj7-8cjw-p6xm|tsc-alias>chokidar>braces": {
+        "expiry": "2026-11-10T00:00:00Z",
+        "notes": "Development-only braces stack exhaustion; repository-controlled globs. ADR-0013. Remove when patched.",
+        "active": true
+      }
+    }
+  ],
+  "report-type": "summary"
+}

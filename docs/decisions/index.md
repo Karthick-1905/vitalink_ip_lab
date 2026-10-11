@@ -16,5 +16,6 @@ These records use MADR headings. They document important decisions already embod
 | [0010](0010-action-local-admin-step-up.md) | Accepted | Request-local password and TOTP verification for sensitive admin writes, plus caller-owned session revocation |
 | [0011](0011-backend-only-atlas-compose.md) | Redis placement partially superseded by ADR-0012 | Single backend container with hosted MongoDB Atlas and runtime-only credentials |
 | [0012](0012-containerized-redis-for-standalone-backend.md) | Accepted for standalone Compose | Persistent Redis container alongside the backend, with hosted Atlas and health-gated startup |
+| [0013](0013-time-limited-development-audit-exception.md) | Accepted; exception expires 2026-11-10 | Strict production audit plus full-tree audit with a bounded exception for unpatched development parser paths |
 
 Future architecture changes should add a new decision or explicitly supersede an existing record. Historical accepted records should not be rewritten to imply a decision was never made.

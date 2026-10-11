@@ -139,3 +139,26 @@ The user requested Redis as a container. The standalone stack now defines `backe
 | Stack startup | Unverified | `docker compose -f backend/compose.yaml up --build -d --wait --wait-timeout 120` failed before container creation because `/var/run/docker.sock` access is denied. Non-interactive sudo also requires a password |
 
 No application source, API payload, model schema, or index changed. Redis runtime connectivity/persistence, actual queue processing, container-to-Atlas connectivity, and full readiness remain unverified. No shared Redis state or Atlas data was migrated, and no background delivery was started by these local checks.
+
+## PR #50 Backend CI dependency audit, 2026-10-11
+
+Reproduced the failing `backend` job before edits with Node 24.21.0 and npm 11.19.0, matching the hosted job runtime. `npm audit --audit-level=high` exited 1 locally with 47 vulnerability entries (6 moderate, 39 high, 2 critical). The hosted log failed at that same step before build/tests; advisory counts changed since the 2026-10-07 run.
+
+Compatible lockfile updates cover axios, proxy-addr, undici, gRPC, busboy, handlebars, ip-address, and the brace-expansion override; tsc-alias also updates within its declared range. Nodemon moves to development dependencies. The new gate preserves a strict production audit and a full-tree high/critical audit with the exact-path, expiring exception described in [ADR-0013](../decisions/0013-time-limited-development-audit-exception.md). The raw full-tree audit still reports 39 entries (5 moderate, 34 high); all high entries derive from the one unpatched development `braces` advisory.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Clean dependency installation | Pass | `npm ci` under Node 24.21.0 / npm 11.19.0, using the refreshed lockfile |
+| Production dependency audit | Pass | `npm audit --omit=dev --audit-level=high`: zero vulnerabilities |
+| Combined dependency gate | Pass | `npm run audit:dependencies`; without the exception the full-tree branch exited 1, and with the reviewed policy it passed |
+| Backend build | Pass | `npm run build`: TypeScript and tsc-alias |
+| Tests independent of containers | Pass | `node node_modules/jest/bin/jest.js --runInBand --runTestsByPath` with the 31 test files that import neither Testcontainers nor the replica-set helper: 243 tests passed |
+| Audit policy regressions | Pass | Included 8 tests using synthetic npm reports and the real audit-ci parser: allowed path before expiry; rejection of different high/critical advisories, unreviewed paths, a direct vulnerable dependency, the deadline, and registry errors; moderate threshold preserved |
+| Documentation contract | Pass | `python scripts/docs/validate_docs.py`: 83 local links, 117 matching API operations, 18 matching models, identical OpenAPI copies, 6 workflow YAML files |
+| MkDocs strict build | Pass | `mkdocs build --strict` in a temporary environment using `requirements-docs.txt` |
+| OpenAPI lint | Pass with warnings | `npm run lint:openapi`: valid contract, 106 existing quality warnings |
+| Whitespace integrity | Pass | `git diff --check` |
+| Full Jest coverage / container tests | Unverified | `docker ps` was denied access to `/var/run/docker.sock`; the 12 container-dependent suites were not rerun and the full CI coverage threshold was not established locally |
+| Hosted Backend CI rerun | Unverified | Local results establish the gate fix, not a new hosted run |
+
+OpenAPI, Mermaid fences, and Structurizr inputs did not change. No application startup, shared database access, migrations, or provider deliveries were performed. The APK missing-secret failure is outside this backend fix. Follow-up requirements are recorded in [open questions](open-questions.md#backend-ci-audit-follow-up-2026-10-11).
