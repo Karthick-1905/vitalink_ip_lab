@@ -98,6 +98,7 @@ nav:
       - Testing strategy: quality/testing.md
   - Operations:
       - Local development runbook: operations/local-development-runbook.md
+      - Backend and Redis Docker with Atlas: operations/backend-docker-runbook.md
       - Monitoring and logging: operations/monitoring-and-logging.md
       - Deployment runbook: operations/deployment-runbook.md
       - Rollback runbook: operations/rollback-runbook.md
@@ -114,6 +115,9 @@ nav:
       - "ADR-0008: Single-use SSE tickets": decisions/0008-single-use-sse-tickets.md
       - "ADR-0009: Lifecycle and audit boundaries": decisions/0009-lifecycle-and-event-audit-boundaries.md
       - "ADR-0010: Admin step-up verification": decisions/0010-action-local-admin-step-up.md
+      - "ADR-0011: Backend Docker with Atlas": decisions/0011-backend-only-atlas-compose.md
+      - "ADR-0012: Redis container for standalone backend": decisions/0012-containerized-redis-for-standalone-backend.md
+      - "ADR-0013: Development dependency audit exception": decisions/0013-time-limited-development-audit-exception.md
   - Reference:
       - Environments: environments.md
       - Source evidence: reference/source-evidence.md

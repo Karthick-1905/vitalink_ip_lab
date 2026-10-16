@@ -30,8 +30,8 @@ flowchart LR
         EC2["EC2 host<br/>repository-defined Docker design"]
         Nginx["Nginx edge<br/>proxy, rate limit, SSE settings"]
         Active["Active deployment slot"]
-        Blue["Express API blue<br/>Node.js 20"]
-        Green["Express API green<br/>Node.js 20"]
+        Blue["Express API blue<br/>Node.js 24"]
+        Green["Express API green<br/>Node.js 24"]
         Render["Render API hostname<br/>used by Flutter defaults/builds"]
     end
 
@@ -169,7 +169,7 @@ flowchart LR
 | Files | Uploads are validated, malware-scanned when enabled, tracked in `FileAsset`, stored in S3-compatible object storage, read through authorized URLs, and purged through a compensating workflow. | `backend/src/utils/fileUpload.ts`; `backend/src/services/fileasset.service.ts` |
 | Notifications | In-app notifications are durable in MongoDB. SSE is served by the API; Redis pub/sub lets multiple API processes fan out events. Push delivery uses a durable Mongo outbox with optional BullMQ acceleration and recovery polling. | `backend/src/services/realtime-notification.service.ts`; `backend/src/services/notification-delivery.service.ts`; `backend/src/jobs/notification-delivery.worker.ts` |
 | Clinical automation | Reminder schedulers run inside the API process and create idempotent dosage, INR, review, and missed-dose notifications. They are not separate deployable services. | `backend/src/server.ts`; `backend/src/jobs/dosage.scheduler.ts`; `backend/src/jobs/clinical-reminder.scheduler.ts` |
-| Deployment | The checked-in deployment design is Nginx plus blue/green Node containers and Redis on EC2, with MongoDB and providers configured externally. Flutter web, Vercel, Render, and GitHub Pages are also present in source; the live combination is unconfirmed. | `deploy/docker-compose.yml`; [deployment architecture](deployment.md); [source inconsistencies](../reference/inconsistencies.md) |
+| Deployment | The EC2 design uses Nginx, blue/green Node containers, and Redis. The standalone Compose path uses one backend and a persistent Redis container with hosted Atlas. Flutter web, Vercel, Render, and GitHub Pages are also present in source; the live combination is unconfirmed. | `deploy/docker-compose.yml`; `backend/compose.yaml`; [deployment architecture](deployment.md); [source inconsistencies](../reference/inconsistencies.md) |
 | ML boundary | `ml-service` and `ml_pipeline` are shown for completeness, but no application route or backend call currently proves runtime clinical integration. Treat them as research/training assets until a reviewed serving contract exists. | `ml-service/main.py`; [source inconsistencies](../reference/inconsistencies.md) |
 
 ## Three flows to use while explaining the diagram

@@ -2,6 +2,8 @@
 
 When CI/CD is not working, follow these steps to manually deploy and manage the service on EC2.
 
+To run the backend and Redis with hosted MongoDB Atlas, use `backend/compose.yaml` and the [backend Docker runbook](../docs/operations/backend-docker-runbook.md).
+
 ## SSH into EC2
 
 ```bash

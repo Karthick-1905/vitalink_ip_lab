@@ -15,7 +15,7 @@ UAT and staging mean the same environment in this repository. Use `staging` as t
 
 ### Backend
 
-The backend loads environment variables through `dotenv` when the process starts. For local work, run commands from `backend/` and copy `backend/.env.example` to `backend/.env`. The deployment compose file instead loads `deploy/.env.production` explicitly.
+The backend loads environment variables through `dotenv` when the process starts. For local work, run commands from `backend/` and copy `backend/.env.example` to `backend/.env`. The EC2 deployment compose file loads `deploy/.env.production` explicitly. The standalone `backend/compose.yaml` loads `backend/.env.docker` in raw format, starting from `backend/.env.docker.example`; follow the [Atlas Docker runbook](operations/backend-docker-runbook.md).
 
 Treat `backend/.env.example` as the authoritative inventory of backend variables. Do not commit populated `.env` files, service-account JSON, access keys, tokens, or passwords. Store UAT and production values in the deployment platform's secret store and inject them at runtime.
 
@@ -171,6 +171,7 @@ At minimum, production readiness requires:
 - `MONGO_URI`, `JWT_SECRET`, and `ADMIN_TOTP_ENCRYPTION_KEY`
 - `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, and `FILE_ASSET_LEGACY_CUTOFF_AT`
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_VERIFY_SERVICE_SID`
+- `MALWARE_SCAN_ENABLED=true` and an HTTPS `MALWARE_SCAN_URL`
 - `API_DOCS_USERNAME` and `API_DOCS_PASSWORD` when `API_DOCS_ENABLED=true`
 - `FIREBASE_SERVICE_ACCOUNT` when `FCM_ENABLED=true`
 
@@ -190,6 +191,8 @@ DOSAGE_REMINDER_TIMEZONE=Asia/Kolkata
 ```
 
 Use `CORS_ALLOWED_ORIGINS`. Multiple origins are comma-separated and must include the scheme, for example `https://app.example.com,https://admin.example.com`. In production, an empty allowlist rejects browser requests that include an `Origin` header.
+
+Both EC2 and standalone backend Compose define a Redis service and set `REDIS_URL=redis://redis:6379` inside their separate networks. The standalone stack now persists Redis data locally and its environment template enables notification delivery. Redis is not published to the host. The standalone direct HTTP binding uses `TRUST_PROXY=false` until a trusted HTTPS proxy is configured.
 
 Build production clients with the production API origin:
 

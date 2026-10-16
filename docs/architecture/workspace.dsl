@@ -17,7 +17,7 @@ workspace "VitaLink" "Source-backed C4 model for the VitaLink anticoagulation mo
         vitalink = softwareSystem "VitaLink" "Coordinates anticoagulation monitoring and multi-tenant hospital administration." {
             flutter = container "Flutter Client" "Role-aware patient, doctor, and administrator application for web, Android, and iOS." "Flutter / Dart"
             edge = container "Nginx Edge" "Reverse proxy, edge rate limiting, forwarded headers, and SSE proxy settings." "Nginx"
-            api = container "Express API" "Versioned REST API, SSE endpoints, scheduled reminders, and notification workers." "Node.js 20 / Express 5 / TypeScript" {
+            api = container "Express API" "Versioned REST API, SSE endpoints, scheduled reminders, and notification workers." "Node.js 24 / Express 5 / TypeScript" {
                 http = component "HTTP Composition Root" "Request IDs, logging, Helmet, CORS, limits, versioning, routes and error handling." "Express"
                 auth = component "Authentication Controllers" "Password, OTP, TOTP, refresh, revoke, logout and password-change endpoints." "TypeScript"
                 sessions = component "Session and Password Services" "Persisted session validation, refresh rotation, security generations, lockout and password policy." "TypeScript"
@@ -82,10 +82,10 @@ workspace "VitaLink" "Source-backed C4 model for the VitaLink anticoagulation mo
                 nginxNode = deploymentNode "Nginx container" "Exposes ports 80 and 443; active config listens on HTTP." "nginx:alpine" {
                     containerInstance vitalink.edge
                 }
-                blueNode = deploymentNode "Blue application slot" "One deployable API slot." "node:20-alpine" {
+                blueNode = deploymentNode "Blue application slot" "One deployable API slot." "node:24-alpine" {
                     containerInstance vitalink.api
                 }
-                greenNode = deploymentNode "Green application slot" "Inactive or previous API slot." "node:20-alpine" {
+                greenNode = deploymentNode "Green application slot" "Inactive or previous API slot." "node:24-alpine" {
                     containerInstance vitalink.api
                 }
                 redisNode = deploymentNode "Redis container" "Persistent append-only Redis data volume." "redis:7-alpine" {
@@ -97,6 +97,20 @@ workspace "VitaLink" "Source-backed C4 model for the VitaLink anticoagulation mo
             }
             webHosting = deploymentNode "Flutter web hosting" "Source contains GitHub Pages and Vercel paths; live path is unconfirmed." "Static hosting" {
                 containerInstance vitalink.flutter
+            }
+        }
+
+        standalone = deploymentEnvironment "Standalone backend with Atlas" {
+            dockerHost = deploymentNode "Docker host" "Backend and Redis Compose; HTTP port bound to localhost, external HTTPS edge configured separately." "Linux / Docker Compose" {
+                backendNode = deploymentNode "Backend container" "Single API instance, readiness probe, init process and 30-second stop grace period." "node:24-alpine" {
+                    containerInstance vitalink.api
+                }
+                redisNode = deploymentNode "Redis container" "Internal service, health-gated backend startup, append-only persistence in redis-data volume; no published host port." "redis:7-alpine" {
+                    containerInstance vitalink.redis
+                }
+            }
+            atlas = deploymentNode "MongoDB Atlas" "Hosted database selected by runtime MONGO_URI; live account and connectivity unverified." "MongoDB Atlas" {
+                containerInstance vitalink.mongo
             }
         }
     }
@@ -136,6 +150,11 @@ workspace "VitaLink" "Source-backed C4 model for the VitaLink anticoagulation mo
             include *
             autoLayout lr
             description "Checked-in deployment design; not evidence of the current live topology."
+        }
+        deployment vitalink standalone "StandaloneBackendDeployment" {
+            include *
+            autoLayout lr
+            description "Backend and persistent Redis Compose with hosted Atlas; frontend and provider integrations are external to this stack."
         }
         styles {
             element "Person" {
