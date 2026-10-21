@@ -97,3 +97,7 @@ The standalone backend Compose path is source configuration. After the initial c
 ## Backend CI audit follow-up, 2026-10-11
 
 The development-only `braces` stack-exhaustion advisory has no upstream fix at this review. Recheck upstream and remove the exact-path exception before its 2026-11-10 00:00 UTC expiry; do not treat the exception as a patched dependency. Local production audit success does not prove the absence of undisclosed vulnerabilities. Docker daemon access is still denied, so the database-backed tests and runtime image compatibility for the refreshed lockfile remain unverified locally. A successful hosted Backend CI rerun must also be established separately from the local audit/build/unit checks. The unrelated APK job's missing `GOOGLE_SERVICES_JSON` secret remains outside this fix.
+
+## Administrator password control rollout, 2026-10-21
+
+The Personal Security password entry is implemented locally. A live browser check and deployment of this frontend change remain unverified. ADM01 has not been changed or checked against a shared database; the account owner will submit the current and new passwords through the UI after rollout.

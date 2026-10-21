@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/auth/session_expiry_handler.dart';
 import 'package:frontend/core/network/api_client.dart';
@@ -210,7 +211,7 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
             AdminPageHeader(
               title: 'Personal Security',
               subtitle:
-                  'This authenticator belongs to your own administrator account. It is separate from platform configuration and health access.',
+                  'Manage your password, authenticator, and signed-in devices.',
               actions: [
                 IconButton(
                   onPressed: _isLoading ? null : _loadStatus,
@@ -220,6 +221,33 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
               ],
             ),
             const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Password',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Use your current password to choose a new one. After saving, sign in again on your devices.',
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.changePassword),
+                      icon: const Icon(Icons.lock_outline_rounded),
+                      label: const Text('Change password'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             if (_isLoading && !_hasLoaded)
               const Center(child: CircularProgressIndicator())
             else if (_loadError != null && !_hasLoaded)

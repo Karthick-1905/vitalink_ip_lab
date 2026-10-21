@@ -162,3 +162,7 @@ Compatible lockfile updates cover axios, proxy-addr, undici, gRPC, busboy, handl
 | Hosted Backend CI rerun | Unverified | Local results establish the gate fix, not a new hosted run |
 
 OpenAPI, Mermaid fences, and Structurizr inputs did not change. No application startup, shared database access, migrations, or provider deliveries were performed. The APK missing-secret failure is outside this backend fix. Follow-up requirements are recorded in [open questions](open-questions.md#backend-ci-audit-follow-up-2026-10-11).
+
+## Administrator self-service password entry, 2026-10-21
+
+The Personal Security page now links to the existing authenticated password-change screen independently of MFA loading. The focused Flutter administrator permission UI suite passed all 22 tests. The Impeccable detector reported no findings. Documentation validation passed with 90 links, 117 matching operations, 18 matching models, and identical OpenAPI copies; the strict MkDocs build and diff whitespace check passed. No API, model, Mermaid, or Structurizr inputs changed. No account password was changed. Browser rendering and hosted deployment are unverified.
