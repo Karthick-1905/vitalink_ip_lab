@@ -9,6 +9,7 @@ import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
 import 'package:frontend/core/widgets/common/api_error_state.dart';
 import 'package:frontend/core/widgets/common/page_skeleton.dart';
 import 'package:frontend/features/admin/access_control_page.dart';
+import 'package:frontend/features/admin/account_security_page.dart';
 import 'package:frontend/features/admin/admin_accounts_page.dart';
 import 'package:frontend/features/admin/admin_capabilities.dart';
 import 'package:frontend/features/admin/analytics_dashboard_page.dart';
@@ -220,6 +221,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       allowedRoles: const {AdminRole.hospitalAdmin},
       builder: (_) => HospitalOperationsHealthPage(repository: _repository),
     ),
+    AdminDestination(
+      id: 'personal-security',
+      label: 'Personal Security',
+      icon: Icons.lock_outline_rounded,
+      selectedIcon: Icons.lock_rounded,
+      builder: (_) => AccountSecurityPage(repository: _repository),
+    ),
   ];
 
   @override
@@ -332,10 +340,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             Positioned.fill(
               child: TickerMode(
                 enabled: id == selectedId,
-                child: Offstage(
-                  offstage: id != selectedId,
-                  child: pageFor(id),
-                ),
+                child: Offstage(offstage: id != selectedId, child: pageFor(id)),
               ),
             ),
         ],

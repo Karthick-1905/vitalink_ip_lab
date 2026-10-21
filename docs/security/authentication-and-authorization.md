@@ -38,7 +38,7 @@ Sensitive administrator writes require action-local step-up verification. Creati
 5. Refresh rotates both the access token ID and refresh hash atomically. Reuse of a previous hash revokes the current family.
 6. Logout, credential change/reset, MFA reset, account disablement, and security-version changes revoke or invalidate sessions.
 
-Administrators, including App Admins, can open **Personal Security > Change password** to reach the authenticated `/change-password` screen. Enter the current password, new password, and confirmation. The existing `POST /auth/change-password` endpoint enforces password policy and invalidates existing sessions; after saving, sign in again with the new password. The password control remains available even if MFA status fails to load.
+The administrator sidebar includes Personal Security for every administrator role, independently of platform and tenant management capabilities. Administrators, including App Admins, can open **Personal Security > Change password** to reach the authenticated `/change-password` screen. Enter the current password, new password, and confirmation. The existing `POST /auth/change-password` endpoint enforces password policy and invalidates existing sessions; after saving, sign in again with the new password. The password control remains available even if MFA status fails to load.
 
 `GET /auth/sessions` returns up to 100 active sessions owned by the caller, with the current session identified. `DELETE /auth/sessions/{id}` revokes only an active session owned by the caller. The Personal Security screen shows device, last use, and IP details and can revoke a selected session. Revoking the current session clears local authentication state and returns to sign-in.
 

@@ -376,6 +376,10 @@ Future<AdminAccessController> _pumpWithAccess(
     QueryClientProvider(
       client: AppDependencies.createQueryClient(),
       child: MaterialApp(
+        routes: {
+          '/change-password': (_) =>
+              const Scaffold(body: Text('Password change route opened')),
+        },
         home: AdminAccessScope(
           controller: controller,
           child: Scaffold(body: child),
@@ -437,9 +441,31 @@ void main() {
       expect(find.text('Operations Health'), findsOneWidget);
       expect(find.text('Administrator Accounts'), findsNothing);
       expect(find.text('Access Control'), findsNothing);
-      expect(find.text('Personal Security'), findsNothing);
+      expect(find.text('Personal Security'), findsOneWidget);
     },
   );
+
+  for (final role in AdminRole.values) {
+    testWidgets('personal security opens password change for ${role.name}', (
+      tester,
+    ) async {
+      final repository = _FakeAdminRepository();
+      await _pumpWithAccess(
+        tester,
+        access: _access(role, const []),
+        child: AdminDashboardPage(repository: repository),
+      );
+      await tester.tap(find.text('Personal Security').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Change password'), findsOneWidget);
+      expect(repository.mfaStatusCalls, 1);
+      expect(repository.sessionListCalls, 1);
+      expect(repository.configCalls, 0);
+      await tester.tap(find.text('Change password'));
+      await tester.pumpAndSettle();
+      expect(find.text('Password change route opened'), findsOneWidget);
+    });
+  }
 
   testWidgets(
     'access refresh evicts a selected destination that became denied',

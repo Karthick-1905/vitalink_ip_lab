@@ -101,3 +101,7 @@ The development-only `braces` stack-exhaustion advisory has no upstream fix at t
 ## Administrator password control rollout, 2026-10-21
 
 The Personal Security password entry is implemented locally. A live browser check and deployment of this frontend change remain unverified. ADM01 has not been changed or checked against a shared database; the account owner will submit the current and new passwords through the UI after rollout.
+
+## Administrator security sidebar follow-up, 2026-10-21
+
+Zen reproduced that Personal Security was absent from the deployed dashboard sidebar. The sidebar destination is now registered locally for all administrator roles; role-by-role navigation tests pass. Hosted verification of this follow-up remains pending. The account owner must enter and submit passwords personally.

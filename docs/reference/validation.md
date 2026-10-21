@@ -166,3 +166,7 @@ OpenAPI, Mermaid fences, and Structurizr inputs did not change. No application s
 ## Administrator self-service password entry, 2026-10-21
 
 The Personal Security page now links to the existing authenticated password-change screen independently of MFA loading. The focused Flutter administrator permission UI suite passed all 22 tests. The Impeccable detector reported no findings. Documentation validation passed with 90 links, 117 matching operations, 18 matching models, and identical OpenAPI copies; the strict MkDocs build and diff whitespace check passed. No API, model, Mermaid, or Structurizr inputs changed. No account password was changed. Browser rendering and hosted deployment are unverified.
+
+## Administrator security navigation repair, 2026-10-21
+
+A Zen browser check of the deployed dashboard reproduced the missing Personal Security sidebar item. The previous password-button change left its page unreachable. The dashboard now registers Personal Security for every administrator role without requiring platform or tenant management capabilities. All 25 administrator permission UI tests passed, including three regressions that select the sidebar item and follow Change password to its named route for App Admin, Hospital Admin, and Auditor. Documentation validation, strict MkDocs build, and the Impeccable detector passed. API, model, Mermaid, and Structurizr inputs did not change. No password was submitted. Post-deployment sidebar verification is pending.
