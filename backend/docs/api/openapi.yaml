@@ -3889,6 +3889,17 @@ components:
           type: number
         is_critical:
           type: boolean
+          description: Legacy/manual field; new submissions are false. Never used to assign INR-based urgency in the doctor queue.
+        review_status:
+          type: string
+          enum: [pending, reviewed]
+          description: Absent on historical reports whose review status is unknown.
+        reviewed_at:
+          type: string
+          format: date-time
+        reviewed_by:
+          type: string
+          description: Server-owned reviewing doctor User ID.
         file_url:
           type: [string, "null"]
           description: Short-lived presigned URL on reads; retained object key in storage for migration compatibility.
@@ -3942,6 +3953,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/InrHistoryItem"
+        dose_history:
+          $ref: "#/components/schemas/DoctorDoseHistory"
         health_logs:
           type: array
           items:
@@ -4327,7 +4340,7 @@ components:
                 patients:
                   type: array
                   items:
-                    $ref: "#/components/schemas/PatientProfile"
+                    $ref: "#/components/schemas/DoctorPatientSummary"
 
     DoctorPatientDetailResponse:
       allOf:
@@ -4441,6 +4454,10 @@ components:
     UpdateReportRequest:
       type: object
       properties:
+        mark_reviewed:
+          type: boolean
+          const: true
+          description: Explicitly record review with server-owned reviewer and timestamp. Notes alone do not mark reviewed.
         is_critical:
           type: boolean
         notes:
@@ -6031,3 +6048,100 @@ components:
         priority:
           type: string
           enum: [LOW, MEDIUM, HIGH, URGENT]
+
+    DoctorPatientSummary:
+      type: object
+      description: Assigned active patient with an active login, within the doctor's hospital. Sorted by workflow priority, oldest waiting upload, then stable ID. No INR-based urgency ranking. Full histories are excluded.
+      properties:
+        _id:
+          type: string
+        login_id:
+          type: [string, "null"]
+        demographics:
+          $ref: "#/components/schemas/PatientDemographics"
+        profile_picture_url:
+          type: "null"
+        hospital_id:
+          type: string
+        assigned_doctor_id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        attention:
+          $ref: "#/components/schemas/DoctorAttention"
+
+    DoctorAttention:
+      type: object
+      properties:
+        reasons:
+          type: array
+          items:
+            type: string
+            enum: [reports_pending, review_overdue, review_today, inr_monitoring_gap, dose_recording_gap, no_inr, review_unknown]
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Workflow order, not clinical severity. Pending reports, due reviews, other reasons, then no outstanding reasons.
+        pending_reports:
+          type: integer
+        unknown_review_reports:
+          type: integer
+        waiting_since:
+          type: [string, "null"]
+          format: date-time
+        latest_inr:
+          oneOf:
+            - type: "null"
+            - type: object
+              properties:
+                value:
+                  type: number
+                test_date:
+                  type: string
+                  format: date-time
+        target_min:
+          type: [number, "null"]
+        target_max:
+          type: [number, "null"]
+        outside_target:
+          type: [boolean, "null"]
+          description: Patient-specific comparison only. Null when target or result is unavailable. Does not rank urgency.
+        next_review_date:
+          type: [string, "null"]
+          format: date
+        recording_gaps:
+          type: integer
+        recording_window_days:
+          type: integer
+        calculated_at:
+          type: string
+          format: date-time
+
+    DoctorDoseHistory:
+      type: object
+      description: Added on authorized doctor patient-detail reads. Current and two previous complete months. Current weekly schedule is an estimate of historical scheduling, not prescription history.
+      properties:
+        today:
+          type: string
+          format: date
+        timezone:
+          type: string
+        current_schedule_only:
+          type: boolean
+          const: true
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              amount:
+                type: number
+                description: Current weekly plan amount in mg, not a historical prescription snapshot.
+              state:
+                type: string
+                enum: [taken, not_recorded, not_scheduled, pending, upcoming, unknown]

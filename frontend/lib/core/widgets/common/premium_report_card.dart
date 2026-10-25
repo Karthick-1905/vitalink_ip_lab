@@ -25,8 +25,12 @@ class PremiumReportCard extends StatelessWidget {
   String _formatDate(dynamic date, {bool includeTime = false}) {
     if (date == null) return 'N/A';
     try {
-      final DateTime dt = date is DateTime ? date : DateTime.parse(date.toString());
-      return DateFormat(includeTime ? 'dd MMM yyyy, hh:mm a' : 'dd MMMM yyyy').format(dt);
+      final DateTime dt = date is DateTime
+          ? date
+          : DateTime.parse(date.toString());
+      return DateFormat(
+        includeTime ? 'dd MMM yyyy, hh:mm a' : 'dd MMMM yyyy',
+      ).format(dt);
     } catch (_) {
       return date.toString();
     }
@@ -35,18 +39,18 @@ class PremiumReportCard extends StatelessWidget {
   Future<void> _launchURL(BuildContext context, String? urlString) async {
     if (urlString == null || urlString.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No file URL available')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('No file URL available')));
       }
       return;
     }
 
     try {
       debugPrint('Opening file preview: $urlString');
-      
+
       final uri = Uri.parse(urlString);
-      
+
       // Validate URL format (require authority/host so hostless schemes fail)
       if (!uri.hasScheme ||
           (uri.scheme != 'http' && uri.scheme != 'https') ||
@@ -59,13 +63,10 @@ class PremiumReportCard extends StatelessWidget {
         }
         return;
       }
-      
+
       // Show the file preview modal
       if (context.mounted) {
-        await FilePreviewModal.show(
-          context,
-          fileUrl: urlString,
-        );
+        await FilePreviewModal.show(context, fileUrl: urlString);
       }
     } catch (e) {
       debugPrint('Error opening file preview: $e');
@@ -82,12 +83,18 @@ class PremiumReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double? inr = report['inr_value'] is num 
-        ? (report['inr_value'] as num).toDouble() 
+    final double? inr = report['inr_value'] is num
+        ? (report['inr_value'] as num).toDouble()
         : double.tryParse(report['inr_value']?.toString() ?? '');
-    
-    final bool isCritical = report['is_critical'] == true;
+
+    // Historical global critical flags do not determine this comparison.
+    const bool isCritical = false;
     final notes = report['notes']?.toString();
+    final reviewLabel = report['review_status'] == 'reviewed'
+        ? 'Reviewed'
+        : report['review_status'] == 'pending'
+        ? 'Awaiting review'
+        : 'Review status unknown';
 
     final reportMap = report is Map ? Map<dynamic, dynamic>.from(report) : null;
     final targets = InrTargetRange.resolve(reportMap);
@@ -108,9 +115,9 @@ class PremiumReportCard extends StatelessWidget {
     };
     final statusHeadline = switch (statusLabel) {
       'CRITICAL' => 'CRITICAL ATTENTION REQUIRED',
-      'LOW' => 'BELOW THERAPEUTIC RANGE',
-      'HIGH' => 'ABOVE THERAPEUTIC RANGE',
-      'NORMAL' => 'STABLE HEALTH REPORT',
+      'LOW' => 'BELOW PATIENT TARGET',
+      'HIGH' => 'ABOVE PATIENT TARGET',
+      'NORMAL' => 'WITHIN PATIENT TARGET',
       _ => 'STATUS UNAVAILABLE',
     };
     final statusIcon = switch (statusLabel) {
@@ -123,7 +130,8 @@ class PremiumReportCard extends StatelessWidget {
 
     final shouldShowViewAction = showActions || showViewAction;
     final shouldShowUpdateAction = showActions || showUpdateAction;
-    final hasViewFileAction = shouldShowViewAction && report['file_url'] != null;
+    final hasViewFileAction =
+        shouldShowViewAction && report['file_url'] != null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -137,18 +145,15 @@ class PremiumReportCard extends StatelessWidget {
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: statusColor.withValues(alpha: 0.15), width: 1.5),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            if (isCritical)
-              Positioned(
-                right: -20,
-                top: -20,
-                child: Icon(Icons.warning_amber_rounded, size: 100, color: Colors.red.withValues(alpha: 0.05)),
-              ),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -171,16 +176,24 @@ class PremiumReportCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Recorded at ${_formatDate(report['test_date'], includeTime: true).contains(',') ? _formatDate(report['test_date'], includeTime: true).split(',').last.trim() : 'N/A'}',
-                            style: GoogleFonts.outfit(color: const Color(0xFF9CA3AF), fontSize: 12),
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFF9CA3AF),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: statusColor.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Text(
                           'INR ${inr?.toStringAsFixed(1) ?? 'N/A'}',
@@ -202,11 +215,7 @@ class PremiumReportCard extends StatelessWidget {
                           color: statusColor.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          statusIcon,
-                          color: statusColor,
-                          size: 16,
-                        ),
+                        child: Icon(statusIcon, color: statusColor, size: 16),
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -235,7 +244,11 @@ class PremiumReportCard extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.note_alt_outlined, size: 14, color: Color(0xFF6B7280)),
+                              const Icon(
+                                Icons.note_alt_outlined,
+                                size: 14,
+                                color: Color(0xFF6B7280),
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 'CLINICAL NOTES',
@@ -261,6 +274,8 @@ class PremiumReportCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 12),
+                  Text(reviewLabel, style: GoogleFonts.outfit(fontSize: 13)),
                   if (hasViewFileAction || shouldShowUpdateAction) ...[
                     const SizedBox(height: 24),
                     Row(
@@ -271,7 +286,8 @@ class PremiumReportCard extends StatelessWidget {
                               icon: Icons.picture_as_pdf_outlined,
                               label: 'VIEW PDF',
                               color: const Color(0xFF1E1E5E),
-                              onPressed: onViewFilePressed ??
+                              onPressed:
+                                  onViewFilePressed ??
                                   () => _launchURL(context, report['file_url']),
                               isPrimary: false,
                             ),
@@ -282,7 +298,7 @@ class PremiumReportCard extends StatelessWidget {
                           Expanded(
                             child: _ActionButton(
                               icon: Icons.edit_note_rounded,
-                              label: 'INTERVENE',
+                              label: 'REVIEW REPORT',
                               color: const Color(0xFF6366F1),
                               onPressed: onUpdatePressed ?? () {},
                               isPrimary: true,
@@ -325,13 +341,19 @@ class _ActionButton extends StatelessWidget {
         icon: Icon(icon, size: 18),
         label: Text(
           label,
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.5),
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+            letterSpacing: 0.5,
+          ),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: isPrimary ? Colors.white : color,
           backgroundColor: isPrimary ? color : Colors.transparent,
           side: BorderSide(color: color, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );

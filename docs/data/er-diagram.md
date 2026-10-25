@@ -24,6 +24,7 @@ erDiagram
     HOSPITAL ||--o{ FILE_ASSET : "hospital_id"
     PATIENT_PROFILE ||--o{ FILE_ASSET : "patient_profile_id"
     USER ||--o{ PATIENT_PROFILE : "assigned_doctor_id"
+    USER o|--o{ PATIENT_PROFILE : "embedded inr_history.reviewed_by"
     USER ||--o{ ADMIN_ROLE_POLICY : "updated_by"
     USER ||--o{ ADMIN_ROLE_POLICY_REVISION : "actor_user_id"
     ADMIN_ROLE_POLICY ||--o{ ADMIN_ROLE_POLICY_REVISION : "role_key versions"

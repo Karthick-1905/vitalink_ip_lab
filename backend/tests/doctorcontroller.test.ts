@@ -988,6 +988,26 @@ describe('Doctor Routes', () => {
             reportId = patient.inr_history[patient.inr_history.length - 1]._id.toString();
         });
 
+        test('records explicit review with server-owned reviewer and timestamp', async () => {
+            const response = await api.put(`/api/doctors/patients/PAT001/reports/${reportId}`, {
+                mark_reviewed: true,
+                notes: 'Reviewed against patient target'
+            }, { headers: { Authorization: `Bearer ${doctorToken}` } });
+            expect(response.status).toBe(200);
+            expect(response.data.data.report.review_status).toBe('reviewed');
+            expect(response.data.data.report.reviewed_by).toBe(String(doctorUser._id));
+            expect(Number.isNaN(Date.parse(response.data.data.report.reviewed_at))).toBe(false);
+            const roster = await api.get('/api/doctors/patients', { headers: { Authorization: `Bearer ${doctorToken}` } });
+            const patient = roster.data.data.patients.find((p: any) => p.login_id === 'PAT001');
+            expect(patient.attention).toBeDefined();
+            expect(patient.medical_config).toBeUndefined();
+            expect(patient.weekly_dosage).toBeUndefined();
+            const spoofed = await api.put(`/api/doctors/patients/PAT001/reports/${reportId}`, {
+                mark_reviewed: true, reviewed_by: String(secondDoctorUser._id)
+            }, { headers: { Authorization: `Bearer ${doctorToken}` } });
+            expect(spoofed.status).toBe(400);
+        });
+
         test('should update report notes', async () => {
             const response = await api.put(`/api/doctors/patients/PAT001/reports/${reportId}`, {
                 notes: 'Updated notes for the report'

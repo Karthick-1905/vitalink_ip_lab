@@ -105,3 +105,7 @@ The Personal Security password entry is implemented locally. A live browser chec
 ## Administrator security sidebar follow-up, 2026-10-21
 
 Zen reproduced that Personal Security was absent from the deployed dashboard sidebar. The sidebar destination is now registered locally for all administrator roles; role-by-role navigation tests pass. Hosted verification of this follow-up remains pending. The account owner must enter and submit passwords personally.
+
+## Doctor attention workflow, 2026-10-25
+
+The source implements an explainable review queue and monthly recording calendar. Live deployment and hospital acceptance are not established. Historical report review cannot be inferred from notes; older entries remain unknown. Historical weekly prescription versions are absent, so old schedule gaps are estimates under the current plan. Reminder jobs retain their existing delivery eligibility and may differ from the overview for profiles missing therapy start. Global INR threshold configuration and the legacy/manual critical update field remain for compatibility; new upload classification and doctor overview do not use them. No historical critical-flag migration was run. The existing roster API is unpaginated; production-scale performance and queue acceptance need separate verification. Structured health-report review and symptom severity are outside this change.

@@ -16,6 +16,9 @@ export const InrLogSchema = new Schema({
   uploaded_at: { type: Date, default: Date.now },
   inr_value: { type: Number, required: true, min: Number.MIN_VALUE, max: 20, validate: Number.isFinite },
   is_critical: { type: Boolean, default: false },
+  review_status: { type: String, enum: ['pending', 'reviewed'] },
+  reviewed_at: { type: Date },
+  reviewed_by: { type: Schema.Types.ObjectId, ref: 'User' },
   file_url: { type: String },
   file_asset_id: { type: Schema.Types.ObjectId, ref: 'FileAsset' },
   notes: { type: String, maxlength: 4000 }

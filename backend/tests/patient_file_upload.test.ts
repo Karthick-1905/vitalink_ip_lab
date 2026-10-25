@@ -258,7 +258,7 @@ describe('Patient File Upload Routes', () => {
             expect(latestReport.is_critical).toBe(false);
         });
 
-        test('should mark report as critical when INR is below configured low threshold', async () => {
+        test('should not assign clinical urgency when INR is below the global threshold', async () => {
             const response = await api.post('/api/patient/reports', {
                 inr_value: '1.4',
                 test_date: '20-02-2026'
@@ -274,10 +274,11 @@ describe('Patient File Upload Routes', () => {
             const updatedPatient = await PatientProfile.findById(patientProfile._id);
             const latestReport = updatedPatient.inr_history[updatedPatient.inr_history.length - 1];
             expect(latestReport.inr_value).toBe(1.4);
-            expect(latestReport.is_critical).toBe(true);
+            expect(latestReport.is_critical).toBe(false);
+            expect(latestReport.review_status).toBe('pending');
         });
 
-        test('should mark report as critical when INR is above configured high threshold', async () => {
+        test('should not assign clinical urgency when INR is above the global threshold', async () => {
             const response = await api.post('/api/patient/reports', {
                 inr_value: '4.6',
                 test_date: '21-02-2026'
@@ -293,7 +294,8 @@ describe('Patient File Upload Routes', () => {
             const updatedPatient = await PatientProfile.findById(patientProfile._id);
             const latestReport = updatedPatient.inr_history[updatedPatient.inr_history.length - 1];
             expect(latestReport.inr_value).toBe(4.6);
-            expect(latestReport.is_critical).toBe(true);
+            expect(latestReport.is_critical).toBe(false);
+            expect(latestReport.review_status).toBe('pending');
         });
 
         test('should atomically reject duplicate INR measurements for one clinical date', async () => {

@@ -1,3 +1,4 @@
+import 'package:frontend/features/doctor/widgets/report_review_sheet.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,7 +14,13 @@ import 'package:frontend/core/widgets/common/premium_report_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class DoctorReportsPage extends StatefulWidget {
-  const DoctorReportsPage({super.key});
+  final String? initialPatientOp;
+  final String? initialPatientName;
+  const DoctorReportsPage({
+    super.key,
+    this.initialPatientOp,
+    this.initialPatientName,
+  });
 
   @override
   State<DoctorReportsPage> createState() => _DoctorReportsPageState();
@@ -23,6 +30,13 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
   final DoctorRepository _repository = AppDependencies.doctorRepository;
   String? _selectedPatientOp;
   String? _selectedPatientName;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPatientOp = widget.initialPatientOp;
+    _selectedPatientName = widget.initialPatientName;
+  }
 
   Future<void> _refreshSelectedReports({
     Future<void> Function()? awaitReportsRefetch,
@@ -40,7 +54,7 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
     } else {
       queryClient.refetchQueries(reportsKey);
     }
-    // Patients list condition (critical flag) also depends on latest INR.
+    // Refresh the workflow summary after clinical report changes.
     queryClient.invalidateQueries(DoctorQueryKeys.patients());
   }
 
@@ -216,9 +230,11 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
               color: const Color(0xFF6366F1).withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.analytics_outlined,
-                size: 80,
-                color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
+            child: Icon(
+              Icons.analytics_outlined,
+              size: 80,
+              color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+            ),
           ),
           PortalLayout.sectionSpacer,
           Text(
@@ -255,15 +271,13 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
         staleTime: Duration.zero,
         refetchOnWindowFocus: true,
         queryFn: () => _repository.getPatientReports(
-              _selectedPatientOp!,
-              includeUrls: true,
-            ),
+          _selectedPatientOp!,
+          includeUrls: true,
+        ),
       ),
       builder: (context, query) {
         Future<void> onRefresh() async {
-          await _refreshSelectedReports(
-            awaitReportsRefetch: query.refetch,
-          );
+          await _refreshSelectedReports(awaitReportsRefetch: query.refetch);
         }
 
         final Widget child;
@@ -284,7 +298,27 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
             ),
           );
         } else {
-          final reports = query.data ?? [];
+          final reports = List<dynamic>.from(query.data ?? []);
+          int reviewOrder(dynamic report) =>
+              report['review_status'] == 'pending'
+              ? 0
+              : report['review_status'] == 'reviewed'
+              ? 2
+              : 1;
+          reports.sort((a, b) {
+            final order = reviewOrder(a).compareTo(reviewOrder(b));
+            if (order != 0) return order;
+            final first = DateTime.tryParse(
+              (a['uploaded_at'] ?? a['test_date']).toString(),
+            );
+            final second = DateTime.tryParse(
+              (b['uploaded_at'] ?? b['test_date']).toString(),
+            );
+            if (first == null || second == null) return 0;
+            return reviewOrder(a) == 0
+                ? first.compareTo(second)
+                : second.compareTo(first);
+          });
           if (reports.isEmpty) {
             // Empty state must still be pull-to-refreshable; a non-scrollable
             // Center previously swallowed refresh after patient uploads.
@@ -300,8 +334,11 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                 ),
                 children: [
                   const SizedBox(height: 80),
-                  Icon(Icons.history_rounded,
-                      size: 64, color: Colors.grey.withValues(alpha: 0.3)),
+                  Icon(
+                    Icons.history_rounded,
+                    size: 64,
+                    color: Colors.grey.withValues(alpha: 0.3),
+                  ),
                   PortalLayout.sectionSpacerTight,
                   Text(
                     'No reports found for ${_selectedPatientName ?? 'selected patient'}'
@@ -356,155 +393,39 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
           }
         }
 
-        return RefreshIndicator(
-          onRefresh: onRefresh,
-          child: child,
-        );
+        return RefreshIndicator(onRefresh: onRefresh, child: child);
       },
     );
   }
 
-  void _updateDialog(
-      BuildContext context, DoctorRepository repository, dynamic report) {
-    final notesController = TextEditingController(text: report['notes'] ?? '');
-    bool isCrit = report['is_critical'] == true;
-    final String rId = report['_id'] ?? '';
-    final qClient = QueryClientProvider.of(context);
-
-    showModalBottomSheet(
+  Future<void> _updateDialog(
+    BuildContext context,
+    DoctorRepository repository,
+    dynamic report,
+  ) async {
+    final op = _selectedPatientOp;
+    if (op == null) return;
+    final client = QueryClientProvider.of(context);
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => UseMutation<void, Map<String, dynamic>>(
-        options: MutationOptions<void, Map<String, dynamic>>(
-          mutationFn: (vars) =>
-              repository.updateReport(_selectedPatientOp!, rId, vars),
-          onSuccess: (_, _) {
-            qClient.invalidateQueries(
-              DoctorQueryKeys.patientReports(_selectedPatientOp!),
-            );
-            Navigator.pop(ctx);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Report Updated Successfully')),
-            );
-          },
-          onError: (e, _) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('Error: $e')));
-          },
+      builder: (_) => ReportReviewSheet(
+        initialNotes: report['notes']?.toString() ?? '',
+        onSave: (notes, reviewed) => repository.updateReport(
+          op,
+          report['_id'].toString(),
+          {'notes': notes, if (reviewed) 'mark_reviewed': true},
         ),
-        builder: (context, mutation) {
-          return StatefulBuilder(
-            builder: (ctx, setS) {
-              return Container(
-                padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Medical Intervention',
-                        style: GoogleFonts.outfit(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E1E5E)),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Update notes or critical status for this report.',
-                        style: GoogleFonts.outfit(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        controller: notesController,
-                        maxLines: 4,
-                        style: GoogleFonts.outfit(),
-                        decoration: InputDecoration(
-                          hintText:
-                              'Enter clinical observations and instructions...',
-                          fillColor: const Color(0xFFF9FAFB),
-                          filled: true,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.grey[200]!)),
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.grey[200]!)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isCrit
-                              ? Colors.red.withValues(alpha: 0.05)
-                              : Colors.grey[50],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: isCrit
-                                  ? Colors.red.withValues(alpha: 0.2)
-                                  : Colors.grey[200]!),
-                        ),
-                        child: SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('Critical Status',
-                              style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  color: isCrit ? Colors.red : Colors.black87)),
-                          subtitle: Text(
-                              'Flags this report for immediate attention',
-                              style: GoogleFonts.outfit(fontSize: 12)),
-                          value: isCrit,
-                          activeThumbColor: Colors.red,
-                          onChanged: (v) => setS(() => isCrit = v),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: mutation.isLoading
-                              ? null
-                              : () {
-                                  mutation.mutate({
-                                    'notes': notesController.text.trim(),
-                                    'is_critical': isCrit
-                                  });
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6366F1),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
-                            elevation: 0,
-                          ),
-                          child: mutation.isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white)
-                              : Text('Save Observations',
-                                  style: GoogleFonts.outfit(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
       ),
-    ).then((_) => notesController.dispose());
+    );
+    if (saved != true || !context.mounted) return;
+    client.invalidateQueries(DoctorQueryKeys.patientReports(op));
+    client.invalidateQueries(DoctorQueryKeys.patients());
+    client.invalidateQueries(DoctorQueryKeys.patientDetail(op));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Report review saved')));
   }
 }
 
@@ -537,10 +458,12 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
   void _filter(String query) {
     setState(() {
       _filteredPatients = widget.patients
-          .where((p) =>
-              p.name.toLowerCase().contains(query.toLowerCase()) ||
-              (p.opNumber?.toLowerCase().contains(query.toLowerCase()) ??
-                  false))
+          .where(
+            (p) =>
+                p.name.toLowerCase().contains(query.toLowerCase()) ||
+                (p.opNumber?.toLowerCase().contains(query.toLowerCase()) ??
+                    false),
+          )
           .toList();
     });
   }
@@ -557,11 +480,13 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
         children: [
           const SizedBox(height: 12),
           Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2))),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
@@ -569,12 +494,15 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                 Text(
                   'Select Patient',
                   style: GoogleFonts.outfit(
-                      fontSize: 22, fontWeight: FontWeight.bold),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close)),
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
               ],
             ),
           ),
@@ -589,8 +517,9 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                 filled: true,
                 fillColor: const Color(0xFFF3F4F6),
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
@@ -606,8 +535,10 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                 final patientName = p.name.trim();
                 return ListTile(
                   enabled: canSelect,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   leading: CircleAvatar(
                     backgroundColor: canSelect
                         ? const Color(0xFF6366F1).withValues(alpha: 0.1)
@@ -615,8 +546,9 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                     child: Text(
                       patientName.isNotEmpty ? patientName[0] : '?',
                       style: TextStyle(
-                        color:
-                            canSelect ? const Color(0xFF6366F1) : Colors.grey,
+                        color: canSelect
+                            ? const Color(0xFF6366F1)
+                            : Colors.grey,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

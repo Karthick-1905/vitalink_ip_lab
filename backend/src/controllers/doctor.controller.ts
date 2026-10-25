@@ -34,6 +34,7 @@ import { createNotificationStreamTicket } from '@alias/services/notification-str
 import { resolveStreamUserOrThrow } from '@alias/services/notification-stream-auth.service'
 import { hasActiveHospitalAccess } from '@alias/services/hospital-access.service'
 import type { AuthUserSnapshot } from '@alias/types/auth-user'
+import { buildDoctorAttention, buildDoseHistory } from '@alias/services/doctor-attention.service'
 
 const normalizeLoginId = (value: string) => value.trim()
 
@@ -268,17 +269,18 @@ export const getPatients = asyncHandler(async (req: Request, res: Response) => {
     account_status: 'Active',
   }
   if (hospitalId) patientQuery.hospital_id = hospitalId
-  // List payload only needs identity + INR criticality flags — skip heavy embeds
+  // Project only the fields needed to calculate the attention summary.
   // and never presign profile pictures (O(n) FileAsset + S3 work).
   // Mutations already require Active; listing discharged/deceased assignees
   // produced a 409 "assignment changed" on later edits.
   const patientProfiles = await PatientProfile.find(patientQuery)
-    .select('demographics inr_history.test_date inr_history.is_critical hospital_id assigned_doctor_id createdAt')
+    .select('demographics inr_history.test_date inr_history.inr_value inr_history.is_critical inr_history.uploaded_at inr_history.review_status medical_config.target_inr medical_config.next_review_date medical_config.therapy_start_date medical_config.taken_doses weekly_dosage hospital_id assigned_doctor_id createdAt')
     .lean()
 
   // Get login_ids for each patient profile
   const patientUsers = await User.find({
     profile_id: { $in: patientProfiles.map(p => p._id) },
+    is_active: true,
     user_type: UserType.PATIENT
   }).select('profile_id login_id').lean()
 
@@ -288,14 +290,19 @@ export const getPatients = asyncHandler(async (req: Request, res: Response) => {
     profileToUser.set(u.profile_id?.toString() ?? '', u)
   })
 
-  const patients = patientProfiles.map((p) => {
+  const now = new Date()
+  const patients = patientProfiles.filter(p => profileToUser.has(String(p._id))).map((p) => {
     const patientUser = profileToUser.get(String(p._id))
+    const { medical_config, weekly_dosage, inr_history, ...identity } = p
     return {
-      ...p,
+      ...identity,
+      attention: buildDoctorAttention(p, now),
       profile_picture_url: null,
       login_id: patientUser?.login_id ?? null,
     }
-  })
+  }).sort((a, b) => a.attention.priority - b.attention.priority ||
+    +new Date(a.attention.waiting_since ?? a.createdAt) - +new Date(b.attention.waiting_since ?? b.createdAt) ||
+    String(a._id).localeCompare(String(b._id)))
 
   res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, "Patients fetched successfully", { patients }))
 })
@@ -313,6 +320,7 @@ export const viewPatient = asyncHandler(async (req: Request, res: Response) => {
   const requesterHospitalId = await getRequiredDoctorHospitalId(doctor)
 
   const patientData = patient.toObject() as any
+  patientData.dose_history = buildDoseHistory(patientData)
   if (patientData.profile_picture_url) {
     patientData.profile_picture_url = await resolveAssetDownloadUrl({
       fileAssetId: patientData.profile_picture_file_asset_id,
@@ -726,7 +734,7 @@ export const getReports = asyncHandler(async (req: Request, res: Response) => {
 
 export const updateReport = asyncHandler(async (req: Request<UpdateReportInput['params'], {}, UpdateReportInput['body']>, res: Response) => {
   const { op_num, report_id } = req.params
-  const { notes, is_critical } = req.body
+  const { notes, is_critical, mark_reviewed } = req.body
 
   const doctor = await getDoctorUserOrThrow(req.user.user_id, req.authUser)
   const patientUser = await getPatientUserOrThrow(op_num)
@@ -748,6 +756,12 @@ export const updateReport = asyncHandler(async (req: Request<UpdateReportInput['
   const reportSet: Record<string, unknown> = {}
   if (notes !== undefined) reportSet['inr_history.$.notes'] = notes
   if (is_critical !== undefined) reportSet['inr_history.$.is_critical'] = is_critical
+  if (mark_reviewed) {
+    changedFields.push('inr_history.review_status')
+    reportSet['inr_history.$.review_status'] = 'reviewed'
+    reportSet['inr_history.$.reviewed_at'] = new Date()
+    reportSet['inr_history.$.reviewed_by'] = doctor._id
+  }
   let report = existingReport
   if (changedFields.length > 0) {
     const updatedPatient = await PatientProfile.findOneAndUpdate(

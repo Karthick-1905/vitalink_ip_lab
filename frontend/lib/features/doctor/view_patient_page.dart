@@ -1,3 +1,5 @@
+import 'package:frontend/features/doctor/widgets/dose_history_card.dart';
+import 'package:frontend/features/doctor/doctor_reports_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -189,24 +191,29 @@ class _NavButton extends StatelessWidget {
     return TextButton(
       onPressed: enabled ? onTap : null,
       style: TextButton.styleFrom(
-        foregroundColor:
-            enabled ? const Color(0xFF6366F1) : const Color(0xFFD1D5DB),
+        foregroundColor: enabled
+            ? const Color(0xFF6366F1)
+            : const Color(0xFFD1D5DB),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: iconAfter
             ? [
-                Text(label,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(width: 4),
                 Icon(icon, size: 20),
               ]
             : [
                 Icon(icon, size: 20),
                 const SizedBox(width: 4),
-                Text(label,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ],
       ),
     );
@@ -265,10 +272,7 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Patient Header Card — primary identity
-                _PatientHeaderCard(
-                  patient: patient,
-                  opNumber: widget.opNumber
-                ),
+                _PatientHeaderCard(patient: patient, opNumber: widget.opNumber),
 
                 PortalLayout.sectionSpacer,
 
@@ -312,12 +316,35 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
 
                 PortalLayout.sectionSpacer,
 
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(
+                          title: const Text('Review patient reports'),
+                        ),
+                        body: DoctorReportsPage(
+                          initialPatientOp: widget.opNumber,
+                          initialPatientName: patient.name,
+                        ),
+                      ),
+                    ),
+                  ),
+                  icon: const Icon(Icons.fact_check_outlined),
+                  label: const Text('Review patient reports'),
+                ),
+                PortalLayout.sectionSpacerTight,
                 // INR Reports Section
                 _InrReportsCard(
                   opNumber: widget.opNumber,
                   repository: widget.repository,
                   isExpanded: _showReports,
                   onToggle: () => setState(() => _showReports = !_showReports),
+                ),
+                PortalLayout.sectionSpacer,
+                DoseHistoryCard(
+                  key: ValueKey(widget.opNumber),
+                  history: patient.doseHistory,
                 ),
               ],
             ),
@@ -332,10 +359,7 @@ class _PatientHeaderCard extends StatelessWidget {
   final PatientDetailModel patient;
   final String opNumber;
 
-  const _PatientHeaderCard({
-    required this.patient,
-    required this.opNumber,
-  });
+  const _PatientHeaderCard({required this.patient, required this.opNumber});
 
   @override
   Widget build(BuildContext context) {
@@ -423,8 +447,11 @@ class _PatientHeaderCard extends StatelessWidget {
                   PortalLayout.labelSpacer,
                   Row(
                     children: [
-                      const Icon(Icons.phone,
-                          size: 14, color: Color(0xFF6B7280)),
+                      const Icon(
+                        Icons.phone,
+                        size: 14,
+                        color: Color(0xFF6B7280),
+                      ),
                       const SizedBox(width: AppSpacing.xxs),
                       Text(
                         patient.phone!,
@@ -595,16 +622,19 @@ class _QuickActionsCard extends StatelessWidget {
                 onPressed: selectedDate == null
                     ? null
                     : () async {
-                        final dateStr =
-                            DateFormat('dd-MM-yyyy').format(selectedDate!);
+                        final dateStr = DateFormat(
+                          'dd-MM-yyyy',
+                        ).format(selectedDate!);
                         try {
                           await repository.updateNextReview(opNumber, dateStr);
                           if (ctx.mounted) {
                             Navigator.of(ctx).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content:
-                                      Text('Review date updated successfully')),
+                                content: Text(
+                                  'Review date updated successfully',
+                                ),
+                              ),
                             );
                             onPatientUpdated();
                           }
@@ -698,55 +728,55 @@ class _ReassignDialogState extends State<_ReassignDialog> {
         child: _loadingDoctors
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Text('Error: $_error')
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Select a doctor to reassign this patient:',
-                        style:
-                            TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _doctors.length,
-                          itemBuilder: (context, index) {
-                            final doctor = _doctors[index];
-                            final loginId = doctor['login_id'] as String?;
-                            final profile =
-                                doctor['profile_id'] as Map<String, dynamic>?;
-                            final name =
-                                profile?['name'] ?? loginId ?? 'Unknown';
-                            final doctorId = loginId ?? '';
-                            final selected = _selectedDoctorId == doctorId;
-
-                            return ListTile(
-                              dense: true,
-                              onTap: doctorId.isEmpty
-                                  ? null
-                                  : () => setState(
-                                      () => _selectedDoctorId = doctorId),
-                              leading: Icon(
-                                selected
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_unchecked,
-                                color: selected
-                                    ? const Color(0xFFF59E0B)
-                                    : Colors.grey,
-                              ),
-                              title: Text(name),
-                              subtitle:
-                                  loginId != null ? Text('ID: $loginId') : null,
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+            ? Text('Error: $_error')
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Select a doctor to reassign this patient:',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 200,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _doctors.length,
+                      itemBuilder: (context, index) {
+                        final doctor = _doctors[index];
+                        final loginId = doctor['login_id'] as String?;
+                        final profile =
+                            doctor['profile_id'] as Map<String, dynamic>?;
+                        final name = profile?['name'] ?? loginId ?? 'Unknown';
+                        final doctorId = loginId ?? '';
+                        final selected = _selectedDoctorId == doctorId;
+
+                        return ListTile(
+                          dense: true,
+                          onTap: doctorId.isEmpty
+                              ? null
+                              : () => setState(
+                                  () => _selectedDoctorId = doctorId,
+                                ),
+                          leading: Icon(
+                            selected
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: selected
+                                ? const Color(0xFFF59E0B)
+                                : Colors.grey,
+                          ),
+                          title: Text(name),
+                          subtitle: loginId != null
+                              ? Text('ID: $loginId')
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
       ),
       actions: [
         TextButton(
@@ -760,12 +790,15 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                   final messenger = ScaffoldMessenger.of(context);
                   setState(() => _isLoading = true);
                   try {
-                    await widget.repository
-                        .reassignPatient(widget.opNumber, _selectedDoctorId!);
+                    await widget.repository.reassignPatient(
+                      widget.opNumber,
+                      _selectedDoctorId!,
+                    );
                     if (!mounted) return;
                     messenger.showSnackBar(
                       const SnackBar(
-                          content: Text('Patient reassigned successfully')),
+                        content: Text('Patient reassigned successfully'),
+                      ),
                     );
                     widget.onSuccess();
                   } catch (e) {
@@ -788,7 +821,9 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Reassign'),
         ),
@@ -849,8 +884,9 @@ class _MedicalConfigCard extends StatelessWidget {
   String _formatDate(dynamic date) {
     if (date == null) return 'Not set';
     try {
-      final DateTime dt =
-          date is DateTime ? date : DateTime.parse(date.toString());
+      final DateTime dt = date is DateTime
+          ? date
+          : DateTime.parse(date.toString());
       return DateFormat('dd MMM yyyy').format(dt);
     } catch (_) {
       return date.toString();
@@ -905,25 +941,29 @@ class _MedicalConfigCard extends StatelessWidget {
               ),
             ),
             PortalLayout.labelSpacer,
-            ...((config['instructions'] as List).map((instr) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('• ',
-                          style: TextStyle(color: Color(0xFF6B7280))),
-                      Expanded(
-                        child: Text(
-                          instr.toString(),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF4B5563),
-                          ),
+            ...((config['instructions'] as List).map(
+              (instr) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '• ',
+                      style: TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                    Expanded(
+                      child: Text(
+                        instr.toString(),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF4B5563),
                         ),
                       ),
-                    ],
-                  ),
-                ))),
+                    ),
+                  ],
+                ),
+              ),
+            )),
           ],
         ],
       ),
@@ -964,9 +1004,9 @@ class _DosageCardState extends State<_DosageCard> {
       setState(() => _isEditing = false);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -994,13 +1034,13 @@ class _DosageCardState extends State<_DosageCard> {
               ),
             )
           : _isEditing
-              ? DosageEditor(
-                  initialDosage: widget.patient.weeklyDosage,
-                  readOnly: false,
-                  onSave: _saveDosage,
-                  onCancel: () => setState(() => _isEditing = false),
-                )
-              : DosageDisplay(dosage: widget.patient.weeklyDosage),
+          ? DosageEditor(
+              initialDosage: widget.patient.weeklyDosage,
+              readOnly: false,
+              onSave: _saveDosage,
+              onCancel: () => setState(() => _isEditing = false),
+            )
+          : DosageDisplay(dosage: widget.patient.weeklyDosage),
     );
   }
 }
@@ -1153,7 +1193,8 @@ class _MonitoringLogsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logs = patient.healthLogs;
-    final hasAny = logs != null &&
+    final hasAny =
+        logs != null &&
         logs.any((log) {
           if (log is! Map) return false;
           final description = log['description']?.toString().trim();
@@ -1231,13 +1272,15 @@ class _MonitoringLogsCard extends StatelessWidget {
                         description,
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight:
-                              isReported ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: isReported
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                           color: isReported
                               ? const Color(0xFF1F2937)
                               : const Color(0xFF9CA3AF),
-                          fontStyle:
-                              isReported ? FontStyle.normal : FontStyle.italic,
+                          fontStyle: isReported
+                              ? FontStyle.normal
+                              : FontStyle.italic,
                         ),
                       ),
                     ],
@@ -1347,10 +1390,8 @@ class _InrReportsCard extends StatelessWidget {
                   queryKey: DoctorQueryKeys.patientReports(opNumber),
                   staleTime: Duration.zero,
                   refetchOnWindowFocus: true,
-                  queryFn: () => repository.getPatientReports(
-                        opNumber,
-                        includeUrls: true,
-                      ),
+                  queryFn: () =>
+                      repository.getPatientReports(opNumber, includeUrls: true),
                 ),
                 builder: (context, query) {
                   return InrReportsSection(
@@ -1396,11 +1437,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Color(0xFFDC2626),
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Color(0xFFDC2626)),
             const SizedBox(height: 16),
             Text(
               'Something went wrong',
@@ -1414,10 +1451,7 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -1427,8 +1461,10 @@ class _ErrorView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),

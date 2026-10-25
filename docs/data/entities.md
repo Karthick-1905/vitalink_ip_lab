@@ -24,6 +24,8 @@ Doctor name, department, primary contact, phone verification state, profile-imag
 
 Primary clinical document. It embeds demographics and next of kin, medical configuration, medical history, seven-day dosage schedule, INR history, health logs, account/assignment-conflict state, profile-image metadata, file-operation leases, and purge progress. References include `hospital_id`, assigned doctor `User._id`, and file assets. `login_id`/OP number remains on `User`, not this profile.
 
+INR history entries now optionally persist `review_status` (`pending` or `reviewed`), `reviewed_at`, and `reviewed_by` referencing the doctor User. New uploads explicitly set pending. Historical entries without a status remain unknown; notes and notification reads are not proof of review. No default or retrospective migration labels older reports reviewed. No collection or index is added.
+
 ## Authentication and delivery factors
 
 <!-- model: AuthSession -->

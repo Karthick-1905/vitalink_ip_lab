@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes'
 import { Notification, PatientProfile, User } from '@alias/models'
 import { NotificationPriority, NotificationType } from '@alias/models/notification.model'
 import { UserType } from '@alias/validators'
-import { getSystemConfig, isFeatureEnabled } from '@alias/services/config.service'
+import { isFeatureEnabled } from '@alias/services/config.service'
 import * as notificationService from '@alias/services/notification.service'
 import { registerUserNotificationStream } from '@alias/services/realtime-notification.service'
 import { publishClinicalNotificationToUser } from '@alias/services/realtime-notification.service'
@@ -27,7 +27,7 @@ import { FileAssetPurpose } from '@alias/models/fileasset.model'
 import { compensateFileAsset, resolveAssetDownloadUrl, resolveAssetDownloadUrls, retireReplacedFileAsset, uploadTrackedFile } from '@alias/services/fileasset.service'
 import { config } from '@alias/config'
 import { parseStrictDateOnly } from '@alias/utils/dateOnly'
-import { getSafeInrTargetRange, getSafeInrThresholds } from '@alias/utils/inrThresholds'
+import { getSafeInrTargetRange } from '@alias/utils/inrThresholds'
 import { acquirePatientFileOperationLease } from '@alias/services/patient-file-purge.service'
 import { createNotificationStreamTicket } from '@alias/services/notification-stream-ticket.service'
 import { resolveStreamUserOrThrow } from '@alias/services/notification-stream-auth.service'
@@ -140,12 +140,8 @@ const notifyDoctorOfInrReport = async (input: {
 		}
 
 		const patientName = (input.patientName ?? '').trim() || 'A patient'
-		const title = input.isCritical
-			? 'Critical INR report submitted'
-			: 'New INR report submitted'
-		const message = input.isCritical
-			? `${patientName} submitted a critical INR of ${input.inrValue}. Review their report history.`
-			: `${patientName} submitted an INR of ${input.inrValue}. Open Reports to review.`
+		const title = 'New INR report submitted'
+		const message = `${patientName} submitted an INR of ${input.inrValue}. Open Reports to review against their prescribed target.`
 
 		const data = {
 			patient_user_id: String(input.patientUserId),
@@ -162,9 +158,7 @@ const notifyDoctorOfInrReport = async (input: {
 		const created = await Notification.create({
 			user_id: doctorUserId,
 			type: NotificationType.REPORT_AVAILABLE,
-			priority: input.isCritical
-				? NotificationPriority.URGENT
-				: NotificationPriority.HIGH,
+			priority: NotificationPriority.HIGH,
 			title,
 			message,
 			data,
@@ -502,9 +496,8 @@ export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput
 	let submittedIsCritical = false
 	try {
 		await fileOperation?.assertOwned()
-		const systemConfig = await getSystemConfig()
-		const { criticalLow, criticalHigh } = getSafeInrThresholds(systemConfig?.inr_thresholds)
-		const isCritical = parsed_inr_value < criticalLow || parsed_inr_value > criticalHigh
+		// INR alone does not establish clinical urgency.
+		const isCritical = false
 		submittedIsCritical = isCritical
 		await fileOperation?.assertOwned()
 		patient = await PatientProfile.findOneAndUpdate(
@@ -521,6 +514,7 @@ export const submitReport = asyncHandler(async (req: Request<{}, {}, ReportInput
 						uploaded_at: new Date(),
 						inr_value: parsed_inr_value,
 						is_critical: isCritical,
+						review_status: 'pending',
 						file_url: uploadedFile?.key ?? '',
 						file_asset_id: fileAsset?._id,
 					},
