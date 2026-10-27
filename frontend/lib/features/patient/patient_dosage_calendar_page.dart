@@ -95,7 +95,7 @@ class _PatientDosageCalendarPageState extends State<PatientDosageCalendarPage> {
         }
 
         return PatientScaffold(
-          pageTitle: 'Dosage Calendar',
+          pageTitle: AppCopy.text('screens.dosageCalendar.title'),
           currentNavIndex: _currentNavIndex,
           onNavChanged: (index) => _handleNav(index),
           body: body,

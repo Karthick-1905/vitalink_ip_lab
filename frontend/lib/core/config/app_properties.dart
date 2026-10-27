@@ -29,6 +29,7 @@ class AppProperties extends ChangeNotifier with WidgetsBindingObserver {
   int revision = 0;
   bool _initialized = false;
   Future<void>? _refreshing;
+  String? _etag;
   DateTime? _lastAttempt;
 
   String text(String key, {Map<String, String> arguments = const {}}) {
@@ -49,7 +50,12 @@ class AppProperties extends ChangeNotifier with WidgetsBindingObserver {
     try {
       _preferences = await SharedPreferences.getInstance();
       final cached = _preferences!.getString(cacheKey);
-      if (cached != null) apply(jsonDecode(cached));
+      if (cached != null) {
+        final payload = jsonDecode(cached);
+        if (apply(payload) && payload['etag'] is String) {
+          _etag = payload['etag'] as String;
+        }
+      }
     } catch (_) {
       /* Bundled defaults are always available. */
     }
@@ -105,7 +111,12 @@ class AppProperties extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> refresh({bool force = false}) {
-    if (_refreshing != null) return _refreshing!;
+    if (_refreshing != null) {
+      // A publication may have completed after an older request started.
+      // Wait for that request, then fetch the newly published state.
+      if (force) return _refreshing!.then((_) => refresh(force: true));
+      return _refreshing!;
+    }
     if (!force &&
         _lastAttempt != null &&
         DateTime.now().difference(_lastAttempt!) < const Duration(minutes: 5)) {
@@ -119,10 +130,22 @@ class AppProperties extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final response = await _client.get<Map<String, dynamic>>(
         '${AppStrings.apiPathPrefix}/app-properties',
+        options: Options(
+          headers: {if (_etag != null) 'If-None-Match': _etag},
+          validateStatus: (status) => status == 200 || status == 304,
+        ),
       );
+      if (response.statusCode == 304) return;
       final payload = response.data?['data'];
       if (apply(payload)) {
-        await _preferences?.setString(cacheKey, jsonEncode(payload));
+        _etag = response.headers.value('etag');
+        await _preferences?.setString(
+          cacheKey,
+          jsonEncode({
+            ...Map<String, dynamic>.from(payload as Map),
+            if (_etag != null) 'etag': _etag,
+          }),
+        );
       }
     } catch (_) {
       /* Keep the last working snapshot on timeout or invalid data. */

@@ -88,7 +88,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
         }
 
         return PatientScaffold(
-          pageTitle: 'My Records',
+          pageTitle: AppCopy.text('screens.myRecords.title'),
           currentNavIndex: _currentNavIndex,
           bodyDecoration: const BoxDecoration(
             gradient: LinearGradient(

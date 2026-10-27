@@ -4291,6 +4291,16 @@
   },
   {
     "file": "frontend/lib/features/doctor/doctor_dashboard_page.dart",
+    "line": 302,
+    "key": "text.reports_769d4ae8"
+  },
+  {
+    "file": "frontend/lib/features/doctor/doctor_dashboard_page.dart",
+    "line": 304,
+    "key": "text.profile_cd17328e"
+  },
+  {
+    "file": "frontend/lib/features/doctor/doctor_dashboard_page.dart",
     "line": 307,
     "key": "text.patient_overview_55ab78f9"
   },
@@ -4436,6 +4446,11 @@
   },
   {
     "file": "frontend/lib/features/doctor/pages/doctor_patient_reports_page.dart",
+    "line": 28,
+    "key": "screens.patientReports.title"
+  },
+  {
+    "file": "frontend/lib/features/doctor/pages/doctor_patient_reports_page.dart",
     "line": 51,
     "key": "text.inr_reports_1bb989f7"
   },
@@ -4453,6 +4468,11 @@
     "file": "frontend/lib/features/doctor/pages/doctor_patient_reports_page.dart",
     "line": 116,
     "key": "text.retry_8036af59"
+  },
+  {
+    "file": "frontend/lib/features/doctor/pages/doctor_patient_reports_page.dart",
+    "line": 206,
+    "key": "screens.patientReports.title"
   },
   {
     "file": "frontend/lib/features/doctor/pages/doctor_patient_reports_page.dart",
@@ -5315,6 +5335,16 @@
     "key": "text.my_profile_bbf9687a"
   },
   {
+    "file": "frontend/lib/features/patient/patient_dashboard_shell_page.dart",
+    "line": 409,
+    "key": "text.dashboard_11f6d87b"
+  },
+  {
+    "file": "frontend/lib/features/patient/patient_dosage_calendar_page.dart",
+    "line": 98,
+    "key": "screens.dosageCalendar.title"
+  },
+  {
     "file": "frontend/lib/features/patient/patient_dosage_calendar_page.dart",
     "line": 144,
     "key": "text.load_3_months_c848ec7f"
@@ -5348,6 +5378,11 @@
     "file": "frontend/lib/features/patient/patient_dosage_calendar_page.dart",
     "line": 537,
     "key": "text.status_unknown_2ee27ab1"
+  },
+  {
+    "file": "frontend/lib/features/patient/patient_health_reports_page.dart",
+    "line": 99,
+    "key": "text.health_reports_28813ca0"
   },
   {
     "file": "frontend/lib/features/patient/patient_health_reports_page.dart",
@@ -5461,6 +5496,11 @@
   },
   {
     "file": "frontend/lib/features/patient/patient_page.dart",
+    "line": 564,
+    "key": "text.dashboard_11f6d87b"
+  },
+  {
+    "file": "frontend/lib/features/patient/patient_page.dart",
     "line": 597,
     "key": "text.historical_data_pending_6d3b96c6"
   },
@@ -5473,6 +5513,11 @@
     "file": "frontend/lib/features/patient/patient_page.dart",
     "line": 940,
     "key": "text.dose_mg_d8858ca3"
+  },
+  {
+    "file": "frontend/lib/features/patient/patient_profile_page.dart",
+    "line": 122,
+    "key": "text.my_profile_bbf9687a"
   },
   {
     "file": "frontend/lib/features/patient/patient_profile_page.dart",
@@ -5493,6 +5538,11 @@
     "file": "frontend/lib/features/patient/patient_profile_page.dart",
     "line": 273,
     "key": "text.doctor_update_b984551f"
+  },
+  {
+    "file": "frontend/lib/features/patient/patient_records_page.dart",
+    "line": 91,
+    "key": "screens.myRecords.title"
   },
   {
     "file": "frontend/lib/features/patient/patient_records_page.dart",
@@ -5671,6 +5721,11 @@
   },
   {
     "file": "frontend/lib/features/patient/patient_take_dosage_page.dart",
+    "line": 281,
+    "key": "text.dosage_management_e665ec7f"
+  },
+  {
+    "file": "frontend/lib/features/patient/patient_take_dosage_page.dart",
     "line": 349,
     "key": "text.previous_ead1fb48"
   },
@@ -5733,6 +5788,11 @@
     "file": "frontend/lib/features/patient/patient_update_inr_page.dart",
     "line": 296,
     "key": "text.submit_inr_report_fa005c04"
+  },
+  {
+    "file": "frontend/lib/features/patient/patient_update_inr_page.dart",
+    "line": 329,
+    "key": "text.update_inr_6061f393"
   },
   {
     "file": "frontend/lib/features/patient/patient_update_inr_page.dart",

@@ -561,7 +561,7 @@ class _PatientPageState extends State<PatientPage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'Dashboard',
+      pageTitle: AppCopy.text('text.dashboard_11f6d87b'),
       currentNavIndex: _currentNavIndex,
       onNavChanged: _handleNav,
       bodyDecoration: bodyDecoration,

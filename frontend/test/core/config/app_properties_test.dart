@@ -4,11 +4,71 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/config/app_properties.dart';
 import 'package:frontend/core/config/property_defaults.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('cached ETag revalidates with 304 without losing properties', () async {
+    final client = Dio(BaseOptions(baseUrl: 'https://properties.invalid'));
+    final adapter = _ControlledAdapter((request) async {
+      expect(request.headers['If-None-Match'], '"cached-version"');
+      return ResponseBody.fromString('', 304);
+    });
+    client.httpClientAdapter = adapter;
+    final properties = AppProperties(client: client);
+    SharedPreferences.setMockInitialValues({
+      properties.cacheKey: jsonEncode({
+        'schemaVersion': 1,
+        'revision': 4,
+        'etag': '"cached-version"',
+        'properties': {'branding.appName': 'Cached hospital'},
+      }),
+    });
+    await properties.initialize();
+    await properties.refresh();
+    expect(properties.text('branding.appName'), 'Cached hospital');
+    expect(properties.revision, 4);
+    properties.dispose();
+  });
+
+  test(
+    'forced refresh after publication waits for old fetch then requests new state',
+    () async {
+      final oldResponse = Completer<ResponseBody>();
+      var calls = 0;
+      ResponseBody snapshot(int revision) => ResponseBody.fromString(
+        jsonEncode({
+          'data': {
+            'schemaVersion': 1,
+            'revision': revision,
+            'properties': {'branding.appName': 'Revision $revision'},
+          },
+        }),
+        200,
+        headers: {
+          'content-type': ['application/json'],
+          'etag': ['"$revision"'],
+        },
+      );
+      final client = Dio(BaseOptions(baseUrl: 'https://properties.invalid'));
+      client.httpClientAdapter = _ControlledAdapter((request) async {
+        calls++;
+        if (calls == 1) return oldResponse.future;
+        expect(request.headers['If-None-Match'], '"1"');
+        return snapshot(2);
+      });
+      final properties = AppProperties(client: client);
+      final first = properties.refresh();
+      final forced = properties.refresh(force: true);
+      oldResponse.complete(snapshot(1));
+      await Future.wait([first, forced]);
+      expect(calls, 2);
+      expect(properties.text('branding.appName'), 'Revision 2');
+      properties.dispose();
+    },
+  );
   test(
     'offline startup retains cached properties and failed refresh does not erase them',
     () async {
@@ -195,6 +255,19 @@ class _Adapter implements HttpClientAdapter {
     );
   }
 
+  @override
+  void close({bool force = false}) {}
+}
+
+class _ControlledAdapter implements HttpClientAdapter {
+  _ControlledAdapter(this.respond);
+  final Future<ResponseBody> Function(RequestOptions) respond;
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) => respond(options);
   @override
   void close({bool force = false}) {}
 }

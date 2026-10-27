@@ -278,7 +278,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'Dosage Management',
+      pageTitle: AppCopy.text('text.dosage_management_e665ec7f'),
       currentNavIndex: _currentNavIndex,
       bodyDecoration: bodyDecoration,
       onNavChanged: _handleNav,

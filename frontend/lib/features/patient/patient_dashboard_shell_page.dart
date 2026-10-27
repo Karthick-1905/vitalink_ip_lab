@@ -406,7 +406,7 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
         return AppCopy.text('text.my_profile_bbf9687a');
       case 0:
       default:
-        return 'Dashboard';
+        return AppCopy.text('text.dashboard_11f6d87b');
     }
   }
 

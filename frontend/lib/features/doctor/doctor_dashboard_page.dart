@@ -299,9 +299,9 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
       case 1:
         return AppCopy.text('text.add_patient_243c1f9d');
       case 2:
-        return 'Reports';
+        return AppCopy.text('text.reports_769d4ae8');
       case 3:
-        return 'Profile';
+        return AppCopy.text('text.profile_cd17328e');
       case 0:
       default:
         return AppCopy.text('text.patient_overview_55ab78f9');

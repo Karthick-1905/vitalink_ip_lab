@@ -326,7 +326,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'Update INR',
+      pageTitle: AppCopy.text('text.update_inr_6061f393'),
       currentNavIndex: _currentNavIndex,
       onNavChanged: _handleNav,
       bodyDecoration: bodyDecoration,

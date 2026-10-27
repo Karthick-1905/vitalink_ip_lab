@@ -96,7 +96,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'Health Reports',
+      pageTitle: AppCopy.text('text.health_reports_28813ca0'),
       currentNavIndex: _currentNavIndex,
       bodyDecoration: bodyDecoration,
       onNavChanged: _handleNav,

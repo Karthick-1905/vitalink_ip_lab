@@ -51,6 +51,12 @@ paths:
       summary: Read public published presentation properties
       security: []
       description: Returns schemaVersion 1, a monotonically increasing publication revision, and merged catalogue defaults plus published overrides. Draft/history/actor data is never included. Available during maintenance.
+      parameters:
+        - in: header
+          name: If-None-Match
+          required: false
+          schema: {type: string}
+          description: Previously received ETag. A matching publication returns HTTP 304 with no snapshot body.
       responses:
         '200':
           description: Published snapshot in the standard response envelope.
@@ -114,7 +120,7 @@ paths:
       operationId: mutatePresentationProperties
       tags: [Admin]
       summary: Save draft, publish saved draft or restore a publication
-      description: Global Application Admin only, with platform.system_config.manage. Uses an atomic expectedVersion comparison. Restoring creates a new revision. Latest 20 history entries are retained. Unknown property keys, invalid colors/images and changed template placeholders are rejected.
+      description: Global Application Admin only, with platform.system_config.manage. Uses an atomic expectedVersion comparison. Restoring creates a new revision. Latest 20 history entries are retained. Unknown property keys, invalid colors/images, missing uploaded-image references and changed template placeholders are rejected.
       requestBody:
         required: true
         content:

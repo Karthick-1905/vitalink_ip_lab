@@ -203,3 +203,15 @@ Implemented a public versioned property snapshot, administrator draft/save/publi
 New integration coverage verifies unpublished drafts remain private, public reads do not create state, ETag revalidation, concurrent-edit conflict rejection, atomic publication, rollback to initial defaults, protected management endpoints, service-level role/read-only restrictions, image content addressing and public bytes, image limits, template placeholder integrity, and exact maintenance exemptions. Flutter coverage verifies offline cached startup, background-refresh persistence, absence of auth headers on public requests, invalid/stale snapshot rejection, bundled fallback and form-state preservation across property changes.
 
 Production rollout, real-device offline/resume behavior, external image hosting and end-to-end acceptance on the deployed application remain unverified. Configuration is global; hospital-specific overrides, installed launcher/splash metadata and unreferenced-image cleanup are not implemented.
+
+## Runtime property follow-up, 2026-10-28
+
+Compared the runtime-property behavior with the original plan and corrected missed patient/report headings, conditional ETag refresh with browser CORS support, forced refresh during an existing pre-publication request, and acceptance of nonexistent uploaded-logo references. The catalogue now contains 884 properties. The linked application-properties runbook and implementation follow-up describe remaining scope explicitly.
+
+- Full Dart analysis of frontend/lib and frontend/test passed with no diagnostics. Backend TypeScript build passed.
+- All 168 Flutter tests passed, including new cached-304 and forced-refresh ordering regression tests.
+- All 11 app-properties MongoDB/HTTP integration tests passed against an isolated Docker fixture. New coverage verifies missing uploaded-image rejection and browser access to conditional-request headers.
+- Documentation contract passed with 122 matching operations, 20 matching models and identical OpenAPI copies. Strict MkDocs build passed; OpenAPI lint passed with 106 existing warnings. Mermaid and Structurizr inputs did not change in this follow-up.
+- The optional CodeRabbit review was unavailable: the installer rejected Windows Git Bash, and WSL had no /bin/bash. No CodeRabbit review result is claimed.
+
+These checks do not establish live deployment, hospital-specific overrides, device acceptance, remote typography or locale support.

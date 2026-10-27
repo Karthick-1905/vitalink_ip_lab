@@ -25,7 +25,7 @@ class _DoctorPatientReportsPageState extends State<DoctorPatientReportsPage> {
   Widget build(BuildContext context) {
     AppProperties.watch(context);
     return DoctorScaffold(
-      pageTitle: 'Patient Reports - ${widget.patientName}',
+      pageTitle: AppCopy.text('screens.patientReports.title', arguments: {'patientName': widget.patientName}),
       currentNavIndex: 0,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +203,7 @@ class _DoctorPatientReportsPageAltState
   Widget build(BuildContext context) {
     AppProperties.watch(context);
     return DoctorScaffold(
-      pageTitle: 'Patient Reports - ${widget.patientName}',
+      pageTitle: AppCopy.text('screens.patientReports.title', arguments: {'patientName': widget.patientName}),
       currentNavIndex: 0,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

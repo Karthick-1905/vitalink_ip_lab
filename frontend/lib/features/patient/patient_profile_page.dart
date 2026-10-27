@@ -119,7 +119,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'My Profile',
+      pageTitle: AppCopy.text('text.my_profile_bbf9687a'),
       currentNavIndex: _currentNavIndex,
       onNavChanged: _handleNav,
       bodyDecoration: bodyDecoration,

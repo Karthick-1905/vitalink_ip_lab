@@ -10,6 +10,7 @@ import { getAdminProperties, getPublishedProperties, mutateProperties, validateP
 import { createBrandAsset, validateBrandImage } from '@alias/services/brand-asset.service'
 import { getServerCopy } from '@alias/services/presentation-copy.service'
 import { isControlPlaneRequest } from '@alias/middlewares/systemConfig.middleware'
+import { config } from '@alias/config'
 import { startMongoReplicaSet, type MongoReplicaSetHarness } from './setup/mongo-replica-set'
 
 jest.setTimeout(120_000)
@@ -68,6 +69,24 @@ test('simultaneous editors cannot overwrite each other', async () => {
   expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
   const failure = results.find(result => result.status === 'rejected') as PromiseRejectedResult
   expect(failure.reason.statusCode).toBe(409)
+})
+
+test('unknown uploaded-logo references cannot be saved', async () => {
+  await expect(mutateProperties(admin, { action: 'save', expectedVersion: 0,
+    properties: { 'asset.hospitalLogo': `brand-asset:${'0'.repeat(64)}` },
+  })).rejects.toMatchObject({ statusCode: 400 })
+  expect((await getAdminProperties(admin)).version).toBe(0)
+})
+
+test('browser clients can read ETag and preflight conditional property requests', async () => {
+  const origin = config.corsAllowedOrigins[0] || 'http://localhost:3000'
+  const response = await api.get('/api/v1/app-properties', { headers: { Origin: origin } })
+  expect(response.headers['access-control-expose-headers']).toContain('ETag')
+  const preflight = await api.options('/api/v1/app-properties', { headers: {
+    Origin: origin, 'Access-Control-Request-Method': 'GET', 'Access-Control-Request-Headers': 'if-none-match',
+  } })
+  expect(preflight.status).toBe(204)
+  expect(preflight.headers['access-control-allow-headers']).toContain('If-None-Match')
 })
 
 test('rejects invalid colors, assets, unknown keys and missing template placeholders', () => {

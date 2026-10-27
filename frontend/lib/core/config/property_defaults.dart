@@ -881,4 +881,7 @@ const propertyDefaults = <String, String>{
   "text.needs_attention_65496a3c": "Needs Attention",
   "notification.channelName": "VitaLink updates",
   "notification.push.title": "VitaLink update",
+  "screens.patientReports.title": "Patient Reports - {patientName}",
+  "screens.dosageCalendar.title": "Dosage Calendar",
+  "screens.myRecords.title": "My Records",
 };

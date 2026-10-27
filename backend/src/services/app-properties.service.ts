@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import { ApiError } from '@alias/utils'
 import AppProperties from '@alias/models/appproperties.model'
+import BrandAsset from '@alias/models/brandasset.model'
 import defaults from '@alias/config/app-properties.defaults.json'
 import { requireAdminCapabilityContext, type AdminAccessContext } from '@alias/types/admin-access'
 
@@ -107,6 +108,14 @@ export async function mutateProperties(access: AdminAccessContext, body: any) {
     if (current.published_revision === 0) update.$push.history.$each.unshift({
       revision: 0, properties: {}, published_at: new Date(), published_by: access.userId,
     })
+  }
+  const references = Object.entries(body.action === 'save' ? update.$set.draft : update.$set.published)
+    .filter(([key, value]) => key.startsWith('asset.') && typeof value === 'string' && /^brand-asset:[a-f0-9]{64}$/.test(value))
+    .map(([, value]) => value as string)
+  for (const reference of new Set(references)) {
+    if (!await BrandAsset.exists({ _id: reference.substring(12) })) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'The referenced brand image does not exist. Upload it before saving.')
+    }
   }
   const changed = await AppProperties.findOneAndUpdate(
     { _id: 'global', version: body.expectedVersion }, update, { new: true, runValidators: true },
