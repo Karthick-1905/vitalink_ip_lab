@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -117,8 +118,9 @@ class _AddPatientFormState extends State<AddPatientForm> {
             ? null
             : _historyDiagCtrl.text.trim(),
         'duration_value': double.tryParse(_historyDurationCtrl.text.trim()),
-        'duration_unit':
-            _historyDurationCtrl.text.trim().isEmpty ? null : _historyUnit,
+        'duration_unit': _historyDurationCtrl.text.trim().isEmpty
+            ? null
+            : _historyUnit,
       };
     }
 
@@ -138,8 +140,9 @@ class _AddPatientFormState extends State<AddPatientForm> {
           : _therapyStartCtrl.text.trim(),
       'prescription': dosage(),
       'medical_history': medicalHistory() == null ? null : [medicalHistory()],
-      'kin_name':
-          _kinNameCtrl.text.trim().isEmpty ? null : _kinNameCtrl.text.trim(),
+      'kin_name': _kinNameCtrl.text.trim().isEmpty
+          ? null
+          : _kinNameCtrl.text.trim(),
       'kin_contact_number': PhoneUtils.formatForApi(_kinContactCtrl.text),
     };
 
@@ -159,9 +162,9 @@ class _AddPatientFormState extends State<AddPatientForm> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context)
-                .colorScheme
-                .copyWith(primary: const Color(0xFF6B5FB3)),
+            colorScheme: Theme.of(
+              context,
+            ).colorScheme.copyWith(primary: const Color(0xFF6B5FB3)),
           ),
           child: child ?? const SizedBox.shrink(),
         );
@@ -179,30 +182,38 @@ class _AddPatientFormState extends State<AddPatientForm> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseMutation<Map<String, dynamic>, Map<String, dynamic>>(
       options: MutationOptions<Map<String, dynamic>, Map<String, dynamic>>(
         mutationFn: _repo.addPatient,
         onSuccess: (data, variables) async {
           if (!context.mounted) return;
-          QueryClientProvider.of(context).invalidateQueries(
-            DoctorQueryKeys.patients(),
-          );
+          QueryClientProvider.of(
+            context,
+          ).invalidateQueries(DoctorQueryKeys.patients());
           final temporaryPassword = data['temporary_password'] as String?;
           if (temporaryPassword != null && context.mounted) {
             await showDialog<void>(
               context: context,
               barrierDismissible: false,
               builder: (dialogContext) => AlertDialog(
-                title: const Text('Patient account created'),
+                title: Text(
+                  AppCopy.text('text.patient_account_created_5e5117e9'),
+                ),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Share this one-time password with the patient through an approved secure channel. It will not be shown again.',
+                    Text(
+                      AppCopy.text(
+                        'text.share_this_one_time_password_with_the_patient_th_4e068ba0',
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    const Text('Temporary password', style: TextStyle(fontWeight: FontWeight.w700)),
+                    Text(
+                      AppCopy.text('text.temporary_password_a3435015'),
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     const SizedBox(height: 6),
                     SelectableText(temporaryPassword),
                   ],
@@ -210,7 +221,9 @@ class _AddPatientFormState extends State<AddPatientForm> {
                 actions: [
                   FilledButton(
                     onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: const Text('I have recorded it securely'),
+                    child: Text(
+                      AppCopy.text('text.i_have_recorded_it_securely_493ad4f3'),
+                    ),
                   ),
                 ],
               ),
@@ -221,18 +234,27 @@ class _AddPatientFormState extends State<AddPatientForm> {
         },
         onError: (error, variables) {
           if (!context.mounted) return;
-          final message =
-              error is ApiException ? error.message : error.toString();
+          final message = error is ApiException
+              ? error.message
+              : error.toString();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed: $message')),
+            SnackBar(
+              content: Text(
+                AppCopy.text(
+                  'text.failed_value1_bf6fa26',
+                  arguments: {'value1': (message).toString()},
+                ),
+              ),
+            ),
           );
         },
       ),
       builder: (context, mutation) {
         final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
         return ScrollConfiguration(
-          behavior: const MaterialScrollBehavior()
-              .copyWith(physics: const BouncingScrollPhysics()),
+          behavior: const MaterialScrollBehavior().copyWith(
+            physics: const BouncingScrollPhysics(),
+          ),
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               PortalLayout.pageGutter,
@@ -246,16 +268,18 @@ class _AddPatientFormState extends State<AddPatientForm> {
               children: [
                 const _DoctorGreeting(),
                 ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(PortalLayout.cardRadius + 4),
+                  borderRadius: BorderRadius.circular(
+                    PortalLayout.cardRadius + 4,
+                  ),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.94),
-                        borderRadius:
-                            BorderRadius.circular(PortalLayout.cardRadius + 4),
+                        borderRadius: BorderRadius.circular(
+                          PortalLayout.cardRadius + 4,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.08),
@@ -270,65 +294,95 @@ class _AddPatientFormState extends State<AddPatientForm> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _sectionTitle('Patient Details'),
-                            _buildTextField(_nameCtrl, 'Name',
-                                hint: 'Enter patient name', isRequired: true),
-                            _buildTextField(_opCtrl, 'OP Number',
-                                hint: 'Enter OP number', isRequired: true),
+                            _buildTextField(
+                              _nameCtrl,
+                              'Name',
+                              hint: 'Enter patient name',
+                              isRequired: true,
+                            ),
+                            _buildTextField(
+                              _opCtrl,
+                              'OP Number',
+                              hint: 'Enter OP number',
+                              isRequired: true,
+                            ),
                             Row(
                               children: [
                                 Expanded(
-                                    child: _buildTextField(_ageCtrl, 'Age',
-                                        hint: 'Enter your age',
-                                        keyboard: TextInputType.number,
-                                        numeric: true,
-                                        integerOnly: true,
-                                        min: 1,
-                                        max: 120)),
+                                  child: _buildTextField(
+                                    _ageCtrl,
+                                    'Age',
+                                    hint: 'Enter your age',
+                                    keyboard: TextInputType.number,
+                                    numeric: true,
+                                    integerOnly: true,
+                                    min: 1,
+                                    max: 120,
+                                  ),
+                                ),
                                 PortalLayout.columnSpacer,
                                 Expanded(
-                                    child: _buildDropdown(
-                                        'Gender',
-                                        _gender,
-                                        ['Male', 'Female', 'Other'],
-                                        (v) => setState(() => _gender = v),
-                                        isRequired: true)),
+                                  child: _buildDropdown(
+                                    'Gender',
+                                    _gender,
+                                    ['Male', 'Female', 'Other'],
+                                    (v) => setState(() => _gender = v),
+                                    isRequired: true,
+                                  ),
+                                ),
                               ],
                             ),
                             Row(
                               children: [
                                 Expanded(
-                                    child: _buildTextField(
-                                        _targetMinCtrl, 'Target INR Min',
-                                        hint: 'Min',
-                                        isRequired: true,
-                                        numeric: true,
-                                        min: 0,
-                                        minExclusive: true,
-                                        keyboard: const TextInputType
-                                            .numberWithOptions(decimal: true))),
+                                  child: _buildTextField(
+                                    _targetMinCtrl,
+                                    'Target INR Min',
+                                    hint: 'Min',
+                                    isRequired: true,
+                                    numeric: true,
+                                    min: 0,
+                                    minExclusive: true,
+                                    keyboard:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                  ),
+                                ),
                                 PortalLayout.columnSpacer,
                                 Expanded(
-                                    child: _buildTextField(
-                                        _targetMaxCtrl, 'Target INR Max',
-                                        hint: 'Max',
-                                        isRequired: true,
-                                        numeric: true,
-                                        min: 0,
-                                        minExclusive: true,
-                                        greaterThan: _targetMinCtrl,
-                                        keyboard: const TextInputType
-                                            .numberWithOptions(decimal: true))),
+                                  child: _buildTextField(
+                                    _targetMaxCtrl,
+                                    'Target INR Max',
+                                    hint: 'Max',
+                                    isRequired: true,
+                                    numeric: true,
+                                    min: 0,
+                                    minExclusive: true,
+                                    greaterThan: _targetMinCtrl,
+                                    keyboard:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                  ),
+                                ),
                               ],
                             ),
-                            _buildDropdown('Therapy', _therapy, _therapyOptions,
-                                (v) => setState(() => _therapy = v),
-                                isRequired: true),
+                            _buildDropdown(
+                              'Therapy',
+                              _therapy,
+                              _therapyOptions,
+                              (v) => setState(() => _therapy = v),
+                              isRequired: true,
+                            ),
                             PortalLayout.fieldSpacer,
                             _medicalHistoryCard(),
                             PortalLayout.sectionSpacerTight,
                             _buildDateField(
                               controller: _therapyStartCtrl,
-                              label: 'Therapy Start Date',
+                              label: AppCopy.text(
+                                'text.therapy_start_date_120b2732',
+                              ),
                               hint: 'dd-mm-yyyy',
                               isRequired: true,
                               onTap: _pickTherapyDate,
@@ -337,26 +391,38 @@ class _AddPatientFormState extends State<AddPatientForm> {
                             _sectionTitle('Prescription *'),
                             _dosageList(),
                             PortalLayout.sectionSpacerTight,
-                            _buildTextField(_contactCtrl, 'Contact',
-                                hint: '10-digit Indian number (+91 automatic)',
-                                isRequired: true,
-                                keyboard: TextInputType.phone,
-                                validator: (value) => PhoneUtils.validate(
-                                      value,
-                                      label: 'Contact',
-                                      required: true,
-                                    )),
-                            _buildTextField(_kinNameCtrl, 'Kin Name',
-                                hint: 'Enter Kin name', isRequired: true),
-                            _buildTextField(_kinContactCtrl, 'Kin Contact',
-                                hint: '10-digit Indian number',
-                                isRequired: true,
-                                keyboard: TextInputType.phone,
-                                validator: (value) => PhoneUtils.validate(
-                                      value,
-                                      label: 'Kin Contact',
-                                      required: true,
-                                    )),
+                            _buildTextField(
+                              _contactCtrl,
+                              'Contact',
+                              hint: '10-digit Indian number (+91 automatic)',
+                              isRequired: true,
+                              keyboard: TextInputType.phone,
+                              validator: (value) => PhoneUtils.validate(
+                                value,
+                                label: AppCopy.text('text.contact_73ac94c3'),
+                                required: true,
+                              ),
+                            ),
+                            _buildTextField(
+                              _kinNameCtrl,
+                              'Kin Name',
+                              hint: 'Enter Kin name',
+                              isRequired: true,
+                            ),
+                            _buildTextField(
+                              _kinContactCtrl,
+                              'Kin Contact',
+                              hint: '10-digit Indian number',
+                              isRequired: true,
+                              keyboard: TextInputType.phone,
+                              validator: (value) => PhoneUtils.validate(
+                                value,
+                                label: AppCopy.text(
+                                  'text.kin_contact_996558b9',
+                                ),
+                                required: true,
+                              ),
+                            ),
                             PortalLayout.itemSpacer,
                             SizedBox(
                               width: double.infinity,
@@ -374,7 +440,9 @@ class _AddPatientFormState extends State<AddPatientForm> {
                                   foregroundColor: Colors.black,
                                   elevation: 0,
                                   side: const BorderSide(
-                                      color: Colors.black87, width: 1),
+                                    color: Colors.black87,
+                                    width: 1,
+                                  ),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: PortalLayout.cardPadding,
                                   ),
@@ -389,8 +457,14 @@ class _AddPatientFormState extends State<AddPatientForm> {
                                         height: 20,
                                         width: 20,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2))
-                                    : const Text('Add Patient'),
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        AppCopy.text(
+                                          'text.add_patient_243c1f9d',
+                                        ),
+                                      ),
                               ),
                             ),
                           ],
@@ -408,16 +482,19 @@ class _AddPatientFormState extends State<AddPatientForm> {
   }
 
   Widget _sectionTitle(String text) => Padding(
-        padding: const EdgeInsets.only(
-          bottom: AppSpacing.xs,
-          top: PortalLayout.itemGap,
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
-        ),
-      );
+    padding: const EdgeInsets.only(
+      bottom: AppSpacing.xs,
+      top: PortalLayout.itemGap,
+    ),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Colors.black87,
+      ),
+    ),
+  );
 
   Widget _medicalHistoryCard() {
     return Container(
@@ -438,45 +515,64 @@ class _AddPatientFormState extends State<AddPatientForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Medical History',
+          Text(
+            AppCopy.text('text.medical_history_880a54f4'),
             style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
           ),
           const SizedBox(height: 10),
-          _buildTextField(_historyDiagCtrl, 'Diagnosis',
-              hint: 'Enter diagnosis'),
+          _buildTextField(
+            _historyDiagCtrl,
+            'Diagnosis',
+            hint: 'Enter diagnosis',
+          ),
           Row(
             children: [
               Expanded(
-                  child: _buildTextField(_historyDurationCtrl, 'Duration',
-                      hint: 'Duration',
-                      keyboard: TextInputType.number,
-                      numeric: true,
-                      min: 0,
-                      minExclusive: true)),
+                child: _buildTextField(
+                  _historyDurationCtrl,
+                  'Duration',
+                  hint: 'Duration',
+                  keyboard: TextInputType.number,
+                  numeric: true,
+                  min: 0,
+                  minExclusive: true,
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
-                  child: _buildDropdown('Unit', _historyUnit, _durationUnits,
-                      (v) => setState(() => _historyUnit = v))),
+                child: _buildDropdown(
+                  'Unit',
+                  _historyUnit,
+                  _durationUnits,
+                  (v) => setState(() => _historyUnit = v),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: null, // TODO: support adding multiple medical history entries
+              onPressed:
+                  null, // TODO: support adding multiple medical history entries
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 side: const BorderSide(color: Colors.black87, width: 1),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: const Text('+ Add Medical History',
-                  style: TextStyle(
-                      color: Colors.black87, fontWeight: FontWeight.w600)),
+              child: Text(
+                AppCopy.text('text.add_medical_history_4e7a88da'),
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
@@ -507,7 +603,10 @@ class _AddPatientFormState extends State<AddPatientForm> {
         Text(
           isRequired ? '$label *' : label,
           style: const TextStyle(
-              fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -518,31 +617,61 @@ class _AddPatientFormState extends State<AddPatientForm> {
           validator: (value) {
             if (validator != null) return validator(value);
             if (isRequired && (value == null || value.trim().isEmpty)) {
-              return '$label is required';
+              return AppCopy.text(
+                'text.value1_is_required_cffdebb0',
+                arguments: {'value1': (label).toString()},
+              );
             }
             final text = value?.trim() ?? '';
             if (numeric && text.isNotEmpty) {
               final parsed = double.tryParse(text);
               if (parsed == null || !parsed.isFinite) {
-                return '$label must be a valid number';
+                return AppCopy.text(
+                  'text.value1_must_be_a_valid_number_1467724b',
+                  arguments: {'value1': (label).toString()},
+                );
               }
               if (integerOnly && parsed != parsed.truncateToDouble()) {
-                return '$label must be a whole number';
+                return AppCopy.text(
+                  'text.value1_must_be_a_whole_number_eaa79d14',
+                  arguments: {'value1': (label).toString()},
+                );
               }
               if (min != null &&
                   (minExclusive ? parsed <= min : parsed < min)) {
                 return minExclusive
-                    ? '$label must be greater than $min'
-                    : '$label must be at least $min';
+                    ? AppCopy.text(
+                        'text.value1_must_be_greater_than_value2_38ff926b',
+                        arguments: {
+                          'value1': (label).toString(),
+                          'value2': (min).toString(),
+                        },
+                      )
+                    : AppCopy.text(
+                        'text.value1_must_be_at_least_value2_4ac0fdf0',
+                        arguments: {
+                          'value1': (label).toString(),
+                          'value2': (min).toString(),
+                        },
+                      );
               }
               if (max != null && parsed > max) {
-                return '$label must not exceed $max';
+                return AppCopy.text(
+                  'text.value1_must_not_exceed_value2_10907cc',
+                  arguments: {
+                    'value1': (label).toString(),
+                    'value2': (max).toString(),
+                  },
+                );
               }
               final comparison = greaterThan == null
                   ? null
                   : double.tryParse(greaterThan.text.trim());
               if (comparison != null && parsed <= comparison) {
-                return '$label must be greater than Target INR Min';
+                return AppCopy.text(
+                  'text.value1_must_be_greater_than_target_inr_min_e9ad43ae',
+                  arguments: {'value1': (label).toString()},
+                );
               }
             }
             return null;
@@ -556,8 +685,10 @@ class _AddPatientFormState extends State<AddPatientForm> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
         ),
       ],
@@ -577,7 +708,10 @@ class _AddPatientFormState extends State<AddPatientForm> {
         Text(
           isRequired ? '$label *' : label,
           style: const TextStyle(
-              fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -586,14 +720,19 @@ class _AddPatientFormState extends State<AddPatientForm> {
           onTap: onTap,
           validator: (value) {
             if (isRequired && (value == null || value.trim().isEmpty)) {
-              return '$label is required';
+              return AppCopy.text(
+                'text.value1_is_required_cffdebb0',
+                arguments: {'value1': (label).toString()},
+              );
             }
             return null;
           },
           decoration: InputDecoration(
             hintText: hint,
-            suffixIcon:
-                const Icon(Icons.calendar_today, color: Color(0xFF6B7280)),
+            suffixIcon: const Icon(
+              Icons.calendar_today,
+              color: Color(0xFF6B7280),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -606,8 +745,10 @@ class _AddPatientFormState extends State<AddPatientForm> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF6B5FB3)),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
         ),
       ],
@@ -627,23 +768,32 @@ class _AddPatientFormState extends State<AddPatientForm> {
         Text(
           isRequired ? '$label *' : label,
           style: const TextStyle(
-              fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           initialValue: value,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down,
-              color: Colors.grey[700], size: 24),
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            color: Colors.grey[700],
+            size: 24,
+          ),
           validator: (selectedValue) {
             if (isRequired &&
                 (selectedValue == null || selectedValue.trim().isEmpty)) {
-              return '$label is required';
+              return AppCopy.text(
+                'text.value1_is_required_cffdebb0',
+                arguments: {'value1': (label).toString()},
+              );
             }
             return null;
           },
           decoration: InputDecoration(
-            hintText: 'Select',
+            hintText: AppCopy.text('text.select_3e892b4d'),
             hintStyle: TextStyle(
               color: Colors.grey[600],
               fontSize: 14,
@@ -663,21 +813,25 @@ class _AddPatientFormState extends State<AddPatientForm> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF6B5FB3)),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
           items: items
-              .map((e) => DropdownMenuItem<String>(
-                    value: e,
-                    child: Text(
-                      e,
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+              .map(
+                (e) => DropdownMenuItem<String>(
+                  value: e,
+                  child: Text(
+                    e,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ))
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (v) {
             if (v != null) onChanged(v);
@@ -717,8 +871,10 @@ class _AddPatientFormState extends State<AddPatientForm> {
           const SizedBox(width: 10),
           SizedBox(
             width: 48,
-            child:
-                Text(day, style: const TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(
+              day,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
           const Spacer(),
           SizedBox(
@@ -726,21 +882,35 @@ class _AddPatientFormState extends State<AddPatientForm> {
             child: TextFormField(
               controller: ctrl,
               enabled: enabled,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               validator: (value) {
                 if (!enabled) return null;
                 final text = value?.trim() ?? '';
-                if (text.isEmpty) return '$day dose is required';
+                if (text.isEmpty) {
+                  return AppCopy.text(
+                    'text.value1_dose_is_required_6246576b',
+                    arguments: {'value1': (day).toString()},
+                  );
+                }
                 final dose = double.tryParse(text);
                 if (dose == null || !dose.isFinite) {
-                  return '$day dose must be numeric';
+                  return AppCopy.text(
+                    'text.value1_dose_must_be_numeric_b8a39b73',
+                    arguments: {'value1': (day).toString()},
+                  );
                 }
-                if (dose <= 0) return '$day dose must be greater than 0';
+                if (dose <= 0) {
+                  return AppCopy.text(
+                    'text.value1_dose_must_be_greater_than_0_230574d9',
+                    arguments: {'value1': (day).toString()},
+                  );
+                }
                 return null;
               },
               decoration: InputDecoration(
-                hintText: 'mg',
+                hintText: AppCopy.text('text.mg_6a2e2dcd'),
                 suffixText: 'mg',
                 filled: true,
                 fillColor: Colors.white,
@@ -748,8 +918,10 @@ class _AddPatientFormState extends State<AddPatientForm> {
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
               ),
             ),
           ),
@@ -759,12 +931,12 @@ class _AddPatientFormState extends State<AddPatientForm> {
   }
 
   List<String> get _therapyOptions => const [
-        'Warfarin',
-        'Heparin',
-        'Dabigatran',
-        'Rivaroxaban',
-        'Acitrom',
-      ];
+    'Warfarin',
+    'Heparin',
+    'Dabigatran',
+    'Rivaroxaban',
+    'Acitrom',
+  ];
 
   List<String> get _durationUnits => const ['Days', 'Weeks', 'Months', 'Years'];
 }
@@ -774,6 +946,7 @@ class AddPatientPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -783,9 +956,7 @@ class AddPatientPage extends StatelessWidget {
             colors: [Color(0xFFC8B5E1), Color(0xFFF8C7D7)],
           ),
         ),
-        child: SafeArea(
-          child: const AddPatientForm(),
-        ),
+        child: SafeArea(child: const AddPatientForm()),
       ),
     );
   }
@@ -796,6 +967,7 @@ class _DoctorGreeting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<DoctorProfileModel>(
       options: QueryOptions<DoctorProfileModel>(
         queryKey: DoctorQueryKeys.profile(),
@@ -810,7 +982,10 @@ class _DoctorGreeting extends StatelessWidget {
         }
 
         return Text(
-          'Welcome, $doctorName',
+          AppCopy.text(
+            'text.welcome_value1_3fdf1edb',
+            arguments: {'value1': (doctorName).toString()},
+          ),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -841,6 +1016,7 @@ class _FancyToggleState extends State<_FancyToggle> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final isOn = widget.value;
     final trackColor = isOn ? _trackOn : _trackOff;
     final thumbColor = isOn ? _thumbOn : _thumbOff;

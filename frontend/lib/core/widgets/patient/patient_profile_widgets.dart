@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -17,6 +18,7 @@ class PatientProfileContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         // The page already removes 40 logical pixels for horizontal padding.
@@ -58,7 +60,7 @@ class PatientProfileContent extends StatelessWidget {
                 children: [
                   PatientInfoSmallCard(
                     icon: Icons.calendar_today,
-                    label: 'Age',
+                    label: AppCopy.text('text.age_8ecbe13c'),
                     value: '${profile['age'] ?? 'N/A'} yrs',
                     color: const Color(0xFFFF7643),
                   ),
@@ -67,7 +69,7 @@ class PatientProfileContent extends StatelessWidget {
                     icon: profile['gender'] == 'Female'
                         ? Icons.female
                         : Icons.male,
-                    label: 'Gender',
+                    label: AppCopy.text('text.gender_a72c0ba0'),
                     value: profile['gender'] ?? 'N/A',
                     color: const Color(0xFF10B981),
                   ),
@@ -79,7 +81,7 @@ class PatientProfileContent extends StatelessWidget {
                   Expanded(
                     child: PatientInfoSmallCard(
                       icon: Icons.calendar_today,
-                      label: 'Age',
+                      label: AppCopy.text('text.age_8ecbe13c'),
                       value: '${profile['age'] ?? 'N/A'} yrs',
                       color: const Color(0xFFFF7643),
                     ),
@@ -90,7 +92,7 @@ class PatientProfileContent extends StatelessWidget {
                       icon: profile['gender'] == 'Female'
                           ? Icons.female
                           : Icons.male,
-                      label: 'Gender',
+                      label: AppCopy.text('text.gender_a72c0ba0'),
                       value: profile['gender'] ?? 'N/A',
                       color: const Color(0xFF10B981),
                     ),
@@ -101,7 +103,7 @@ class PatientProfileContent extends StatelessWidget {
 
             PatientInfoCard(
               icon: Icons.medical_services,
-              label: 'Therapy Drug',
+              label: AppCopy.text('text.therapy_drug_5d5334d0'),
               value: profile['therapyDrug'] ?? 'Warfarin',
               color: const Color(0xFF8B5CF6),
             ),
@@ -110,7 +112,7 @@ class PatientProfileContent extends StatelessWidget {
             if (profile['doctorName'] != null) ...[
               PatientInfoCard(
                 icon: Icons.person,
-                label: 'Assigned Doctor',
+                label: AppCopy.text('text.assigned_doctor_2c77d0e4'),
                 value: profile['doctorName']!,
                 color: const Color(0xFF3B82F6),
               ),
@@ -166,11 +168,12 @@ class PatientProfileContent extends StatelessWidget {
 
   Widget _buildHeaderDetails({bool isCentered = false}) {
     return Column(
-      crossAxisAlignment:
-          isCentered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: isCentered
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         Text(
-          profile['name'] ?? 'Patient Name',
+          profile['name'] ?? AppCopy.text('text.patient_name_1d86ace1'),
           textAlign: isCentered ? TextAlign.center : TextAlign.start,
           style: const TextStyle(
             fontSize: 22,
@@ -188,7 +191,10 @@ class PatientProfileContent extends StatelessWidget {
               border: Border.all(color: const Color(0xFFC7D2FE), width: 1),
             ),
             child: Text(
-              'OP #${profile['opNumber']}',
+              AppCopy.text(
+                'text.op_value1_38c57f2b',
+                arguments: {'value1': (profile['opNumber']).toString()},
+              ),
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -207,7 +213,12 @@ class PatientProfileContent extends StatelessWidget {
             border: Border.all(color: const Color(0xFF6366F1), width: 1.5),
           ),
           child: Text(
-            'Target INR: ${profile['targetINR'] ?? '2.0 - 3.0'}',
+            AppCopy.text(
+              'text.target_inr_value1_8126a029',
+              arguments: {
+                'value1': (profile['targetINR'] ?? '2.0 - 3.0').toString(),
+              },
+            ),
             textAlign: isCentered ? TextAlign.center : TextAlign.start,
             style: const TextStyle(
               fontSize: 13,
@@ -228,6 +239,7 @@ class PatientAvatarPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final parts = name.trim().split(' ').where((e) => e.isNotEmpty).toList();
     String initials;
     if (parts.isEmpty) {
@@ -266,6 +278,7 @@ class PatientInfoSmallCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -324,6 +337,7 @@ class PatientInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -386,6 +400,7 @@ class PatientProfileDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -402,8 +417,8 @@ class PatientProfileDetails extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Personal Details',
+          Text(
+            AppCopy.text('text.personal_details_1687a8ff'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -411,25 +426,28 @@ class PatientProfileDetails extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          PatientDetailRow(label: 'Phone', value: profile['phone'] ?? 'N/A'),
+          PatientDetailRow(
+            label: AppCopy.text('text.phone_4930944f'),
+            value: profile['phone'] ?? 'N/A',
+          ),
           const SizedBox(height: 12),
           PatientDetailRow(
-            label: 'Caregiver',
+            label: AppCopy.text('text.caregiver_ae2c28ad'),
             value: profile['caregiver'] ?? 'N/A',
           ),
           const SizedBox(height: 12),
           PatientDetailRow(
-            label: 'Kin Name',
+            label: AppCopy.text('text.kin_name_6cf8bbcc'),
             value: profile['kinName'] ?? 'N/A',
           ),
           const SizedBox(height: 12),
           PatientDetailRow(
-            label: 'Kin Phone',
+            label: AppCopy.text('text.kin_phone_9521f96d'),
             value: profile['kinPhone'] ?? 'N/A',
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Therapy Details',
+          Text(
+            AppCopy.text('text.therapy_details_488741e8'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -438,12 +456,12 @@ class PatientProfileDetails extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           PatientDetailRow(
-            label: 'Start Date',
+            label: AppCopy.text('text.start_date_1a637601'),
             value: profile['therapyStartDate'] ?? 'N/A',
           ),
           const SizedBox(height: 12),
           PatientDetailRow(
-            label: 'Next Review',
+            label: AppCopy.text('text.next_review_fbb4bd7c'),
             value: profile['nextReviewDate'] ?? 'N/A',
           ),
         ],
@@ -460,6 +478,7 @@ class PatientDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 340;
@@ -528,6 +547,7 @@ class PatientActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -547,7 +567,7 @@ class PatientActionButtons extends StatelessWidget {
             );
           },
           icon: const Icon(Icons.edit, size: 20),
-          label: const Text('Update Profile'),
+          label: Text(AppCopy.text('text.update_profile_d44bd129')),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF6366F1),
             foregroundColor: Colors.white,
@@ -561,13 +581,12 @@ class PatientActionButtons extends StatelessWidget {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () {
-            Navigator.of(context).pushNamed(
-              AppRoutes.changePassword,
-              arguments: false,
-            );
+            Navigator.of(
+              context,
+            ).pushNamed(AppRoutes.changePassword, arguments: false);
           },
           icon: const Icon(Icons.lock_outline, size: 20),
-          label: const Text('Change password'),
+          label: Text(AppCopy.text('text.change_password_87f6bf6e')),
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFF4338CA),
             side: const BorderSide(color: Color(0xFFC7D2FE), width: 1.5),
@@ -581,7 +600,7 @@ class PatientActionButtons extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: () => _showLogoutConfirmation(context),
           icon: const Icon(Icons.logout, size: 20),
-          label: const Text('Logout'),
+          label: Text(AppCopy.text('text.logout_877a6a0b')),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.red,
             side: const BorderSide(color: Colors.red, width: 1.5),
@@ -674,7 +693,8 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
     final therapyStart = _displayOrEmpty(widget.profile['therapyStartDate']);
     _therapyStartController = TextEditingController(text: therapyStart);
     final gender = widget.profile['gender']?.toString();
-    _selectedGender = (gender == 'Male' || gender == 'Female' || gender == 'Other')
+    _selectedGender =
+        (gender == 'Male' || gender == 'Female' || gender == 'Other')
         ? gender
         : null;
   }
@@ -743,8 +763,10 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully'),
+          SnackBar(
+            content: Text(
+              AppCopy.text('text.profile_updated_successfully_d53e34c6'),
+            ),
             backgroundColor: Color(0xFF10B981),
           ),
         );
@@ -763,6 +785,7 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -799,8 +822,8 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Update Profile',
+                    Text(
+                      AppCopy.text('text.update_profile_d44bd129'),
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -808,8 +831,10 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Keep your medical and contact information current',
+                    Text(
+                      AppCopy.text(
+                        'text.keep_your_medical_and_contact_information_curren_92976146',
+                      ),
                       style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                     ),
                     const SizedBox(height: 24),
@@ -834,7 +859,7 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                     _buildSectionTitle('Demographics'),
                     _buildTextField(
                       controller: _nameController,
-                      label: 'Name',
+                      label: AppCopy.text('text.name_fe07306'),
                       icon: Icons.person_outline,
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
@@ -848,13 +873,13 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                                 children: [
                                   _buildTextField(
                                     controller: _ageController,
-                                    label: 'Age',
+                                    label: AppCopy.text('text.age_8ecbe13c'),
                                     icon: Icons.calendar_today_outlined,
                                     keyboardType: TextInputType.number,
                                   ),
                                   const SizedBox(height: 16),
                                   _buildDropdownField(
-                                    label: 'Gender',
+                                    label: AppCopy.text('text.gender_a72c0ba0'),
                                     value: _selectedGender,
                                     items: ['Male', 'Female', 'Other'],
                                     onChanged: (v) =>
@@ -867,7 +892,7 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                                   Expanded(
                                     child: _buildTextField(
                                       controller: _ageController,
-                                      label: 'Age',
+                                      label: AppCopy.text('text.age_8ecbe13c'),
                                       icon: Icons.calendar_today_outlined,
                                       keyboardType: TextInputType.number,
                                     ),
@@ -875,7 +900,9 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: _buildDropdownField(
-                                      label: 'Gender',
+                                      label: AppCopy.text(
+                                        'text.gender_a72c0ba0',
+                                      ),
                                       value: _selectedGender,
                                       items: ['Male', 'Female', 'Other'],
                                       onChanged: (v) =>
@@ -889,43 +916,56 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _phoneController,
-                      label: 'Phone Number',
+                      label: AppCopy.text('text.phone_number_f25088d8'),
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
-                      helperText: '+91 is added automatically',
-                      validator: (v) => PhoneUtils.validate(v, label: 'Phone'),
+                      helperText: AppCopy.text(
+                        'text.91_is_added_automatically_10a7eeeb',
+                      ),
+                      validator: (v) => PhoneUtils.validate(
+                        v,
+                        label: AppCopy.text('text.phone_4930944f'),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     _buildSectionTitle('Caregiver & Kin'),
                     _buildTextField(
                       controller: _caregiverController,
-                      label: 'Caregiver Name',
+                      label: AppCopy.text('text.caregiver_name_e148e694'),
                       icon: Icons.handshake_outlined,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _kinNameController,
-                      label: 'Next of Kin Name',
+                      label: AppCopy.text('text.next_of_kin_name_eedb63ce'),
                       icon: Icons.family_restroom_outlined,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _kinPhoneController,
-                      label: 'Kin Phone Number',
+                      label: AppCopy.text('text.kin_phone_number_7fc307d6'),
                       icon: Icons.contact_phone_outlined,
                       keyboardType: TextInputType.phone,
-                      helperText: 'Use a 10-digit Indian number',
-                      validator: (v) =>
-                          PhoneUtils.validate(v, label: 'Kin Phone'),
+                      helperText: AppCopy.text(
+                        'text.use_a_10_digit_indian_number_a56679a4',
+                      ),
+                      validator: (v) => PhoneUtils.validate(
+                        v,
+                        label: AppCopy.text('text.kin_phone_9521f96d'),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     _buildSectionTitle('Therapy Configuration'),
                     _buildTextField(
                       controller: _therapyStartController,
-                      label: 'Start Date (DD-MM-YYYY)',
+                      label: AppCopy.text(
+                        'text.start_date_dd_mm_yyyy_60ab8a88',
+                      ),
                       icon: Icons.date_range_outlined,
                       readOnly: true,
-                      helperText: 'Managed by your doctor — not editable here',
+                      helperText: AppCopy.text(
+                        'text.managed_by_your_doctor_not_editable_here_10f176b0',
+                      ),
                       suffixIcon: const Icon(
                         Icons.lock_outline,
                         color: Color(0xFF9CA3AF),
@@ -962,7 +1002,11 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                                               color: Colors.white,
                                             ),
                                           )
-                                        : const Text('Save Changes'),
+                                        : Text(
+                                            AppCopy.text(
+                                              'text.save_changes_174a0119',
+                                            ),
+                                          ),
                                   ),
                                   const SizedBox(height: 12),
                                   OutlinedButton(
@@ -978,7 +1022,9 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    child: const Text('Cancel'),
+                                    child: Text(
+                                      AppCopy.text('text.cancel_35afca3b'),
+                                    ),
                                   ),
                                 ],
                               )
@@ -1002,15 +1048,18 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                                           ),
                                         ),
                                       ),
-                                      child: const Text('Cancel'),
+                                      child: Text(
+                                        AppCopy.text('text.cancel_35afca3b'),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     flex: 2,
                                     child: ElevatedButton(
-                                      onPressed:
-                                          _isLoading ? null : _saveProfile,
+                                      onPressed: _isLoading
+                                          ? null
+                                          : _saveProfile,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color(
                                           0xFF6366F1,
@@ -1034,7 +1083,11 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
                                                 color: Colors.white,
                                               ),
                                             )
-                                          : const Text('Save Changes'),
+                                          : Text(
+                                              AppCopy.text(
+                                                'text.save_changes_174a0119',
+                                              ),
+                                            ),
                                     ),
                                   ),
                                 ],
@@ -1118,8 +1171,9 @@ class _PatientEditProfileModalState extends State<PatientEditProfileModal> {
   }) {
     return DropdownButtonFormField<String>(
       initialValue: value,
-      items:
-          items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+      items: items
+          .map((i) => DropdownMenuItem(value: i, child: Text(i)))
+          .toList(),
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,

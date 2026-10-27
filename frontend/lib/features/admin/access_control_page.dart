@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/network/api_client.dart';
@@ -83,7 +84,9 @@ class _AccessControlPageState extends State<AccessControlPage> {
             content: Text(
               error is ApiException
                   ? error.message
-                  : 'Could not refresh access policies.',
+                  : AppCopy.text(
+                      'text.could_not_refresh_access_policies_e263575a',
+                    ),
             ),
           ),
         );
@@ -95,12 +98,14 @@ class _AccessControlPageState extends State<AccessControlPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       anyCapabilities: const [AdminCapabilities.platformRolePolicyRead],
       roles: const {AdminRole.appAdmin},
       scope: AdminScope.global,
-      deniedMessage:
-          'Access policies are only available to System Administrators. Hospital Admins cannot view or change global role policy.',
+      deniedMessage: AppCopy.text(
+        'text.access_policies_are_only_available_to_system_adm_6066b938',
+      ),
       builder: (context) {
         if (!_hasLoaded && !_isLoading) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _load());
@@ -128,12 +133,12 @@ class _AccessControlPageState extends State<AccessControlPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Could not load access policies.'),
+            Text(AppCopy.text('text.could_not_load_access_policies_6f70d185')),
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(AppCopy.text('text.try_again_213e90fa')),
             ),
           ],
         ),
@@ -151,8 +156,10 @@ class _AccessControlPageState extends State<AccessControlPage> {
           ..sort((a, b) => a.role.index.compareTo(b.role.index));
 
     if (manageablePolicies.isEmpty) {
-      return const Center(
-        child: Text('No configurable administrator roles found.'),
+      return Center(
+        child: Text(
+          AppCopy.text('text.no_configurable_administrator_roles_found_c322bf'),
+        ),
       );
     }
 
@@ -172,16 +179,16 @@ class _AccessControlPageState extends State<AccessControlPage> {
           if (manageablePolicies.length > 1) ...[
             Center(
               child: SegmentedButton<AdminRole>(
-                segments: const [
+                segments: [
                   ButtonSegment<AdminRole>(
                     value: AdminRole.hospitalAdmin,
                     icon: Icon(Icons.local_hospital_outlined),
-                    label: Text('Hospital Admin'),
+                    label: Text(AppCopy.text('text.hospital_admin_72ccad88')),
                   ),
                   ButtonSegment<AdminRole>(
                     value: AdminRole.auditor,
                     icon: Icon(Icons.visibility_outlined),
-                    label: Text('System Auditor'),
+                    label: Text(AppCopy.text('text.system_auditor_e77b9212')),
                   ),
                 ],
                 selected: {activeRole},
@@ -241,9 +248,12 @@ class _AccessControlPageState extends State<AccessControlPage> {
       );
       if (!mounted) return;
       final reason = await _showPreviewDialog(
-        title: 'Review ${policy.label} changes',
+        title: AppCopy.text(
+          'text.review_value1_changes_495b5b12',
+          arguments: {'value1': (policy.label).toString()},
+        ),
         preview: preview,
-        confirmLabel: 'Apply policy',
+        confirmLabel: AppCopy.text('text.apply_policy_b9bc679b'),
       );
       if (reason == null || !mounted) return;
       final stepUp = await requestAdminStepUp(
@@ -271,7 +281,11 @@ class _AccessControlPageState extends State<AccessControlPage> {
         await _load(preserveDrafts: true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Access policy updated.')),
+            SnackBar(
+              content: Text(
+                AppCopy.text('text.access_policy_updated_16d765d6'),
+              ),
+            ),
           );
         }
       } catch (error) {
@@ -307,10 +321,15 @@ class _AccessControlPageState extends State<AccessControlPage> {
       );
       if (!mounted) return;
       final reason = await _showPreviewDialog(
-        title:
-            'Restore ${policy.label} to version ${revision.newPolicyVersion}?',
+        title: AppCopy.text(
+          'text.restore_value1_to_version_value2_213b2944',
+          arguments: {
+            'value1': (policy.label).toString(),
+            'value2': (revision.newPolicyVersion).toString(),
+          },
+        ),
         preview: preview,
-        confirmLabel: 'Restore as new version',
+        confirmLabel: AppCopy.text('text.restore_as_new_version_4ff39605'),
       );
       if (reason == null || !mounted) return;
       final stepUp = await requestAdminStepUp(
@@ -334,8 +353,12 @@ class _AccessControlPageState extends State<AccessControlPage> {
         await _load(preserveDrafts: true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Policy restored as a new policy version.'),
+            SnackBar(
+              content: Text(
+                AppCopy.text(
+                  'text.policy_restored_as_a_new_policy_version_54cc29d4',
+                ),
+              ),
             ),
           );
         }
@@ -380,17 +403,22 @@ class _AccessControlPageState extends State<AccessControlPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${preview.affectedActiveAccounts} active administrator account(s) will use this policy.',
+                    AppCopy.text(
+                      'text.value1_active_administrator_account_s_will_use_t_3b0fe988',
+                      arguments: {
+                        'value1': (preview.affectedActiveAccounts).toString(),
+                      },
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _PreviewChanges(
-                    label: 'Added',
+                    label: AppCopy.text('text.added_b35c3185'),
                     capabilities: preview.added,
                     icon: Icons.add_circle_outline,
                   ),
                   const SizedBox(height: 12),
                   _PreviewChanges(
-                    label: 'Removed',
+                    label: AppCopy.text('text.removed_70a26e7b'),
                     capabilities: preview.removed,
                     icon: Icons.remove_circle_outline,
                   ),
@@ -413,10 +441,13 @@ class _AccessControlPageState extends State<AccessControlPage> {
                   TextFormField(
                     key: const Key('policy-change-reason'),
                     controller: reasonController,
-                    decoration: const InputDecoration(
-                      labelText: 'Reason for this change',
-                      helperText:
-                          'The reason is stored in permanent policy history.',
+                    decoration: InputDecoration(
+                      labelText: AppCopy.text(
+                        'text.reason_for_this_change_58d3beea',
+                      ),
+                      helperText: AppCopy.text(
+                        'text.the_reason_is_stored_in_permanent_policy_history_fbe1e728',
+                      ),
                     ),
                     minLines: 2,
                     maxLines: 4,
@@ -434,7 +465,7 @@ class _AccessControlPageState extends State<AccessControlPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             key: const Key('confirm-policy-change'),
@@ -527,6 +558,7 @@ class _PolicyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final values = draft ?? policy.capabilities;
     final hasDraft = draft != null && !_mapsEqual(draft!, policy.capabilities);
@@ -573,7 +605,14 @@ class _PolicyCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Chip(label: Text('Version ${policy.policyVersion}')),
+                Chip(
+                  label: Text(
+                    AppCopy.text(
+                      'text.version_value1_d9b2c281',
+                      arguments: {'value1': (policy.policyVersion).toString()},
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -581,14 +620,33 @@ class _PolicyCard extends StatelessWidget {
               spacing: 12,
               runSpacing: 8,
               children: [
-                Text('${policy.activeAccountCount} active account(s)'),
+                Text(
+                  AppCopy.text(
+                    'text.value1_active_account_s_133c9d0a',
+                    arguments: {
+                      'value1': (policy.activeAccountCount).toString(),
+                    },
+                  ),
+                ),
                 Text(
                   policy.updatedAt == null
-                      ? 'Last change unavailable'
-                      : 'Changed ${_formatDate(policy.updatedAt!)}',
+                      ? AppCopy.text('text.last_change_unavailable_397c6ee1')
+                      : AppCopy.text(
+                          'text.changed_value1_c9c687c5',
+                          arguments: {
+                            'value1': (_formatDate(
+                              policy.updatedAt!,
+                            )).toString(),
+                          },
+                        ),
                 ),
                 if (policy.changeReason != null)
-                  Text('Reason: ${policy.changeReason}'),
+                  Text(
+                    AppCopy.text(
+                      'text.reason_value1_f38c1387',
+                      arguments: {'value1': (policy.changeReason).toString()},
+                    ),
+                  ),
               ],
             ),
             if (conflict != null) ...[
@@ -607,7 +665,12 @@ class _PolicyCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Server version ${conflict!.policyVersion} is newer. Your local draft is still shown; compare it before previewing again.',
+                          AppCopy.text(
+                            'text.server_version_value1_is_newer_your_local_draft__7add2b7f',
+                            arguments: {
+                              'value1': (conflict!.policyVersion).toString(),
+                            },
+                          ),
                           style: TextStyle(
                             color: theme.colorScheme.onErrorContainer,
                           ),
@@ -652,11 +715,11 @@ class _PolicyCard extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.preview_outlined),
-                    label: const Text('Preview changes'),
+                    label: Text(AppCopy.text('text.preview_changes_964c14fa')),
                   ),
                   TextButton(
                     onPressed: isBusy ? null : onDiscardDraft,
-                    child: const Text('Discard draft'),
+                    child: Text(AppCopy.text('text.discard_draft_8789fd5e')),
                   ),
                 ],
               ),
@@ -665,18 +728,40 @@ class _PolicyCard extends StatelessWidget {
               const Divider(height: 28),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
-                title: const Text('Policy history'),
-                subtitle: Text('${revisions.length} recorded change(s)'),
+                title: Text(AppCopy.text('text.policy_history_4bfeb417')),
+                subtitle: Text(
+                  AppCopy.text(
+                    'text.value1_recorded_change_s_3285c95b',
+                    arguments: {'value1': (revisions.length).toString()},
+                  ),
+                ),
                 children: [
                   for (final revision in revisions)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.history_rounded),
                       title: Text(
-                        'Version ${revision.newPolicyVersion}: ${revision.changeReason}',
+                        AppCopy.text(
+                          'text.version_value1_value2_886b0694',
+                          arguments: {
+                            'value1': (revision.newPolicyVersion).toString(),
+                            'value2': (revision.changeReason).toString(),
+                          },
+                        ),
                       ),
                       subtitle: Text(
-                        '${revision.affectedActiveAccountCount} active account(s) affected${revision.createdAt == null ? '' : ' • ${_formatDate(revision.createdAt!)}'}',
+                        AppCopy.text(
+                          'text.value1_active_account_s_affected_value2_2a1f78b5',
+                          arguments: {
+                            'value1': (revision.affectedActiveAccountCount)
+                                .toString(),
+                            'value2':
+                                (revision.createdAt == null
+                                        ? ''
+                                        : ' • ${_formatDate(revision.createdAt!)}')
+                                    .toString(),
+                          },
+                        ),
                       ),
                       trailing:
                           canEdit &&
@@ -685,7 +770,7 @@ class _PolicyCard extends StatelessWidget {
                               onPressed: isBusy
                                   ? null
                                   : () => onRestore(revision),
-                              child: const Text('Restore'),
+                              child: Text(AppCopy.text('text.restore_ff87f71')),
                             )
                           : null,
                     ),
@@ -714,12 +799,19 @@ class _CapabilityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final info = adminCapabilityInfo[capability];
     final title = info?.label ?? capability;
     final description = info?.description ?? capability;
     if (editable) {
       return Semantics(
-        label: '$title permission. ${enabled ? 'Enabled' : 'Disabled'}',
+        label: AppCopy.text(
+          'text.value1_permission_value2_b0226bc1',
+          arguments: {
+            'value1': (title).toString(),
+            'value2': (enabled ? 'Enabled' : 'Disabled').toString(),
+          },
+        ),
         child: SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(title),
@@ -736,7 +828,11 @@ class _CapabilityRow extends StatelessWidget {
       ),
       title: Text(title),
       subtitle: Text(description),
-      trailing: Text(enabled ? 'Included' : 'Not included'),
+      trailing: Text(
+        enabled
+            ? AppCopy.text('text.included_b8adfdd9')
+            : AppCopy.text('text.not_included_34c9f84e'),
+      ),
     );
   }
 }
@@ -754,13 +850,14 @@ class _PreviewChanges extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 4),
         if (capabilities.isEmpty)
-          const Text('None')
+          Text(AppCopy.text('text.none_304ff7fb'))
         else
           for (final capability in capabilities)
             ListTile(
@@ -779,10 +876,11 @@ class _PolicyReadOnlyNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Material(
       color: Theme.of(context).colorScheme.secondaryContainer,
       borderRadius: BorderRadius.circular(12),
-      child: const Padding(
+      child: Padding(
         padding: EdgeInsets.all(14),
         child: Row(
           children: [
@@ -790,7 +888,9 @@ class _PolicyReadOnlyNotice extends StatelessWidget {
             SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Read-only policy review. System Auditors can inspect policy and history but cannot edit, preview, save, or restore.',
+                AppCopy.text(
+                  'text.read_only_policy_review_system_auditors_can_insp_90499975',
+                ),
               ),
             ),
           ],

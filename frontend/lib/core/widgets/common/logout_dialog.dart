@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:styled_widget/styled_widget.dart';
 
@@ -8,6 +9,7 @@ class LogoutDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,
@@ -37,7 +39,7 @@ class LogoutDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Logout')
+              Text(AppCopy.text('text.logout_877a6a0b'))
                   .fontSize(22)
                   .fontWeight(FontWeight.bold)
                   .textColor(const Color(0xFF1F2937)),
@@ -48,15 +50,11 @@ class LogoutDialog extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Icon
           <Widget>[
-            const Icon(
-              Icons.logout_rounded,
-              color: Colors.red,
-              size: 48,
-            )
-          ]
+                const Icon(Icons.logout_rounded, color: Colors.red, size: 48),
+              ]
               .toColumn()
               .padding(all: 20)
               .decorated(
@@ -65,7 +63,7 @@ class LogoutDialog extends StatelessWidget {
               )
               .padding(bottom: 24),
 
-          const Text('Are you sure you want to logout?')
+          Text(AppCopy.text('text.are_you_sure_you_want_to_logout_ef0b4f08'))
               .fontSize(16)
               .textColor(const Color(0xFF4B5563))
               .textAlignment(TextAlign.center)
@@ -78,11 +76,9 @@ class LogoutDialog extends StatelessWidget {
               onLogout();
             },
             icon: const Icon(Icons.logout, color: Colors.white),
-            label: const Text('Logout', 
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            label: Text(
+              AppCopy.text('text.logout_877a6a0b'),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

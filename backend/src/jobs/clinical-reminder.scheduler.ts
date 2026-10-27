@@ -1,3 +1,4 @@
+import { getServerCopy } from '@alias/services/presentation-copy.service'
 import Notification, { NotificationPriority, NotificationType } from '@alias/models/notification.model'
 import PatientProfile from '@alias/models/patientprofile.model'
 import DoctorProfile from '@alias/models/doctorprofile.model'
@@ -90,6 +91,7 @@ async function createReminder(input: {
 
 /** Daily INR/review reminders and missed-dose escalation. All reminders are idempotent per recipient and local day. */
 export async function runClinicalReminderPass(now = new Date()): Promise<ReminderResult> {
+  const copy = await getServerCopy()
   const result: ReminderResult = { created: 0, skipped: 0, failed: 0 }
   if (!await isFeatureEnabled('notifications_enabled')) return result
   await Notification.init()
@@ -116,7 +118,7 @@ export async function runClinicalReminderPass(now = new Date()): Promise<Reminde
       if (lastInr && new Date(lastInr) <= inrCutoff) {
         const created = await createReminder({
           userId: patientUserId, key: `inr:${patientUserId}:${dueWindow}`, type: NotificationType.INR_REMINDER,
-          title: 'INR test due', message: 'Please submit your INR test result so your care team can review it.',
+          title: copy('notification.inr.title'), message: copy('notification.inr.message'),
           data: { route: 'patient-update-inr', patientId, reminderType: 'inr', dueWindow },
           deliveryValidUntil,
         })
@@ -127,7 +129,7 @@ export async function runClinicalReminderPass(now = new Date()): Promise<Reminde
         const reviewDateKey = dateKey(new Date(reviewDate))
         const created = await createReminder({
           userId: patientUserId, key: `review:${patientUserId}:${reviewDateKey}`, type: NotificationType.APPOINTMENT_REMINDER,
-          title: 'Review appointment approaching', message: `Your next care review is scheduled for ${reviewDateKey}.`,
+          title: copy('notification.review.title'), message: copy('notification.review.message', { date: reviewDateKey }),
           data: { route: 'patient-details', patientId, reminderType: 'review', dueWindow },
           // Appointment reminders remain clinically relevant throughout the
           // review date, not merely on the first lead-window scheduler day.
@@ -171,10 +173,10 @@ export async function runClinicalReminderPass(now = new Date()): Promise<Reminde
           // In-app record stays informative without PHI; FCM body is generic at send time.
           const created = await createReminder({
             userId, key: `missed-dose:${userId}:${patientId}:${dueWindow}`, type: NotificationType.CRITICAL_ALERT,
-            title: 'Medication doses need attention',
+            title: copy('notification.missed.title'),
             message: userId === patientUserId
-              ? `You have missed ${missed} scheduled doses in the last ${config.missedDoseEscalationWindowDays} days.`
-              : `A patient on your roster has missed ${missed} scheduled doses in the last ${config.missedDoseEscalationWindowDays} days.`,
+              ? copy('notification.missed.patient', { count: missed, days: config.missedDoseEscalationWindowDays })
+              : copy('notification.missed.doctor', { count: missed, days: config.missedDoseEscalationWindowDays }),
             data: { route: userId === patientUserId ? 'patient-take-dosage' : 'doctor-dashboard', patientId, reminderType: 'missed-dose', dueWindow },
             deliveryValidUntil,
           })

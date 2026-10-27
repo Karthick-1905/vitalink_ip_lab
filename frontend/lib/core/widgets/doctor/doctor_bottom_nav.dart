@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -13,13 +14,15 @@ class DoctorBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final navTheme = theme.bottomNavigationBarTheme;
     final activeColor = navTheme.selectedItemColor ?? theme.colorScheme.primary;
     final inactiveColor =
         navTheme.unselectedItemColor ??
         theme.colorScheme.onSurface.withValues(alpha: 0.55);
-    final navBackgroundColor = navTheme.backgroundColor ?? theme.colorScheme.surface;
+    final navBackgroundColor =
+        navTheme.backgroundColor ?? theme.colorScheme.surface;
 
     return SafeArea(
       top: false,
@@ -48,33 +51,37 @@ class DoctorBottomNavBar extends StatelessWidget {
               showUnselectedLabels: true,
               selectedItemColor: activeColor,
               unselectedItemColor: inactiveColor,
-              selectedLabelStyle:
-                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 10),
-              unselectedLabelStyle:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
+              selectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+              ),
               elevation: 0,
               items: [
                 _navItem(
                   iconSvg: _homeIcon,
-                  label: 'Home',
+                  label: AppCopy.text('text.home_52f50eae'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
                 _navItem(
                   iconSvg: _addIcon,
-                  label: 'Add',
+                  label: AppCopy.text('text.add_9dc3aa14'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
                 _navItem(
                   iconSvg: _reportsIcon,
-                  label: 'Reports',
+                  label: AppCopy.text('text.reports_769d4ae8'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
                 _navItem(
                   iconSvg: _profileIcon,
-                  label: 'Profile',
+                  label: AppCopy.text('text.profile_cd17328e'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),

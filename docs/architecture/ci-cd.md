@@ -60,3 +60,7 @@ The only temporary exception is [GHSA-vfj7-8cjw-p6xm](https://github.com/advisor
 - The deploy preflight validates the JWT secret but readiness is responsible for the broader required-environment inventory.
 - Migrations are not automatically executed by backend CD. Operators must follow the migration order in the deployment runbook.
 - No source-backed approval gate, canary traffic policy, database backup gate, artifact signing/attestation, or post-deploy authenticated clinical smoke suite is present.
+
+## Runtime property catalogue check
+
+Frontend CI also runs `python3 ../scripts/properties/sync.py --check` after dependency installation. The workflow triggers for frontend code, the backend property-default JSON copy, and property scripts. This checks identical default catalogues, the generated Dart map, and static property-key references before Flutter analysis/tests.

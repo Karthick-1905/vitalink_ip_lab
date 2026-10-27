@@ -136,3 +136,15 @@ One active runtime configuration with INR critical thresholds, session timeout, 
 | `notificationdeliveries` | required `expires_at` based on configured retention days |
 
 Audit logs, file assets, inactive users/profiles, policy revisions, invoices, and hospitals have no schema TTL. Their retention requirements are unconfirmed.
+
+## Public presentation configuration
+
+<!-- model: AppProperties -->
+### `AppProperties` / `appproperties`
+
+Global singleton with string `_id=global`, integer edit `version`, monotonic `published_revision`, draft and published string override maps, last `updated_by` User reference, and timestamps. Embedded history retains the latest 20 publication snapshots with actor, time and optional restored-from revision. Draft/publish/rollback use one `_id` plus expected-version conditioned MongoDB update. Only MongoDB's built-in unique `_id` index is needed. Public reads project merged defaults and published values only. Management lazily creates the singleton.
+
+<!-- model: BrandAsset -->
+### `BrandAsset` / `brandassets`
+
+Public branding image with SHA-256 string `_id`, validated PNG/JPEG `content_type`, binary `bytes` excluded from default selection, `created_by` User reference and timestamps. Maximum 512 KiB and 2048 pixels per side. Built-in unique `_id` makes repeated uploads idempotent. Read endpoint explicitly selects bytes and emits immutable public image responses. Separate from private tenant-scoped FileAsset records. No automatic upload cleanup is implemented.

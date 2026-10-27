@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
@@ -18,6 +19,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
         queryKey: PatientQueryKeys.recordsFull(),
@@ -131,12 +133,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           border: isSelected
-              ? Border(
-                  bottom: BorderSide(
-                    color: Colors.pink[400]!,
-                    width: 3,
-                  ),
-                )
+              ? Border(bottom: BorderSide(color: Colors.pink[400]!, width: 3))
               : null,
         ),
         child: Text(
@@ -173,7 +170,9 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
   }
 
   Widget _buildINRHistory(
-      Map<String, dynamic> profile, List<Map<String, dynamic>> history) {
+    Map<String, dynamic> profile,
+    List<Map<String, dynamic>> history,
+  ) {
     final targetINR = profile['targetINR'] ?? '2.0 - 3.0';
 
     return Column(
@@ -190,7 +189,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Target INR Range',
+                  AppCopy.text('text.target_inr_range_3b8ce8ba'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -218,8 +217,8 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                         color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text(
-                        'On Track',
+                      child: Text(
+                        AppCopy.text('text.on_track_df00c457'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -237,7 +236,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
 
         // INR history list
         Text(
-          'Test History',
+          AppCopy.text('text.test_history_46b989c1'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -246,14 +245,17 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
         ),
         const SizedBox(height: 12),
         if (history.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: Text('No INR reports found.')),
+            child: Center(
+              child: Text(AppCopy.text('text.no_inr_reports_found_40788394')),
+            ),
           )
         else
           ...history.map((record) {
             final status = record['status'] as String? ?? 'Normal';
-            final isCritical = record['isCritical'] == true ||
+            final isCritical =
+                record['isCritical'] == true ||
                 status == 'Critical' ||
                 status == 'High' ||
                 status == 'Low';
@@ -279,7 +281,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          record['date'] ?? 'N/A',
+                          record['date'] ?? AppCopy.text('text.n_a_79db7a01'),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -298,7 +300,10 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'INR: ${record['inr']}',
+                            AppCopy.text(
+                              'text.inr_value1_83b20cf6',
+                              arguments: {'value1': (record['inr']).toString()},
+                            ),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -315,10 +320,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                         record['notes'] != 'No notes')
                       Text(
                         record['notes'],
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                       ),
                   ],
                 ),
@@ -343,7 +345,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
           onPressed: () =>
               _showAddHealthLogDialog(onDataChanged: onDataChanged),
           icon: const Icon(Icons.add),
-          label: const Text('Add Health Log'),
+          label: Text(AppCopy.text('text.add_health_log_8fd82d44')),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.pink[400],
             minimumSize: const Size.fromHeight(44),
@@ -359,7 +361,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                   Icon(Icons.favorite, size: 64, color: Colors.grey[300]),
                   const SizedBox(height: 16),
                   Text(
-                    'No health logs',
+                    AppCopy.text('text.no_health_logs_a36b807f'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -375,8 +377,9 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
             final type = log['type'] ?? 'OTHER';
             final severity = log['severity'] ?? 'Normal';
             final isResolved = log['is_resolved'] ?? true;
-            final dateStr =
-                AppDependencies.patientRepository.formatDate(log['date']);
+            final dateStr = AppDependencies.patientRepository.formatDate(
+              log['date'],
+            );
 
             return Card(
               elevation: 1,
@@ -446,7 +449,9 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                isResolved ? 'Resolved' : 'Ongoing',
+                                isResolved
+                                    ? AppCopy.text('text.resolved_503b5525')
+                                    : AppCopy.text('text.ongoing_680df662'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -462,11 +467,9 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      log['description'] ?? 'No description',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
+                      log['description'] ??
+                          AppCopy.text('text.no_description_9c7619b0'),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -521,7 +524,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Weekly Dosage Summary',
+                  AppCopy.text('text.weekly_dosage_summary_63948a23'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -536,7 +539,14 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                   runSpacing: 8,
                   children: [
                     Text(
-                      '${totalWeeklyDose.toStringAsFixed(1)} mg',
+                      AppCopy.text(
+                        'text.value1_mg_ec8b8037',
+                        arguments: {
+                          'value1': (totalWeeklyDose.toStringAsFixed(
+                            1,
+                          )).toString(),
+                        },
+                      ),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -544,11 +554,8 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                       ),
                     ),
                     Text(
-                      'Total Weekly',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
+                      AppCopy.text('text.total_weekly_a47d2c0'),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -558,7 +565,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
         ),
         const SizedBox(height: 20),
         Text(
-          'Daily Schedule',
+          AppCopy.text('text.daily_schedule_d67d589f'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -616,11 +623,8 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'mg',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                        ),
+                        AppCopy.text('text.mg_6a2e2dcd'),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -633,8 +637,9 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
     );
   }
 
-  void _showAddHealthLogDialog(
-      {required Future<void> Function() onDataChanged}) {
+  void _showAddHealthLogDialog({
+    required Future<void> Function() onDataChanged,
+  }) {
     final descriptionController = TextEditingController();
     String selectedType = 'SIDE_EFFECT';
     bool isSubmitting = false;
@@ -644,39 +649,40 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Add Health Log'),
+          title: Text(AppCopy.text('text.add_health_log_8fd82d44')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Log Type',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+                Text(
+                  AppCopy.text('text.log_type_e281925b'),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 DropdownButton<String>(
                   isExpanded: true,
                   value: selectedType,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: 'SIDE_EFFECT',
-                      child: Text('Side Effect'),
+                      child: Text(AppCopy.text('text.side_effect_e7634bc7')),
                     ),
                     DropdownMenuItem(
                       value: 'ILLNESS',
-                      child: Text('Illness'),
+                      child: Text(AppCopy.text('text.illness_e44308a7')),
                     ),
                     DropdownMenuItem(
                       value: 'LIFESTYLE',
-                      child: Text('Lifestyle Change'),
+                      child: Text(
+                        AppCopy.text('text.lifestyle_change_b5694338'),
+                      ),
                     ),
                     DropdownMenuItem(
                       value: 'OTHER_MEDS',
-                      child: Text('Other Medications'),
+                      child: Text(
+                        AppCopy.text('text.other_medications_41658fc9'),
+                      ),
                     ),
                   ],
                   onChanged: isSubmitting
@@ -687,18 +693,15 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                         },
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Description',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+                Text(
+                  AppCopy.text('text.description_66de7a09'),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: descriptionController,
                   decoration: InputDecoration(
-                    hintText: 'Enter details...',
+                    hintText: AppCopy.text('text.enter_details_c9b849b'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -712,9 +715,10 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
           ),
           actions: [
             TextButton(
-              onPressed:
-                  isSubmitting ? null : () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              onPressed: isSubmitting
+                  ? null
+                  : () => Navigator.pop(dialogContext),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             ElevatedButton(
               onPressed: isSubmitting
@@ -724,8 +728,12 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                       final description = descriptionController.text.trim();
                       if (description.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please enter a description'),
+                          SnackBar(
+                            content: Text(
+                              AppCopy.text(
+                                'text.please_enter_a_description_e6db0fcc',
+                              ),
+                            ),
                             backgroundColor: Colors.orange,
                           ),
                         );
@@ -749,8 +757,12 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                           dialogClosed = true;
                         }
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Health log added successfully'),
+                          SnackBar(
+                            content: Text(
+                              AppCopy.text(
+                                'text.health_log_added_successfully_78b4d2ac',
+                              ),
+                            ),
                             backgroundColor: Colors.green,
                             duration: Duration(seconds: 2),
                           ),
@@ -787,7 +799,7 @@ class _PatientRecordsPageState extends State<PatientRecordsPage> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Add'),
+                  : Text(AppCopy.text('text.add_9dc3aa14')),
             ),
           ],
         ),

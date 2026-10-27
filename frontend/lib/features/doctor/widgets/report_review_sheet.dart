@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/common/api_error_state.dart';
 
@@ -68,15 +69,17 @@ class _ReportReviewSheetState extends State<ReportReviewSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Review report',
+                AppCopy.text('text.review_report_9ab46d2d'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1E1E5E),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Read the report, add notes, and explicitly record your review.',
+              Text(
+                AppCopy.text(
+                  'text.read_the_report_add_notes_and_explicitly_record__9f27f050',
+                ),
               ),
               const SizedBox(height: 20),
               TextField(
@@ -85,8 +88,10 @@ class _ReportReviewSheetState extends State<ReportReviewSheet> {
                 maxLines: 4,
                 maxLength: 4000,
                 decoration: InputDecoration(
-                  labelText: 'Review notes',
-                  hintText: 'Clinical observations and instructions',
+                  labelText: AppCopy.text('text.review_notes_78a36080'),
+                  hintText: AppCopy.text(
+                    'text.clinical_observations_and_instructions_d07af773',
+                  ),
                   filled: true,
                   fillColor: const Color(0xFFF9FAFB),
                   border: OutlineInputBorder(
@@ -99,9 +104,13 @@ class _ReportReviewSheetState extends State<ReportReviewSheet> {
                 color: const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(16),
                 child: SwitchListTile(
-                  title: const Text('Record report review'),
-                  subtitle: const Text(
-                    'Confirms you have reviewed this report',
+                  title: Text(
+                    AppCopy.text('text.record_report_review_d6af738a'),
+                  ),
+                  subtitle: Text(
+                    AppCopy.text(
+                      'text.confirms_you_have_reviewed_this_report_6e215a6a',
+                    ),
                   ),
                   value: _markReviewed,
                   activeThumbColor: const Color(0xFF6366F1),
@@ -127,7 +136,7 @@ class _ReportReviewSheetState extends State<ReportReviewSheet> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Save review'),
+                      : Text(AppCopy.text('text.save_review_7041ccfc')),
                 ),
               ),
             ],

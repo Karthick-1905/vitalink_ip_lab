@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/widgets/index.dart';
@@ -22,6 +23,7 @@ class DoctorPatientReportsPage extends StatefulWidget {
 class _DoctorPatientReportsPageState extends State<DoctorPatientReportsPage> {
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return DoctorScaffold(
       pageTitle: 'Patient Reports - ${widget.patientName}',
       currentNavIndex: 0,
@@ -46,17 +48,22 @@ class _DoctorPatientReportsPageState extends State<DoctorPatientReportsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'INR Reports',
+                        AppCopy.text('text.inr_reports_1bb989f7'),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       PortalLayout.metaSpacer,
                       Text(
-                        'OP: ${widget.patientOpNumber}',
+                        AppCopy.text(
+                          'text.op_value1_f163b800',
+                          arguments: {
+                            'value1': (widget.patientOpNumber).toString(),
+                          },
+                        ),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -73,18 +80,15 @@ class _DoctorPatientReportsPageState extends State<DoctorPatientReportsPage> {
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: AppDependencies.doctorRepository
-                  .getPatientReports(
-                    widget.patientOpNumber,
-                    includeUrls: true,
-                  )
+                  .getPatientReports(widget.patientOpNumber, includeUrls: true)
                   .then((reports) {
-                return List<Map<String, dynamic>>.from(
-                  reports.map((r) {
-                    if (r is Map<String, dynamic>) return r;
-                    return Map<String, dynamic>.from(r as Map);
+                    return List<Map<String, dynamic>>.from(
+                      reports.map((r) {
+                        if (r is Map<String, dynamic>) return r;
+                        return Map<String, dynamic>.from(r as Map);
+                      }),
+                    );
                   }),
-                );
-              }),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -102,14 +106,14 @@ class _DoctorPatientReportsPageState extends State<DoctorPatientReportsPage> {
                         ),
                         PortalLayout.sectionSpacerTight,
                         Text(
-                          'Error loading reports',
+                          AppCopy.text('text.error_loading_reports_bd004f06'),
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         PortalLayout.sectionSpacer,
                         ElevatedButton.icon(
                           onPressed: () => setState(() {}),
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
+                          label: Text(AppCopy.text('text.retry_8036af59')),
                         ),
                       ],
                     ),
@@ -197,6 +201,7 @@ class _DoctorPatientReportsPageAltState
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return DoctorScaffold(
       pageTitle: 'Patient Reports - ${widget.patientName}',
       currentNavIndex: 0,
@@ -221,17 +226,22 @@ class _DoctorPatientReportsPageAltState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'INR Reports',
+                        AppCopy.text('text.inr_reports_1bb989f7'),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       PortalLayout.metaSpacer,
                       Text(
-                        'OP: ${widget.patientOpNumber}',
+                        AppCopy.text(
+                          'text.op_value1_f163b800',
+                          arguments: {
+                            'value1': (widget.patientOpNumber).toString(),
+                          },
+                        ),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -265,14 +275,14 @@ class _DoctorPatientReportsPageAltState
                         ),
                         PortalLayout.sectionSpacerTight,
                         Text(
-                          'Error loading reports',
+                          AppCopy.text('text.error_loading_reports_bd004f06'),
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         PortalLayout.sectionSpacer,
                         ElevatedButton.icon(
                           onPressed: _refreshReports,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
+                          label: Text(AppCopy.text('text.retry_8036af59')),
                         ),
                       ],
                     ),

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:frontend/features/doctor/widgets/dose_history_card.dart';
 import 'package:frontend/features/doctor/doctor_reports_page.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +72,7 @@ class _ViewPatientPageState extends State<ViewPatientPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final hasMultiple =
         widget.allPatients != null && widget.allPatients!.length > 1;
 
@@ -84,7 +86,7 @@ class _ViewPatientPageState extends State<ViewPatientPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Patient Details',
+          AppCopy.text('text.patient_details_d6e0a188'),
           style: const TextStyle(
             color: Color(0xFF1F2937),
             fontWeight: FontWeight.w600,
@@ -125,7 +127,9 @@ class _ViewPatientPageState extends State<ViewPatientPage> {
               itemBuilder: (context, index) {
                 final patient = widget.allPatients![index];
                 if (patient.opNumber == null) {
-                  return const Center(child: Text('Invalid patient'));
+                  return Center(
+                    child: Text(AppCopy.text('text.invalid_patient_fcb41989')),
+                  );
                 }
                 return _PatientDetailContent(
                   key: ValueKey(patient.opNumber),
@@ -151,13 +155,13 @@ class _ViewPatientPageState extends State<ViewPatientPage> {
                   children: [
                     _NavButton(
                       icon: Icons.chevron_left,
-                      label: 'Previous',
+                      label: AppCopy.text('text.previous_ead1fb48'),
                       enabled: _currentIndex > 0,
                       onTap: () => _navigateToPatient(_currentIndex - 1),
                     ),
                     _NavButton(
                       icon: Icons.chevron_right,
-                      label: 'Next',
+                      label: AppCopy.text('text.next_dce2da08'),
                       iconAfter: true,
                       enabled: _currentIndex < widget.allPatients!.length - 1,
                       onTap: () => _navigateToPatient(_currentIndex + 1),
@@ -188,6 +192,7 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return TextButton(
       onPressed: enabled ? onTap : null,
       style: TextButton.styleFrom(
@@ -239,6 +244,7 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<PatientDetailModel>(
       options: QueryOptions<PatientDetailModel>(
         queryKey: DoctorQueryKeys.patientDetail(widget.opNumber),
@@ -258,7 +264,9 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
 
         final patient = patientQuery.data;
         if (patient == null) {
-          return const Center(child: Text('Patient not found'));
+          return Center(
+            child: Text(AppCopy.text('text.patient_not_found_ae477cdf')),
+          );
         }
 
         return RefreshIndicator(
@@ -321,7 +329,11 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
                     MaterialPageRoute<void>(
                       builder: (_) => Scaffold(
                         appBar: AppBar(
-                          title: const Text('Review patient reports'),
+                          title: Text(
+                            AppCopy.text(
+                              'text.review_patient_reports_cfde8ef7',
+                            ),
+                          ),
                         ),
                         body: DoctorReportsPage(
                           initialPatientOp: widget.opNumber,
@@ -331,7 +343,9 @@ class _PatientDetailContentState extends State<_PatientDetailContent> {
                     ),
                   ),
                   icon: const Icon(Icons.fact_check_outlined),
-                  label: const Text('Review patient reports'),
+                  label: Text(
+                    AppCopy.text('text.review_patient_reports_cfde8ef7'),
+                  ),
                 ),
                 PortalLayout.sectionSpacerTight,
                 // INR Reports Section
@@ -363,6 +377,7 @@ class _PatientHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: PortalLayout.cardInsetsComfortable,
       decoration: BoxDecoration(
@@ -417,7 +432,12 @@ class _PatientHeaderCard extends StatelessWidget {
                   children: [
                     _InfoChip(
                       icon: Icons.badge_outlined,
-                      label: 'OP #${patient.opNumber ?? opNumber}',
+                      label: AppCopy.text(
+                        'text.op_value1_38c57f2b',
+                        arguments: {
+                          'value1': (patient.opNumber ?? opNumber).toString(),
+                        },
+                      ),
                       color: const Color(0xFF6366F1),
                     ),
                   ],
@@ -428,7 +448,10 @@ class _PatientHeaderCard extends StatelessWidget {
                     if (patient.age != null) ...[
                       _InfoChip(
                         icon: Icons.cake_outlined,
-                        label: '${patient.age} yrs',
+                        label: AppCopy.text(
+                          'text.value1_yrs_bf2538c5',
+                          arguments: {'value1': (patient.age).toString()},
+                        ),
                         color: const Color(0xFF059669),
                       ),
                       PortalLayout.inlineSpacer,
@@ -485,6 +508,7 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -525,6 +549,7 @@ class _QuickActionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: PortalLayout.cardInsets,
       decoration: BoxDecoration(
@@ -541,8 +566,8 @@ class _QuickActionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Quick Actions',
+          Text(
+            AppCopy.text('text.quick_actions_8d04349f'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -555,7 +580,7 @@ class _QuickActionsCard extends StatelessWidget {
               Expanded(
                 child: _ActionButton(
                   icon: Icons.calendar_month,
-                  label: 'Update Review',
+                  label: AppCopy.text('text.update_review_bc953400'),
                   color: const Color(0xFF6366F1),
                   onTap: () => _showUpdateReviewDialog(context),
                 ),
@@ -564,7 +589,7 @@ class _QuickActionsCard extends StatelessWidget {
               Expanded(
                 child: _ActionButton(
                   icon: Icons.swap_horiz,
-                  label: 'Reassign',
+                  label: AppCopy.text('text.reassign_9376a1e1'),
                   color: const Color(0xFFF59E0B),
                   onTap: () => _showReassignDialog(context),
                 ),
@@ -584,7 +609,7 @@ class _QuickActionsCard extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text('Update Next Review Date'),
+            title: Text(AppCopy.text('text.update_next_review_date_c90de269')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -593,7 +618,7 @@ class _QuickActionsCard extends StatelessWidget {
                   title: Text(
                     selectedDate != null
                         ? DateFormat('dd-MM-yyyy').format(selectedDate!)
-                        : 'Select Date',
+                        : AppCopy.text('text.select_date_8c838bf3'),
                   ),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -616,7 +641,7 @@ class _QuickActionsCard extends StatelessWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Cancel'),
+                child: Text(AppCopy.text('text.cancel_35afca3b')),
               ),
               ElevatedButton(
                 onPressed: selectedDate == null
@@ -630,9 +655,11 @@ class _QuickActionsCard extends StatelessWidget {
                           if (ctx.mounted) {
                             Navigator.of(ctx).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  'Review date updated successfully',
+                                  AppCopy.text(
+                                    'text.review_date_updated_successfully_1e37dfc5',
+                                  ),
                                 ),
                               ),
                             );
@@ -641,7 +668,14 @@ class _QuickActionsCard extends StatelessWidget {
                         } catch (e) {
                           if (ctx.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
+                              SnackBar(
+                                content: Text(
+                                  AppCopy.text(
+                                    'text.error_value1_caf169bf',
+                                    arguments: {'value1': (e).toString()},
+                                  ),
+                                ),
+                              ),
                             );
                           }
                         }
@@ -650,7 +684,7 @@ class _QuickActionsCard extends StatelessWidget {
                   backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Update'),
+                child: Text(AppCopy.text('text.update_6e230e94')),
               ),
             ],
           );
@@ -721,20 +755,28 @@ class _ReassignDialogState extends State<_ReassignDialog> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AlertDialog(
-      title: const Text('Reassign Patient'),
+      title: Text(AppCopy.text('text.reassign_patient_8d604fc4')),
       content: SizedBox(
         width: double.maxFinite,
         child: _loadingDoctors
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-            ? Text('Error: $_error')
+            ? Text(
+                AppCopy.text(
+                  'text.error_value1_caf169bf',
+                  arguments: {'value1': (_error).toString()},
+                ),
+              )
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Select a doctor to reassign this patient:',
+                  Text(
+                    AppCopy.text(
+                      'text.select_a_doctor_to_reassign_this_patient_d5fef877',
+                    ),
                     style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                   ),
                   const SizedBox(height: 12),
@@ -769,7 +811,12 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                           ),
                           title: Text(name),
                           subtitle: loginId != null
-                              ? Text('ID: $loginId')
+                              ? Text(
+                                  AppCopy.text(
+                                    'text.id_value1_33495a',
+                                    arguments: {'value1': (loginId).toString()},
+                                  ),
+                                )
                               : null,
                         );
                       },
@@ -781,7 +828,7 @@ class _ReassignDialogState extends State<_ReassignDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(AppCopy.text('text.cancel_35afca3b')),
         ),
         ElevatedButton(
           onPressed: _selectedDoctorId == null || _isLoading
@@ -796,15 +843,26 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                     );
                     if (!mounted) return;
                     messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Patient reassigned successfully'),
+                      SnackBar(
+                        content: Text(
+                          AppCopy.text(
+                            'text.patient_reassigned_successfully_a95fba9c',
+                          ),
+                        ),
                       ),
                     );
                     widget.onSuccess();
                   } catch (e) {
                     if (!mounted) return;
                     messenger.showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
+                      SnackBar(
+                        content: Text(
+                          AppCopy.text(
+                            'text.error_value1_caf169bf',
+                            arguments: {'value1': (e).toString()},
+                          ),
+                        ),
+                      ),
                     );
                   } finally {
                     if (mounted) {
@@ -825,7 +883,7 @@ class _ReassignDialogState extends State<_ReassignDialog> {
                     color: Colors.white,
                   ),
                 )
-              : const Text('Reassign'),
+              : Text(AppCopy.text('text.reassign_9376a1e1')),
         ),
       ],
     );
@@ -847,6 +905,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Material(
       color: color.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(12),
@@ -882,7 +941,7 @@ class _MedicalConfigCard extends StatelessWidget {
   const _MedicalConfigCard({required this.patient});
 
   String _formatDate(dynamic date) {
-    if (date == null) return 'Not set';
+    if (date == null) return AppCopy.text('text.not_set_d7958fc6');
     try {
       final DateTime dt = date is DateTime
           ? date
@@ -895,26 +954,27 @@ class _MedicalConfigCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final config = patient.medicalConfig;
     final targetInr = config?['target_inr'] as Map<String, dynamic>?;
 
     return InfoCard(
-      title: 'Medical Configuration',
+      title: AppCopy.text('text.medical_configuration_ba44351e'),
       child: Column(
         children: [
           InfoRow(
             icon: Icons.medication,
-            label: 'Therapy Drug',
+            label: AppCopy.text('text.therapy_drug_5d5334d0'),
             value: config?['therapy_drug']?.toString() ?? 'Not specified',
           ),
           InfoRow(
             icon: Icons.play_arrow,
-            label: 'Start Date',
+            label: AppCopy.text('text.start_date_1a637601'),
             value: _formatDate(config?['therapy_start_date']),
           ),
           InfoRow(
             icon: Icons.analytics,
-            label: 'Target INR',
+            label: AppCopy.text('text.target_inr_625b0bf'),
             value: targetInr != null
                 ? '${targetInr['min'] ?? 2.0} - ${targetInr['max'] ?? 3.0}'
                 : '2.0 - 3.0',
@@ -922,17 +982,17 @@ class _MedicalConfigCard extends StatelessWidget {
           ),
           InfoRow(
             icon: Icons.event,
-            label: 'Next Review',
+            label: AppCopy.text('text.next_review_fbb4bd7c'),
             value: _formatDate(config?['next_review_date']),
             valueColor: const Color(0xFF6366F1),
           ),
           if (config?['instructions'] != null &&
               (config!['instructions'] as List).isNotEmpty) ...[
             const Divider(height: PortalLayout.sectionGap),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Instructions',
+                AppCopy.text('text.instructions_48d33564'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -998,15 +1058,26 @@ class _DosageCardState extends State<_DosageCard> {
       await widget.repository.updatePatientDosage(widget.opNumber, dosage);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dosage updated successfully')),
+        SnackBar(
+          content: Text(
+            AppCopy.text('text.dosage_updated_successfully_9ac4e458'),
+          ),
+        ),
       );
       widget.onUpdated();
       setState(() => _isEditing = false);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppCopy.text(
+              'text.error_value1_caf169bf',
+              arguments: {'value1': (e).toString()},
+            ),
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -1016,14 +1087,15 @@ class _DosageCardState extends State<_DosageCard> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return InfoCard(
-      title: 'Weekly Dosage',
+      title: AppCopy.text('text.weekly_dosage_ce5489d7'),
       actions: [
         if (!_isEditing && !_isSaving)
           IconButton(
             icon: const Icon(Icons.edit, size: 20, color: Color(0xFF6366F1)),
             onPressed: () => setState(() => _isEditing = true),
-            tooltip: 'Edit Dosage',
+            tooltip: AppCopy.text('text.edit_dosage_ba49486e'),
           ),
       ],
       child: _isSaving
@@ -1052,12 +1124,13 @@ class _NextOfKinCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final kin = patient.nextOfKin;
     if (kin == null || (kin['name'] == null && kin['phone'] == null)) {
       return InfoCard(
-        title: 'Next of Kin',
-        child: const Text(
-          'No next of kin information available',
+        title: AppCopy.text('text.next_of_kin_3c1ef5f'),
+        child: Text(
+          AppCopy.text('text.no_next_of_kin_information_available_ad71489f'),
           style: TextStyle(
             color: Color(0xFF6B7280),
             fontStyle: FontStyle.italic,
@@ -1067,25 +1140,25 @@ class _NextOfKinCard extends StatelessWidget {
     }
 
     return InfoCard(
-      title: 'Next of Kin',
+      title: AppCopy.text('text.next_of_kin_3c1ef5f'),
       child: Column(
         children: [
           if (kin['name'] != null)
             InfoRow(
               icon: Icons.person,
-              label: 'Name',
+              label: AppCopy.text('text.name_fe07306'),
               value: kin['name'].toString(),
             ),
           if (kin['relation'] != null)
             InfoRow(
               icon: Icons.family_restroom,
-              label: 'Relation',
+              label: AppCopy.text('text.relation_b4b329c1'),
               value: kin['relation'].toString(),
             ),
           if (kin['phone'] != null)
             InfoRow(
               icon: Icons.phone,
-              label: 'Phone',
+              label: AppCopy.text('text.phone_4930944f'),
               value: kin['phone'].toString(),
             ),
         ],
@@ -1101,12 +1174,13 @@ class _MedicalHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final history = patient.medicalHistory;
     if (history == null || history.isEmpty) {
       return InfoCard(
-        title: 'Medical History',
-        child: const Text(
-          'No medical history recorded',
+        title: AppCopy.text('text.medical_history_880a54f4'),
+        child: Text(
+          AppCopy.text('text.no_medical_history_recorded_ba32ccf3'),
           style: TextStyle(
             color: Color(0xFF6B7280),
             fontStyle: FontStyle.italic,
@@ -1116,7 +1190,7 @@ class _MedicalHistoryCard extends StatelessWidget {
     }
 
     return InfoCard(
-      title: 'Medical History',
+      title: AppCopy.text('text.medical_history_880a54f4'),
       child: Column(
         children: history.map((item) {
           final diagnosis = item['diagnosis'];
@@ -1151,7 +1225,8 @@ class _MedicalHistoryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        diagnosis?.toString() ?? 'Unknown',
+                        diagnosis?.toString() ??
+                            AppCopy.text('text.unknown_cc200e59'),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -1160,7 +1235,13 @@ class _MedicalHistoryCard extends StatelessWidget {
                       ),
                       if (durationValue != null && durationUnit != null)
                         Text(
-                          'Duration: $durationValue $durationUnit',
+                          AppCopy.text(
+                            'text.duration_value1_value2_2c32b336',
+                            arguments: {
+                              'value1': (durationValue).toString(),
+                              'value2': (durationUnit).toString(),
+                            },
+                          ),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF6B7280),
@@ -1183,15 +1264,33 @@ class _MonitoringLogsCard extends StatelessWidget {
 
   const _MonitoringLogsCard({required this.patient});
 
-  static const _entries = <({String type, String label, String fallback})>[
-    (type: 'SIDE_EFFECT', label: 'Side Effects', fallback: 'None reported'),
-    (type: 'ILLNESS', label: 'Illness', fallback: 'None reported'),
-    (type: 'LIFESTYLE', label: 'Lifestyle', fallback: 'Stable'),
-    (type: 'OTHER_MEDS', label: 'Other Medications', fallback: 'None reported'),
-  ];
+  static List<({String type, String label, String fallback})> get _entries =>
+      <({String type, String label, String fallback})>[
+        (
+          type: 'SIDE_EFFECT',
+          label: AppCopy.text('text.side_effects_f5502c5c'),
+          fallback: 'None reported',
+        ),
+        (
+          type: 'ILLNESS',
+          label: AppCopy.text('text.illness_e44308a7'),
+          fallback: 'None reported',
+        ),
+        (
+          type: 'LIFESTYLE',
+          label: AppCopy.text('text.lifestyle_ae65f0a0'),
+          fallback: 'Stable',
+        ),
+        (
+          type: 'OTHER_MEDS',
+          label: AppCopy.text('text.other_medications_41658fc9'),
+          fallback: 'None reported',
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final logs = patient.healthLogs;
     final hasAny =
         logs != null &&
@@ -1202,7 +1301,7 @@ class _MonitoringLogsCard extends StatelessWidget {
         });
 
     return InfoCard(
-      title: 'Monitoring Logs',
+      title: AppCopy.text('text.monitoring_logs_6584b3a6'),
       child: hasAny
           ? Column(
               children: _entries.map((entry) {
@@ -1288,8 +1387,10 @@ class _MonitoringLogsCard extends StatelessWidget {
                 );
               }).toList(),
             )
-          : const Text(
-              'No monitoring logs reported by the patient yet',
+          : Text(
+              AppCopy.text(
+                'text.no_monitoring_logs_reported_by_the_patient_yet_e7b66bf',
+              ),
               style: TextStyle(
                 color: Color(0xFF6B7280),
                 fontStyle: FontStyle.italic,
@@ -1321,6 +1422,7 @@ class _InrReportsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1358,9 +1460,9 @@ class _InrReportsCard extends StatelessWidget {
                     ),
                   ),
                   PortalLayout.columnSpacer,
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'INR Reports',
+                      AppCopy.text('text.inr_reports_1bb989f7'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -1418,9 +1520,10 @@ class _InrReportsCard extends StatelessWidget {
 
 String _formatApiError(Object? error) {
   if (error is ApiException) {
-    return '${error.title}: ${error.message}';
+    return "${(error.title).toString()}: ${(error.message).toString()}";
   }
-  return error?.toString() ?? 'Something went wrong';
+  return error?.toString() ??
+      AppCopy.text('text.something_went_wrong_76fc465e');
 }
 
 class _ErrorView extends StatelessWidget {
@@ -1431,6 +1534,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -1440,7 +1544,7 @@ class _ErrorView extends StatelessWidget {
             const Icon(Icons.error_outline, size: 64, color: Color(0xFFDC2626)),
             const SizedBox(height: 16),
             Text(
-              'Something went wrong',
+              AppCopy.text('text.something_went_wrong_76fc465e'),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -1457,7 +1561,7 @@ class _ErrorView extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
+              label: Text(AppCopy.text('text.try_again_f5b37c9a')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
                 foregroundColor: Colors.white,

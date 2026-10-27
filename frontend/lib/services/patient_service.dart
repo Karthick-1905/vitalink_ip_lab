@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:frontend/core/constants/strings.dart';
@@ -18,7 +19,10 @@ class PatientService {
       requestOptions: response.requestOptions,
       response: response,
       type: DioExceptionType.badResponse,
-      message: 'Request failed with status code $statusCode',
+      message: AppCopy.text(
+        'text.request_failed_with_status_code_value1_af5fa462',
+        arguments: {'value1': (statusCode).toString()},
+      ),
     );
   }
 
@@ -50,7 +54,9 @@ class PatientService {
                 requestOptions: response.requestOptions,
                 response: response,
                 type: DioExceptionType.badResponse,
-                message: 'Authentication failed - token may be invalid or expired',
+                message: AppCopy.text(
+                  'text.authentication_failed_token_may_be_invalid_or_ex_33e26be7',
+                ),
               ),
             );
           }
@@ -79,10 +85,12 @@ class PatientService {
         if (profile.isEmpty) {
           throw Exception('Profile data is incomplete');
         }
-        final demographics =
-            profile['demographics'] is Map ? profile['demographics'] : {};
-        final medicalConfig =
-            profile['medical_config'] is Map ? profile['medical_config'] : {};
+        final demographics = profile['demographics'] is Map
+            ? profile['demographics']
+            : {};
+        final medicalConfig = profile['medical_config'] is Map
+            ? profile['medical_config']
+            : {};
         final targetInr = medicalConfig['target_inr'] is Map
             ? medicalConfig['target_inr']
             : {};
@@ -103,8 +111,8 @@ class PatientService {
             ? demographics['next_of_kin']
             : {};
 
-        final doctorUpdates = dataSection is Map &&
-                dataSection['doctor_updates'] is Map
+        final doctorUpdates =
+            dataSection is Map && dataSection['doctor_updates'] is Map
             ? Map<String, dynamic>.from(dataSection['doctor_updates'] as Map)
             : null;
 
@@ -167,8 +175,7 @@ class PatientService {
     try {
       final response = await _dio.get(_endpoint('/missed-doses'));
       if (response.statusCode == 200) {
-        final dataSection =
-            response.data is Map ? response.data['data'] : null;
+        final dataSection = response.data is Map ? response.data['data'] : null;
         final recent = dataSection is Map
             ? (dataSection['recent_missed_doses'] as List?) ?? const []
             : const [];
@@ -203,10 +210,12 @@ class PatientService {
       });
 
       if (fileBytes != null && fileName != null) {
-        formData.files.add(MapEntry(
-          'file',
-          MultipartFile.fromBytes(fileBytes, filename: fileName),
-        ));
+        formData.files.add(
+          MapEntry(
+            'file',
+            MultipartFile.fromBytes(fileBytes, filename: fileName),
+          ),
+        );
       }
 
       final response = await _dio.post(_endpoint('/reports'), data: formData);
@@ -224,10 +233,7 @@ class PatientService {
     try {
       final response = await _dio.post(
         _endpoint('/health-logs'),
-        data: {
-          'type': type,
-          'description': description,
-        },
+        data: {'type': type, 'description': description},
       );
 
       _rejectNonSuccessfulResponse(response);
@@ -242,10 +248,10 @@ class PatientService {
   }) async {
     _setupInterceptors();
     try {
-      final response = await _dio.post(_endpoint('/dosage'), data: {
-        'date': date,
-        'dose': dose,
-      });
+      final response = await _dio.post(
+        _endpoint('/dosage'),
+        data: {'date': date, 'dose': dose},
+      );
       _rejectNonSuccessfulResponse(response);
     } on DioException catch (e) {
       throw Exception('Failed to mark dose as taken: ${e.message}');
@@ -259,15 +265,15 @@ class PatientService {
   }) async {
     _setupInterceptors();
     try {
-      final queryParams = <String, dynamic>{
-        'months': months,
-      };
+      final queryParams = <String, dynamic>{'months': months};
       if (startDate != null) {
         queryParams['start_date'] = startDate;
       }
 
-      final response =
-          await _dio.get(_endpoint('/dosage-calendar'), queryParameters: queryParams);
+      final response = await _dio.get(
+        _endpoint('/dosage-calendar'),
+        queryParameters: queryParams,
+      );
 
       if (response.statusCode == 200) {
         final data = response.data is Map ? response.data['data'] : null;
@@ -275,8 +281,9 @@ class PatientService {
           throw Exception('Failed to fetch calendar data');
         }
         final calendarData = (data['calendar_data'] as List?) ?? const [];
-        final dateRange =
-            data['date_range'] is Map ? data['date_range'] as Map : const {};
+        final dateRange = data['date_range'] is Map
+            ? data['date_range'] as Map
+            : const {};
         return {
           'calendar_data': calendarData.map((item) {
             final row = item is Map ? item : const {};
@@ -307,12 +314,12 @@ class PatientService {
     try {
       final response = await _dio.get(_endpoint('/reports'));
       if (response.statusCode == 200) {
-        final dataSection =
-            response.data is Map ? response.data['data'] : null;
+        final dataSection = response.data is Map ? response.data['data'] : null;
         final report = dataSection is Map ? dataSection['report'] : null;
         if (report is! Map) return [];
-        final medicalConfig =
-            report['medical_config'] is Map ? report['medical_config'] as Map : {};
+        final medicalConfig = report['medical_config'] is Map
+            ? report['medical_config'] as Map
+            : {};
         final targetInr = medicalConfig['target_inr'] is Map
             ? medicalConfig['target_inr'] as Map
             : const {};
@@ -360,10 +367,13 @@ class PatientService {
             'drug': therapyDrug,
             'dosage': '${report['weekly_dosage']?['monday'] ?? 5}mg',
             'frequency': 'As per schedule',
-            'startDate':
-                formatDate(report['medical_config']['therapy_start_date']),
-            'instructions': (report['medical_config']['instructions'] as List?)
-                    ?.join(', ') ??
+            'startDate': formatDate(
+              report['medical_config']['therapy_start_date'],
+            ),
+            'instructions':
+                (report['medical_config']['instructions'] as List?)?.join(
+                  ', ',
+                ) ??
                 'Follow doctor instructions',
           });
         }
@@ -381,17 +391,13 @@ class PatientService {
     try {
       final response = await _dio.get(_endpoint('/reports'));
       if (response.statusCode == 200) {
-        final dataSection =
-            response.data is Map ? response.data['data'] : null;
+        final dataSection = response.data is Map ? response.data['data'] : null;
         final report = dataSection is Map ? dataSection['report'] : null;
         final inrHistory = report is Map
             ? (report['inr_history'] as List?) ?? const []
             : const [];
         if (inrHistory.isEmpty) {
-          return {
-            'value': 0.0,
-            'date': 'N/A',
-          };
+          return {'value': 0.0, 'date': 'N/A'};
         }
 
         Map<String, dynamic>? latestEntry;
@@ -417,10 +423,7 @@ class PatientService {
         }
 
         if (latestEntry == null) {
-          return {
-            'value': 0.0,
-            'date': 'N/A',
-          };
+          return {'value': 0.0, 'date': 'N/A'};
         }
 
         return {
@@ -428,10 +431,7 @@ class PatientService {
           'date': formatDate(latestEntry['test_date']),
         };
       }
-      return {
-        'value': 0.0,
-        'date': 'N/A',
-      };
+      return {'value': 0.0, 'date': 'N/A'};
     } on DioException catch (e) {
       throw Exception('Error: ${e.message}');
     } catch (e) {
@@ -535,10 +535,10 @@ class PatientService {
   }) async {
     _setupInterceptors();
     try {
-      final response = await _dio.get(_endpoint('/doctor-updates'), queryParameters: {
-        'unread_only': unreadOnly.toString(),
-        'limit': limit,
-      });
+      final response = await _dio.get(
+        _endpoint('/doctor-updates'),
+        queryParameters: {'unread_only': unreadOnly.toString(), 'limit': limit},
+      );
 
       if (response.statusCode == 200) {
         final updates = response.data['data']['updates'] as List? ?? const [];
@@ -563,7 +563,9 @@ class PatientService {
   static Future<void> markDoctorUpdateAsRead(String eventId) async {
     _setupInterceptors();
     try {
-      final response = await _dio.patch(_endpoint('/doctor-updates/$eventId/read'));
+      final response = await _dio.patch(
+        _endpoint('/doctor-updates/$eventId/read'),
+      );
       if (response.statusCode != 200) {
         throw Exception('Failed to mark doctor update as read');
       }

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:frontend/core/motion/motion_widgets.dart';
@@ -16,10 +17,12 @@ class PatientBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final navTheme = theme.bottomNavigationBarTheme;
     final activeColor = navTheme.selectedItemColor ?? theme.colorScheme.primary;
-    final inactiveColor = navTheme.unselectedItemColor ??
+    final inactiveColor =
+        navTheme.unselectedItemColor ??
         theme.colorScheme.onSurface.withValues(alpha: 0.55);
     final navBackgroundColor =
         navTheme.backgroundColor ?? theme.colorScheme.surface;
@@ -51,39 +54,43 @@ class PatientBottomNavBar extends StatelessWidget {
               showUnselectedLabels: true,
               selectedItemColor: activeColor,
               unselectedItemColor: inactiveColor,
-              selectedLabelStyle:
-                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 10),
-              unselectedLabelStyle:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
+              selectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+              ),
               elevation: 0,
               items: [
                 _navItem(
                   iconSvg: _homeIcon,
-                  label: 'Home',
+                  label: AppCopy.text('text.home_52f50eae'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
                 _navItem(
                   iconSvg: _inrIcon,
-                  label: 'Update INR',
+                  label: AppCopy.text('text.update_inr_6061f393'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
                 _navItem(
                   iconSvg: _dosageIcon,
-                  label: 'Dosage',
+                  label: AppCopy.text('text.dosage_4817189c'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
                 _navItem(
                   iconSvg: _recordsIcon,
-                  label: 'Notes',
+                  label: AppCopy.text('text.notes_ff01b6a'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                 ),
                 _navItem(
                   iconSvg: _profileIcon,
-                  label: 'Profile',
+                  label: AppCopy.text('text.profile_cd17328e'),
                   activeColor: activeColor,
                   inactiveColor: inactiveColor,
                   badgeCount: unreadDoctorUpdatesCount,

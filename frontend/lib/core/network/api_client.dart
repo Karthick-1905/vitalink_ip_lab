@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:frontend/core/constants/strings.dart';
@@ -73,7 +74,7 @@ class ApiException implements Exception {
   }
 
   String get actionLabel {
-    if (shouldReturnToLogin) return 'Back to login';
+    if (shouldReturnToLogin) return AppCopy.text('text.back_to_login_78247cd6');
     if (canRetry) return 'Retry';
     return 'Dismiss';
   }
@@ -81,33 +82,33 @@ class ApiException implements Exception {
   static String _defaultTitle(ApiErrorKind kind) {
     switch (kind) {
       case ApiErrorKind.badRequest:
-        return 'Check the details';
+        return AppCopy.text('text.check_the_details_be987422');
       case ApiErrorKind.unauthorized:
-        return 'Session expired';
+        return AppCopy.text('text.session_expired_cc9faa82');
       case ApiErrorKind.forbidden:
-        return 'Access not allowed';
+        return AppCopy.text('text.access_not_allowed_c176c16e');
       case ApiErrorKind.notFound:
-        return 'This service is unavailable';
+        return AppCopy.text('text.this_service_is_unavailable_b71365dc');
       case ApiErrorKind.locked:
-        return 'Account temporarily locked';
+        return AppCopy.text('text.account_temporarily_locked_93707e5a');
       case ApiErrorKind.gone:
-        return 'This sign-in step expired';
+        return AppCopy.text('text.this_sign_in_step_expired_87e4ad65');
       case ApiErrorKind.rateLimited:
-        return 'Please slow down';
+        return AppCopy.text('text.please_slow_down_9ccfdf78');
       case ApiErrorKind.requestTooLarge:
-        return 'File or request too large';
+        return AppCopy.text('text.file_or_request_too_large_f794fd38');
       case ApiErrorKind.server:
-        return 'Server problem';
+        return AppCopy.text('text.server_problem_fe957fbd');
       case ApiErrorKind.network:
-        return 'Cannot reach VitaLink';
+        return AppCopy.text('text.cannot_reach_vitalink_eaed2779');
       case ApiErrorKind.timeout:
-        return 'Request timed out';
+        return AppCopy.text('text.request_timed_out_819ad5');
       case ApiErrorKind.malformedResponse:
-        return 'Unexpected server response';
+        return AppCopy.text('text.unexpected_server_response_1b5fca54');
       case ApiErrorKind.deprecatedApi:
-        return 'App update needed';
+        return AppCopy.text('text.app_update_needed_19a0e662');
       case ApiErrorKind.unknown:
-        return 'Something went wrong';
+        return AppCopy.text('text.something_went_wrong_76fc465e');
     }
   }
 
@@ -122,7 +123,10 @@ class ApiConflictException extends ApiException {
     super.apiVersion,
     super.supportedVersions,
     super.details,
-  }) : super(kind: ApiErrorKind.unknown, title: 'Changes are out of date');
+  }) : super(
+         kind: ApiErrorKind.unknown,
+         title: AppCopy.text('text.changes_are_out_of_date_2fc3b0ab'),
+       );
 }
 
 class _RefreshRejected implements Exception {
@@ -297,7 +301,9 @@ class ApiClient {
           requestOptions: response.requestOptions,
           response: response,
           type: DioExceptionType.badResponse,
-          message: 'Refresh response did not contain valid tokens',
+          message: AppCopy.text(
+            'text.refresh_response_did_not_contain_valid_tokens_17a36bb9',
+          ),
         );
       }
 
@@ -356,7 +362,10 @@ class ApiClient {
       requestOptions: originalRequestError.requestOptions,
       type: DioExceptionType.unknown,
       error: cause,
-      message: 'Access-token refresh failed: $cause',
+      message: AppCopy.text(
+        'text.access_token_refresh_failed_value1_b40cbc9f',
+        arguments: {'value1': (cause).toString()},
+      ),
     );
   }
 
@@ -673,7 +682,9 @@ class ApiClient {
     return ApiException(
       _sanitizeServerMessage(message),
       kind: isTimeout ? ApiErrorKind.timeout : ApiErrorKind.network,
-      title: isTimeout ? 'Request timed out' : 'Cannot reach VitaLink',
+      title: isTimeout
+          ? AppCopy.text('text.request_timed_out_819ad5')
+          : AppCopy.text('text.cannot_reach_vitalink_eaed2779'),
     );
   }
 
@@ -785,7 +796,9 @@ class ApiClient {
                 ),
           statusCode: statusCode,
           kind: ApiErrorKind.notFound,
-          title: hasApiRouteHint ? 'API route not found' : null,
+          title: hasApiRouteHint
+              ? AppCopy.text('text.api_route_not_found_c07f157f')
+              : null,
           apiVersion: apiVersion,
           supportedVersions: supportedVersions,
         );
@@ -998,11 +1011,15 @@ class ApiClient {
 
     // Flutter Web often wraps CORS/TLS/DNS failures in this XHR onError text.
     if (_isBrowserXhrNetworkError(message)) {
-      return 'Unable to reach the server. Please try again in a moment.';
+      return AppCopy.text(
+        'text.unable_to_reach_the_server_please_try_again_in_a_10ab68bb',
+      );
     }
 
     if (_isIncomingMessageQuerySetterError(message)) {
-      return 'Server configuration error. Please contact support.';
+      return AppCopy.text(
+        'text.server_configuration_error_please_contact_suppor_90c935fd',
+      );
     }
     return message;
   }

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -37,6 +38,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final search = _searchController.text.trim();
     final canManage = AdminAccessScope.can(
       context,
@@ -86,7 +88,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                 onPressed: () =>
                     showAddPatientDialog(context, onSuccess: _refresh),
                 icon: const Icon(Icons.person_add_alt_1_rounded),
-                label: const Text('Add Patient'),
+                label: Text(AppCopy.text('text.add_patient_243c1f9d')),
               )
             : null;
 
@@ -99,7 +101,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Patient Management',
+                      AppCopy.text('text.patient_management_8a38f5f1'),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 12),
@@ -109,13 +111,13 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                         FilledButton.tonalIcon(
                           onPressed: () => _showFilterSheet(context),
                           icon: const Icon(Icons.filter_list_rounded),
-                          label: const Text('Filter'),
+                          label: Text(AppCopy.text('text.filter_f4a9c097')),
                         ),
                         const SizedBox(width: 8),
                         FilledButton.tonalIcon(
                           onPressed: _refresh,
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Refresh'),
+                          label: Text(AppCopy.text('text.refresh_815aad4')),
                         ),
                       ],
                     ),
@@ -128,11 +130,14 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search patients by name or ID...',
+                  hintText: AppCopy.text(
+                    'text.search_patients_by_name_or_id_db17cd9b',
+                  ),
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
-                  fillColor:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
                     borderSide: BorderSide.none,
@@ -173,7 +178,15 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: InputChip(
-                          label: Text('Doctor: ${_doctorFilterLabel ?? _doctorFilter}'),
+                          label: Text(
+                            AppCopy.text(
+                              'text.doctor_value1_2f9517c8',
+                              arguments: {
+                                'value1': (_doctorFilterLabel ?? _doctorFilter)
+                                    .toString(),
+                              },
+                            ),
+                          ),
                           onDeleted: () => setState(() {
                             _doctorFilter = null;
                             _doctorFilterLabel = null;
@@ -188,7 +201,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                         _doctorFilterLabel = null;
                         _page = 1;
                       }),
-                      child: const Text('Clear All'),
+                      child: Text(AppCopy.text('text.clear_all_de7f94e5')),
                     ),
                   ],
                 ),
@@ -200,43 +213,38 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
               child: query.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : query.isError
-                      ? ApiErrorState(
-                          error: query.error,
-                          onRetry: _refresh,
-                        )
-                      : patientsList.isEmpty
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.people_outline_rounded,
-                                    size: 48,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text('No patients found'),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: EdgeInsets.only(
-                                bottom: canManage ? 80 : 16,
-                              ),
-                              itemCount: patientsList.length,
-                              itemBuilder: (context, index) {
-                                final patient =
-                                    patientsList[index] as Map<String, dynamic>;
-                                return _PatientListTile(
-                                  patient: patient,
-                                  onRefresh: _refresh,
-                                  canManage: canManage,
-                                  canAssign: canAssign,
-                                  canStatus: canStatus,
-                                  canResetCredentials: canResetCredentials,
-                                );
-                              },
-                            ),
+                  ? ApiErrorState(error: query.error, onRetry: _refresh)
+                  : patientsList.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline_rounded,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(AppCopy.text('text.no_patients_found_a637cb0')),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.only(bottom: canManage ? 80 : 16),
+                      itemCount: patientsList.length,
+                      itemBuilder: (context, index) {
+                        final patient =
+                            patientsList[index] as Map<String, dynamic>;
+                        return _PatientListTile(
+                          patient: patient,
+                          onRefresh: _refresh,
+                          canManage: canManage,
+                          canAssign: canAssign,
+                          canStatus: canStatus,
+                          canResetCredentials: canResetCredentials,
+                        );
+                      },
+                    ),
             ),
 
             // Pagination
@@ -253,10 +261,19 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.chevron_left_rounded),
-                      onPressed:
-                          _page > 1 ? () => setState(() => _page--) : null,
+                      onPressed: _page > 1
+                          ? () => setState(() => _page--)
+                          : null,
                     ),
-                    Text('Page $_page of $totalPages'),
+                    Text(
+                      AppCopy.text(
+                        'text.page_value1_of_value2_bd90d60a',
+                        arguments: {
+                          'value1': (_page).toString(),
+                          'value2': (totalPages).toString(),
+                        },
+                      ),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.chevron_right_rounded),
                       onPressed: _page < totalPages
@@ -273,7 +290,9 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
           return Scaffold(
             appBar: AppBar(
               title: Text(
-                canManage ? 'Patient Management' : 'Patients',
+                canManage
+                    ? AppCopy.text('text.patient_management_8a38f5f1')
+                    : AppCopy.text('text.patients_7364b4f7'),
               ),
               actions: [
                 IconButton(
@@ -301,11 +320,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
             Positioned(
               right: 16,
               bottom: 16,
-              child: SafeArea(
-                top: false,
-                left: false,
-                child: addPatientFab,
-              ),
+              child: SafeArea(top: false, left: false, child: addPatientFab),
             ),
           ],
         );
@@ -321,11 +336,17 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
     bool doctorsLoading = _availableDoctorsLoading || doctors.isEmpty;
     String? doctorLoadError;
 
-    Future<void> loadDoctors(StateSetter setSheetState, BuildContext sheetContext) async {
+    Future<void> loadDoctors(
+      StateSetter setSheetState,
+      BuildContext sheetContext,
+    ) async {
       if (_availableDoctors.isNotEmpty || _availableDoctorsLoading) return;
       _availableDoctorsLoading = true;
       try {
-        final response = await _repo.getAllDoctors(limit: 100, isActive: 'true');
+        final response = await _repo.getAllDoctors(
+          limit: 100,
+          isActive: 'true',
+        );
         final items = response['doctors'] as List? ?? [];
         doctors = items.cast<Map<String, dynamic>>();
         _availableDoctors = doctors;
@@ -338,6 +359,7 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
         if (sheetContext.mounted) setSheetState(() {});
       }
     }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -345,116 +367,146 @@ class _PatientManagementPageState extends State<PatientManagementPage> {
         builder: (ctx, setSheetState) {
           if (doctorsLoading) loadDoctors(setSheetState, ctx);
           return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 24,
-            right: 24,
-            top: 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Filter Patients',
-                style: Theme.of(ctx).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 24),
-              Text('Account Status', style: Theme.of(ctx).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilterChip(
-                    label: const Text('All'),
-                    selected: status == null,
-                    onSelected: (_) => setSheetState(() => status = null),
-                  ),
-                  FilterChip(
-                    label: const Text('Active'),
-                    selected: status == 'Active',
-                    onSelected: (_) => setSheetState(() => status = 'Active'),
-                  ),
-                  FilterChip(
-                    label: const Text('Discharged'),
-                    selected: status == 'Discharged',
-                    onSelected: (_) =>
-                        setSheetState(() => status = 'Discharged'),
-                  ),
-                  FilterChip(
-                    label: const Text('Deceased'),
-                    selected: status == 'Deceased',
-                    onSelected: (_) => setSheetState(() => status = 'Deceased'),
-                  ),
-                  FilterChip(
-                    label: const Text('Assignment conflict'),
-                    selected: status == 'AssignmentConflict',
-                    onSelected: (_) => setSheetState(() => status = 'AssignmentConflict'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text('Assigned doctor', style: Theme.of(ctx).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              if (doctorsLoading)
-                const LinearProgressIndicator()
-              else if (doctorLoadError != null)
-                const Text('Could not load doctors. Reopen filters to retry.')
-              else
-                DropdownButtonFormField<String>(
-                  initialValue: doctorId,
-                  hint: const Text('All doctors'),
-                  decoration: const InputDecoration(labelText: 'Doctor'),
-                  items: doctors.map((doctor) {
-                    final profile = doctor['profile_id'] as Map<String, dynamic>? ?? {};
-                    final id = (doctor['_id'] ?? doctor['id']).toString();
-                    final name = profile['name'] as String? ?? doctor['login_id'] as String? ?? 'Unknown';
-                    return DropdownMenuItem(value: id, child: Text(name));
-                  }).toList(),
-                  onChanged: (value) => setSheetState(() {
-                    doctorId = value;
-                    doctorName = doctors.where((doctor) => (doctor['_id'] ?? doctor['id']).toString() == value)
-                        .map((doctor) => (doctor['profile_id'] as Map<String, dynamic>?)?['name'] as String?)
-                        .firstOrNull;
-                  }),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              left: 24,
+              right: 24,
+              top: 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppCopy.text('text.filter_patients_36ac587'),
+                  style: Theme.of(ctx).textTheme.headlineSmall,
                 ),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        setState(() {
-                          _statusFilter = null;
-                          _doctorFilter = null;
-                          _doctorFilterLabel = null;
-                          _page = 1;
-                        });
-                        Navigator.pop(ctx);
-                      },
-                      child: const Text('Reset'),
+                const SizedBox(height: 24),
+                Text(
+                  AppCopy.text('text.account_status_ebb2e11e'),
+                  style: Theme.of(ctx).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilterChip(
+                      label: Text(AppCopy.text('text.all_75afe364')),
+                      selected: status == null,
+                      onSelected: (_) => setSheetState(() => status = null),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        setState(() {
-                          _statusFilter = status;
-                          _doctorFilter = doctorId;
-                          _doctorFilterLabel = doctorName;
-                          _page = 1;
-                        });
-                        Navigator.pop(ctx);
-                      },
-                      child: const Text('Apply'),
+                    FilterChip(
+                      label: Text(AppCopy.text('text.active_1f89134f')),
+                      selected: status == 'Active',
+                      onSelected: (_) => setSheetState(() => status = 'Active'),
                     ),
+                    FilterChip(
+                      label: Text(AppCopy.text('text.discharged_dbe69549')),
+                      selected: status == 'Discharged',
+                      onSelected: (_) =>
+                          setSheetState(() => status = 'Discharged'),
+                    ),
+                    FilterChip(
+                      label: Text(AppCopy.text('text.deceased_1b212e3f')),
+                      selected: status == 'Deceased',
+                      onSelected: (_) =>
+                          setSheetState(() => status = 'Deceased'),
+                    ),
+                    FilterChip(
+                      label: Text(
+                        AppCopy.text('text.assignment_conflict_8312dd32'),
+                      ),
+                      selected: status == 'AssignmentConflict',
+                      onSelected: (_) =>
+                          setSheetState(() => status = 'AssignmentConflict'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  AppCopy.text('text.assigned_doctor_ffb10bc4'),
+                  style: Theme.of(ctx).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                if (doctorsLoading)
+                  const LinearProgressIndicator()
+                else if (doctorLoadError != null)
+                  Text(
+                    AppCopy.text(
+                      'text.could_not_load_doctors_reopen_filters_to_retry_f6a0508e',
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    initialValue: doctorId,
+                    hint: Text(AppCopy.text('text.all_doctors_ad11cc44')),
+                    decoration: InputDecoration(
+                      labelText: AppCopy.text('text.doctor_91c5cb32'),
+                    ),
+                    items: doctors.map((doctor) {
+                      final profile =
+                          doctor['profile_id'] as Map<String, dynamic>? ?? {};
+                      final id = (doctor['_id'] ?? doctor['id']).toString();
+                      final name =
+                          profile['name'] as String? ??
+                          doctor['login_id'] as String? ??
+                          'Unknown';
+                      return DropdownMenuItem(value: id, child: Text(name));
+                    }).toList(),
+                    onChanged: (value) => setSheetState(() {
+                      doctorId = value;
+                      doctorName = doctors
+                          .where(
+                            (doctor) =>
+                                (doctor['_id'] ?? doctor['id']).toString() ==
+                                value,
+                          )
+                          .map(
+                            (doctor) =>
+                                (doctor['profile_id']
+                                        as Map<String, dynamic>?)?['name']
+                                    as String?,
+                          )
+                          .firstOrNull;
+                    }),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setState(() {
+                            _statusFilter = null;
+                            _doctorFilter = null;
+                            _doctorFilterLabel = null;
+                            _page = 1;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                        child: Text(AppCopy.text('text.reset_ac8a560')),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          setState(() {
+                            _statusFilter = status;
+                            _doctorFilter = doctorId;
+                            _doctorFilterLabel = doctorName;
+                            _page = 1;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                        child: Text(AppCopy.text('text.apply_ca77bbdb')),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           );
         },
       ),
@@ -481,19 +533,23 @@ class _PatientListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
-    final profile = patient['profile_id'] as Map<String, dynamic>? ??
+    final profile =
+        patient['profile_id'] as Map<String, dynamic>? ??
         patient['patient_profile'] as Map<String, dynamic>? ??
         {};
     final demographics = profile['demographics'] as Map<String, dynamic>? ?? {};
-    final name = demographics['name'] as String? ??
+    final name =
+        demographics['name'] as String? ??
         patient['login_id'] as String? ??
         'Unknown';
     final age = demographics['age'];
     final gender = demographics['gender'] as String? ?? '';
     final isActive = patient['is_active'] as bool? ?? true;
     final accountStatus = profile['account_status'] as String? ?? 'Active';
-    final id = patient['_id'] as String? ??
+    final id =
+        patient['_id'] as String? ??
         patient['id'] as String? ??
         patient['user_id'] as String? ??
         '';
@@ -501,12 +557,14 @@ class _PatientListTile extends StatelessWidget {
     final assignedDoctorRef =
         profile['assigned_doctor_id'] ?? patient['assigned_doctor_id'];
     final currentDoctorId = assignedDoctorRef is Map
-        ? (assignedDoctorRef['_id'] ?? assignedDoctorRef['id'])?.toString() ?? ''
+        ? (assignedDoctorRef['_id'] ?? assignedDoctorRef['id'])?.toString() ??
+              ''
         : assignedDoctorRef?.toString() ?? '';
     final assignedDoctorProfile = assignedDoctorRef is Map
         ? assignedDoctorRef['profile_id'] as Map<String, dynamic>?
         : null;
-    final assignedDoctorName = patient['assigned_doctor_name'] as String? ??
+    final assignedDoctorName =
+        patient['assigned_doctor_name'] as String? ??
         assignedDoctorProfile?['name'] as String? ??
         (currentDoctorId.isEmpty ? 'Unassigned' : 'Doctor unavailable');
     final details = [
@@ -564,11 +622,13 @@ class _PatientListTile extends StatelessWidget {
                           ),
                           itemBuilder: (_) => [
                             if (canManage)
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'edit',
                                 child: ListTile(
                                   leading: Icon(Icons.edit_rounded, size: 20),
-                                  title: Text('Edit'),
+                                  title: Text(
+                                    AppCopy.text('text.edit_c2c76cb1'),
+                                  ),
                                   contentPadding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
                                 ),
@@ -577,22 +637,36 @@ class _PatientListTile extends StatelessWidget {
                               PopupMenuItem(
                                 value: 'reassign',
                                 child: ListTile(
-                                  leading:
-                                      Icon(Icons.swap_horiz_rounded, size: 20),
-                                  title: Text(accountStatus == 'AssignmentConflict'
-                                      ? 'Resolve assignment conflict'
-                                      : 'Reassign Doctor'),
+                                  leading: Icon(
+                                    Icons.swap_horiz_rounded,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    accountStatus == 'AssignmentConflict'
+                                        ? AppCopy.text(
+                                            'text.resolve_assignment_conflict_ddc90d56',
+                                          )
+                                        : AppCopy.text(
+                                            'text.reassign_doctor_55c53170',
+                                          ),
+                                  ),
                                   contentPadding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
                                 ),
                               ),
                             if (canResetCredentials)
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'password',
                                 child: ListTile(
-                                  leading:
-                                      Icon(Icons.lock_reset_rounded, size: 20),
-                                  title: Text('Reset Password'),
+                                  leading: Icon(
+                                    Icons.lock_reset_rounded,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    AppCopy.text(
+                                      'text.reset_password_e61eb009',
+                                    ),
+                                  ),
                                   contentPadding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
                                 ),
@@ -609,10 +683,17 @@ class _PatientListTile extends StatelessWidget {
                                     color: isActive ? Colors.red : Colors.green,
                                   ),
                                   title: Text(
-                                    isActive ? 'Deactivate' : 'Activate',
+                                    isActive
+                                        ? AppCopy.text(
+                                            'text.deactivate_7fcfb5f3',
+                                          )
+                                        : AppCopy.text(
+                                            'text.activate_3b8f0190',
+                                          ),
                                     style: TextStyle(
-                                      color:
-                                          isActive ? Colors.red : Colors.green,
+                                      color: isActive
+                                          ? Colors.red
+                                          : Colors.green,
                                     ),
                                   ),
                                   contentPadding: EdgeInsets.zero,
@@ -640,7 +721,10 @@ class _PatientListTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            'OP #$opNum',
+                            AppCopy.text(
+                              'text.op_value1_38c57f2b',
+                              arguments: {'value1': (opNum).toString()},
+                            ),
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
@@ -659,7 +743,13 @@ class _PatientListTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Login ${isActive ? 'Active' : 'Inactive'}',
+                          AppCopy.text(
+                            'text.login_value1_31160fee',
+                            arguments: {
+                              'value1': (isActive ? 'Active' : 'Inactive')
+                                  .toString(),
+                            },
+                          ),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: isActive
                                 ? theme.colorScheme.onPrimaryContainer
@@ -668,28 +758,55 @@ class _PatientListTile extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: accountStatus == 'AssignmentConflict'
                               ? theme.colorScheme.errorContainer
                               : theme.colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text('Clinical: $accountStatus', style: theme.textTheme.labelSmall),
+                        child: Text(
+                          AppCopy.text(
+                            'text.clinical_value1_c59500da',
+                            arguments: {'value1': (accountStatus).toString()},
+                          ),
+                          style: theme.textTheme.labelSmall,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('Assigned doctor: $assignedDoctorName', style: theme.textTheme.bodySmall),
+                  Text(
+                    AppCopy.text(
+                      'text.assigned_doctor_value1_59b7cd96',
+                      arguments: {'value1': (assignedDoctorName).toString()},
+                    ),
+                    style: theme.textTheme.bodySmall,
+                  ),
                   if (accountStatus == 'AssignmentConflict') ...[
                     const SizedBox(height: 4),
-                    Text('Assignment repair is required before clinical actions can resume.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                    Text(
+                      AppCopy.text(
+                        'text.assignment_repair_is_required_before_clinical_ac_22735be2',
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
                   ],
                   if (accountStatus == 'Deceased') ...[
                     const SizedBox(height: 4),
-                    Text('Deceased patient records cannot be reactivated or discharged.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+                    Text(
+                      AppCopy.text(
+                        'text.deceased_patient_records_cannot_be_reactivated_o_8eb5cb8b',
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
                   ],
                   if (details.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -754,9 +871,15 @@ class _PatientListTile extends StatelessWidget {
         break;
       case 'status':
         if (accountStatus == 'AssignmentConflict' && !isActive) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Resolve the assignment conflict before activating this account.'),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppCopy.text(
+                  'text.resolve_the_assignment_conflict_before_activatin_da6f6d15',
+                ),
+              ),
+            ),
+          );
           return;
         }
         showStatusToggleDialog(

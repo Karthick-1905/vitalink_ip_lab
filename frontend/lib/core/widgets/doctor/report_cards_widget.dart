@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/utils/inr_target_range.dart';
 import 'package:frontend/core/widgets/doctor/report_action_modal.dart';
@@ -36,15 +37,13 @@ class ReportCardWithActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Colors.grey[50]!,
-          ],
+          colors: [Colors.white, Colors.grey[50]!],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[200]!),
@@ -80,8 +79,9 @@ class ReportCardWithActions extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'INR Value',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        AppCopy.text('text.inr_value_e1178645'),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
                               color: Colors.white70,
                               fontWeight: FontWeight.w500,
                             ),
@@ -104,7 +104,7 @@ class ReportCardWithActions extends StatelessWidget {
                     Text(
                       _testDate != null
                           ? DateFormat('MMM dd').format(_testDate!)
-                          : 'Date n/a',
+                          : AppCopy.text('text.date_n_a_61cfb7b3'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -132,8 +132,8 @@ class ReportCardWithActions extends StatelessWidget {
                           color: Colors.red[400],
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
-                          'CRITICAL',
+                        child: Text(
+                          AppCopy.text('text.critical_23405508'),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -159,7 +159,9 @@ class ReportCardWithActions extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(_inrValue).withValues(alpha: 0.1),
+                        color: _getStatusColor(
+                          _inrValue,
+                        ).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
@@ -172,9 +174,9 @@ class ReportCardWithActions extends StatelessWidget {
                     Text(
                       _getStatusText(_inrValue),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: _getStatusColor(_inrValue),
-                          ),
+                        fontWeight: FontWeight.w600,
+                        color: _getStatusColor(_inrValue),
+                      ),
                     ),
                   ],
                 ),
@@ -182,11 +184,11 @@ class ReportCardWithActions extends StatelessWidget {
                 if ((report['notes'] as String?)?.isNotEmpty ?? false) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'Notes',
+                    AppCopy.text('text.notes_ff01b6a'),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -202,32 +204,24 @@ class ReportCardWithActions extends StatelessWidget {
           // Action buttons footer
           Container(
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Colors.grey[200]!),
-              ),
+              border: Border(top: BorderSide(color: Colors.grey[200]!)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: _buildActionButton(
                     context,
-                    label: 'View',
+                    label: AppCopy.text('text.view_5e4baa18'),
                     icon: Icons.visibility,
-                    onPressed: isLoading
-                        ? null
-                        : () => _showViewModal(context),
+                    onPressed: isLoading ? null : () => _showViewModal(context),
                     color: const Color(0xFF6366F1),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 48,
-                  color: Colors.grey[200],
-                ),
+                Container(width: 1, height: 48, color: Colors.grey[200]),
                 Expanded(
                   child: _buildActionButton(
                     context,
-                    label: 'Update',
+                    label: AppCopy.text('text.update_6e230e94'),
                     icon: Icons.edit,
                     onPressed: isLoading
                         ? null
@@ -268,9 +262,9 @@ class ReportCardWithActions extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: onPressed == null ? Colors.grey[400] : color,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: onPressed == null ? Colors.grey[400] : color,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -352,10 +346,9 @@ class DoctorReportsListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (error != null) {
@@ -363,29 +356,25 @@ class DoctorReportsListWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.red[400],
-            ),
+            Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
             const SizedBox(height: 16),
             Text(
-              'Error loading reports',
+              AppCopy.text('text.error_loading_reports_bd004f06'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
               error!,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(AppCopy.text('text.retry_8036af59')),
             ),
           ],
         ),
@@ -397,29 +386,27 @@ class DoctorReportsListWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 48,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              'No reports yet',
+              AppCopy.text('text.no_reports_yet_6d674c9b'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'Reports will appear here once uploaded',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              AppCopy.text(
+                'text.reports_will_appear_here_once_uploaded_e816f0e6',
+              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
             if (onEmpty != null) ...[
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: onEmpty,
                 icon: const Icon(Icons.add),
-                label: const Text('Upload Report'),
+                label: Text(AppCopy.text('text.upload_report_704c35f6')),
               ),
             ],
           ],

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -88,10 +89,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final List<String> _visitedDestinationIds = <String>[];
   String? _selectedDestinationId;
 
-  late final List<AdminDestination> _destinations = [
+  List<AdminDestination> get _destinations => [
     AdminDestination(
       id: 'dashboard',
-      label: 'Dashboard',
+      label: AppCopy.text('text.dashboard_11f6d87b'),
       icon: Icons.dashboard_outlined,
       selectedIcon: Icons.dashboard_rounded,
       readCapabilities: AdminCapabilities.dashboardRead,
@@ -99,7 +100,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'hospitals',
-      label: 'Hospitals',
+      label: AppCopy.text('text.hospitals_64b409e0'),
       icon: Icons.local_hospital_outlined,
       selectedIcon: Icons.local_hospital_rounded,
       readCapabilities: const [AdminCapabilities.platformHospitalsRead],
@@ -109,7 +110,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'doctors',
-      label: 'Doctors',
+      label: AppCopy.text('text.doctors_bb5ef753'),
       icon: Icons.medical_services_outlined,
       selectedIcon: Icons.medical_services_rounded,
       readCapabilities: const [AdminCapabilities.tenantDoctorsRead],
@@ -124,7 +125,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'patients',
-      label: 'Patients',
+      label: AppCopy.text('text.patients_7364b4f7'),
       icon: Icons.people_outline,
       selectedIcon: Icons.people_rounded,
       readCapabilities: const [AdminCapabilities.tenantPatientsRead],
@@ -139,7 +140,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'admin-accounts',
-      label: 'Administrator Accounts',
+      label: AppCopy.text('text.administrator_accounts_fd0d4536'),
       icon: Icons.manage_accounts_outlined,
       selectedIcon: Icons.manage_accounts_rounded,
       readCapabilities: const [AdminCapabilities.platformAdminAccountsRead],
@@ -150,7 +151,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'access-control',
-      label: 'Access Control',
+      label: AppCopy.text('text.access_control_4af28fda'),
       icon: Icons.admin_panel_settings_outlined,
       selectedIcon: Icons.admin_panel_settings_rounded,
       readCapabilities: const [AdminCapabilities.platformRolePolicyRead],
@@ -161,7 +162,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'billing',
-      label: 'Billing',
+      label: AppCopy.text('text.billing_6f58987c'),
       icon: Icons.receipt_long_outlined,
       selectedIcon: Icons.receipt_long_rounded,
       readCapabilities: AdminCapabilities.billingRead,
@@ -169,7 +170,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'analytics',
-      label: 'Analytics',
+      label: AppCopy.text('text.analytics_bcade02b'),
       icon: Icons.analytics_outlined,
       selectedIcon: Icons.analytics_rounded,
       readCapabilities: AdminCapabilities.analyticsRead,
@@ -180,7 +181,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'notifications',
-      label: 'Notifications',
+      label: AppCopy.text('text.notifications_381d190f'),
       icon: Icons.notifications_outlined,
       selectedIcon: Icons.notifications_rounded,
       readCapabilities: AdminCapabilities.notificationActions,
@@ -191,7 +192,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'audit',
-      label: 'Audit Logs',
+      label: AppCopy.text('text.audit_logs_9995d21b'),
       icon: Icons.history_outlined,
       selectedIcon: Icons.history_rounded,
       readCapabilities: AdminCapabilities.auditRead,
@@ -202,7 +203,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'platform-configuration',
-      label: 'Platform Configuration',
+      label: AppCopy.text('text.platform_configuration_25fccd7c'),
       icon: Icons.tune_outlined,
       selectedIcon: Icons.tune_rounded,
       readCapabilities: const [AdminCapabilities.platformSystemConfigRead],
@@ -213,7 +214,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'operations-health',
-      label: 'Operations Health',
+      label: AppCopy.text('text.operations_health_7a119f17'),
       icon: Icons.health_and_safety_outlined,
       selectedIcon: Icons.health_and_safety_rounded,
       readCapabilities: const [AdminCapabilities.tenantOperationsHealthRead],
@@ -223,7 +224,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
     AdminDestination(
       id: 'personal-security',
-      label: 'Personal Security',
+      label: AppCopy.text('text.personal_security_f7c6e401'),
       icon: Icons.lock_outline_rounded,
       selectedIcon: Icons.lock_rounded,
       builder: (_) => AccountSecurityPage(repository: _repository),
@@ -232,12 +233,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final controller = AdminAccessScope.maybeOf(context);
     if (controller == null) {
-      return const AccessDeniedState(
-        title: 'Administrator access unavailable',
-        message:
-            'Open the administrator portal from a signed-in administrator session.',
+      return AccessDeniedState(
+        title: AppCopy.text('text.administrator_access_unavailable_30d06fa2'),
+        message: AppCopy.text(
+          'text.open_the_administrator_portal_from_a_signed_in_a_44c50aa7',
+        ),
       );
     }
     final access = controller.access;
@@ -247,10 +250,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       }
       return Scaffold(
         body: AccessDeniedState(
-          title: 'Could not verify administrator access',
-          message:
-              'VitaLink could not load your current administrator permissions. No administrator pages were loaded.',
-          actionLabel: 'Try again',
+          title: AppCopy.text(
+            'text.could_not_verify_administrator_access_ff0520f9',
+          ),
+          message: AppCopy.text(
+            'text.vitalink_could_not_load_your_current_administrat_89515f84',
+          ),
+          actionLabel: AppCopy.text('text.try_again_213e90fa'),
           onAction: controller.refresh,
         ),
       );
@@ -260,11 +266,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         .where((destination) => destination.isReadable(access))
         .toList(growable: false);
     if (allowedDestinations.isEmpty) {
-      return const Scaffold(
+      return Scaffold(
         body: AccessDeniedState(
-          title: 'No administrator pages are available',
-          message:
-              'Your current policy does not include a readable administrator destination. Ask an Application Admin to review your role policy.',
+          title: AppCopy.text(
+            'text.no_administrator_pages_are_available_871c08d2',
+          ),
+          message: AppCopy.text(
+            'text.your_current_policy_does_not_include_a_readable__5ac0b5ee',
+          ),
         ),
       );
     }
@@ -356,6 +365,7 @@ class _DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       anyCapabilities: AdminCapabilities.dashboardRead,
       builder: (context) {
@@ -381,8 +391,8 @@ class _DashboardTab extends StatelessWidget {
           children: [
             Text(
               access.role == AdminRole.hospitalAdmin
-                  ? 'Hospital Dashboard'
-                  : 'Administrator Dashboard',
+                  ? AppCopy.text('text.hospital_dashboard_cbcfc6bf')
+                  : AppCopy.text('text.administrator_dashboard_cc0112de'),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -399,16 +409,19 @@ class _DashboardTab extends StatelessWidget {
             if (canReadDashboardStats)
               _StatsSection(repository: repository)
             else
-              const _UnavailableDashboardWidget(
+              _UnavailableDashboardWidget(
                 icon: Icons.analytics_outlined,
-                title: 'Dashboard statistics not included',
-                message:
-                    'Your policy does not include dashboard aggregate access. Other permitted widgets remain available independently.',
+                title: AppCopy.text(
+                  'text.dashboard_statistics_not_included_aba33a49',
+                ),
+                message: AppCopy.text(
+                  'text.your_policy_does_not_include_dashboard_aggregate_8889f984',
+                ),
               ),
             if (canAddDoctor || canAddPatient) ...[
               const SizedBox(height: 20),
               Text(
-                'Quick Actions',
+                AppCopy.text('text.quick_actions_8d04349f'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -420,13 +433,13 @@ class _DashboardTab extends StatelessWidget {
                 children: [
                   if (canAddDoctor)
                     _QuickActionCard(
-                      title: 'Add Doctor',
+                      title: AppCopy.text('text.add_doctor_364f0b4f'),
                       icon: Icons.person_add_rounded,
                       onTap: () => showAddDoctorDialog(context),
                     ),
                   if (canAddPatient)
                     _QuickActionCard(
-                      title: 'Add Patient',
+                      title: AppCopy.text('text.add_patient_243c1f9d'),
                       icon: Icons.person_add_alt_1_rounded,
                       onTap: () => showAddPatientDialog(context),
                     ),
@@ -446,7 +459,9 @@ class _DashboardTab extends StatelessWidget {
         );
         if (AdminScaffold.showsSidebar(context)) {
           return Scaffold(
-            appBar: AppBar(title: const Text('VitaLink Admin')),
+            appBar: AppBar(
+              title: Text(AppCopy.text('text.vitalink_admin_1b2ae580')),
+            ),
             body: body,
           );
         }
@@ -463,6 +478,7 @@ class _StatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<AdminStatsModel>(
       options: QueryOptions<AdminStatsModel>(
         queryKey: AdminQueryKeys.stats(),
@@ -474,7 +490,9 @@ class _StatsSection extends StatelessWidget {
           return ApiErrorState(
             error: query.error,
             onRetry: query.refetch,
-            title: 'Could not load operational analytics',
+            title: AppCopy.text(
+              'text.could_not_load_operational_analytics_3a28d54d',
+            ),
           );
         }
         final stats = query.data;
@@ -489,25 +507,25 @@ class _StatsSection extends StatelessWidget {
               children: [
                 _StatsCard(
                   width: width,
-                  title: 'Total Doctors',
+                  title: AppCopy.text('text.total_doctors_4eb54df5'),
                   value: '${stats?.doctorStats.total ?? 0}',
                   icon: Icons.medical_services_rounded,
                 ),
                 _StatsCard(
                   width: width,
-                  title: 'Total Patients',
+                  title: AppCopy.text('text.total_patients_170282a9'),
                   value: '${stats?.patientStats.total ?? 0}',
                   icon: Icons.people_rounded,
                 ),
                 _StatsCard(
                   width: width,
-                  title: 'Active Doctors',
+                  title: AppCopy.text('text.active_doctors_2dd5bbbb'),
                   value: '${stats?.doctorStats.active ?? 0}',
                   icon: Icons.verified_user_rounded,
                 ),
                 _StatsCard(
                   width: width,
-                  title: 'Active Patients',
+                  title: AppCopy.text('text.active_patients_2353842f'),
                   value: '${stats?.patientStats.active ?? 0}',
                   icon: Icons.group_rounded,
                 ),
@@ -527,6 +545,7 @@ class _PlatformHealthSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<SystemHealthModel>(
       options: QueryOptions<SystemHealthModel>(
         queryKey: const ['admin', 'platform-health-summary'],
@@ -541,7 +560,7 @@ class _PlatformHealthSummary extends StatelessWidget {
                 const Icon(Icons.monitor_heart_outlined),
                 const SizedBox(width: 8),
                 Text(
-                  'Platform Health',
+                  AppCopy.text('text.platform_health_e5beca84'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -549,7 +568,9 @@ class _PlatformHealthSummary extends StatelessWidget {
                 const Spacer(),
                 IconButton(
                   onPressed: query.refetch,
-                  tooltip: 'Refresh platform health',
+                  tooltip: AppCopy.text(
+                    'text.refresh_platform_health_f017c4a7',
+                  ),
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
@@ -581,6 +602,7 @@ class _ReminderDeliveryHealthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
         queryKey: const ['admin', 'reminder-delivery-health'],
@@ -605,13 +627,17 @@ class _ReminderDeliveryHealthCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Hospital reminder delivery health',
+                        AppCopy.text(
+                          'text.hospital_reminder_delivery_health_78ce578d',
+                        ),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
                     IconButton(
                       onPressed: query.refetch,
-                      tooltip: 'Refresh reminder health',
+                      tooltip: AppCopy.text(
+                        'text.refresh_reminder_health_2277ce7c',
+                      ),
                       icon: const Icon(Icons.refresh_rounded),
                     ),
                   ],
@@ -620,21 +646,26 @@ class _ReminderDeliveryHealthCard extends StatelessWidget {
                 if (query.isLoading)
                   const LinearProgressIndicator()
                 else if (query.isError)
-                  const Text(
-                    'Delivery health is temporarily unavailable. Other dashboard widgets are unaffected.',
+                  Text(
+                    AppCopy.text(
+                      'text.delivery_health_is_temporarily_unavailable_other_79765ceb',
+                    ),
                   )
                 else
                   Wrap(
                     spacing: 24,
                     runSpacing: 12,
                     children: [
-                      _ReminderMetric(label: 'Sent today', value: '$recent'),
                       _ReminderMetric(
-                        label: 'Delivered',
+                        label: AppCopy.text('text.sent_today_9f89a796'),
+                        value: '$recent',
+                      ),
+                      _ReminderMetric(
+                        label: AppCopy.text('text.delivered_e84a8faf'),
                         value: '${status['SUCCEEDED'] ?? 0}',
                       ),
                       _ReminderMetric(
-                        label: 'Needs attention',
+                        label: AppCopy.text('text.needs_attention_5d640b9c'),
                         value: '$overdue',
                       ),
                     ],
@@ -656,6 +687,7 @@ class _ReminderMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return SizedBox(
       width: 140,
       child: Column(
@@ -689,6 +721,7 @@ class _StatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return SizedBox(
       width: width,
@@ -733,6 +766,7 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return SizedBox(
       width: 220,
@@ -776,6 +810,7 @@ class _UnavailableDashboardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -815,5 +850,5 @@ String _formattedDate() {
     'Nov',
     'Dec',
   ];
-  return '${months[now.month - 1]} ${now.day}, ${now.year}';
+  return "${(months[now.month - 1]).toString()} ${(now.day).toString()}, ${(now.year).toString()}";
 }

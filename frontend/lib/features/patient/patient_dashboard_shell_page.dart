@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -53,10 +54,7 @@ bool shouldShowSystemAnnouncementPopup({
 class PatientDashboardShellPage extends StatefulWidget {
   final int initialTabIndex;
 
-  const PatientDashboardShellPage({
-    super.key,
-    this.initialTabIndex = 0,
-  });
+  const PatientDashboardShellPage({super.key, this.initialTabIndex = 0});
 
   @override
   State<PatientDashboardShellPage> createState() =>
@@ -68,9 +66,11 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
   static const int _tabCount = 5;
 
   late int _currentNavIndex;
+
   /// Tabs that have been opened at least once. Unvisited tabs stay unmounted
   /// so their UseQuery data loaders do not fire on shell open.
   final Set<int> _activatedTabs = <int>{};
+
   /// Keep built tab widgets so revisiting a tab preserves local UI state.
   final List<Widget?> _tabCache = List<Widget?>.filled(_tabCount, null);
   int? _lastObservedUnreadCount;
@@ -174,22 +174,20 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
         );
       case 0:
       default:
-        return PatientPage(
-          embedInShell: true,
-          onTabChanged: _onNavChanged,
-        );
+        return PatientPage(embedInShell: true, onTabChanged: _onNavChanged);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<int>(
       options: QueryOptions<int>(
         queryKey: PatientQueryKeys.doctorUpdatesUnread(),
         refetchOnWindowFocus: false,
         queryFn: () async {
-          final summary =
-              await AppDependencies.patientRepository.getDoctorUpdatesSummary();
+          final summary = await AppDependencies.patientRepository
+              .getDoctorUpdatesSummary();
           return (summary['unread_count'] as num?)?.toInt() ?? 0;
         },
       ),
@@ -219,9 +217,9 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
               unreadDoctorUpdatesCount: unreadDoctorUpdates,
               notificationBadgeCount: unreadNotifications,
               onNotificationPressed: () async {
-                await Navigator.of(context).pushNamed(
-                  AppRoutes.patientNotifications,
-                );
+                await Navigator.of(
+                  context,
+                ).pushNamed(AppRoutes.patientNotifications);
                 _refreshUnreadUpdates();
                 _refreshNotificationsUnread();
               },
@@ -284,11 +282,16 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
         context: context,
         builder: (dialogContext) {
           return AlertDialog(
-            title: const Text('New Doctor Updates'),
+            title: Text(AppCopy.text('text.new_doctor_updates_9bf78676')),
             content: Text(
               unreadCount == 1
-                  ? 'You have 1 unread doctor update.'
-                  : 'You have $unreadCount unread doctor updates.',
+                  ? AppCopy.text(
+                      'text.you_have_1_unread_doctor_update_9c99f3be',
+                    )
+                  : AppCopy.text(
+                      'text.you_have_value1_unread_doctor_updates_dc0fdf58',
+                      arguments: {'value1': (unreadCount).toString()},
+                    ),
             ),
             actions: [
               TextButton(
@@ -296,22 +299,22 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
                   Navigator.of(dialogContext).pop();
                   _popupScheduled = false;
                 },
-                child: const Text('Later'),
+                child: Text(AppCopy.text('text.later_f7f62b49')),
               ),
               FilledButton(
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
                   _popupScheduled = false;
                   unawaited(
-                    Navigator.of(context)
-                        .pushNamed(AppRoutes.patientNotifications)
-                        .then((_) {
+                    Navigator.of(
+                      context,
+                    ).pushNamed(AppRoutes.patientNotifications).then((_) {
                       _refreshUnreadUpdates();
                       _refreshNotificationsUnread();
                     }),
                   );
                 },
-                child: const Text('View Updates'),
+                child: Text(AppCopy.text('text.view_updates_c103f88e')),
               ),
             ],
           );
@@ -325,31 +328,21 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
   void _refreshUnreadUpdates() {
     if (!mounted) return;
     final queryClient = QueryClientProvider.of(context);
-    queryClient.invalidateQueries(
-      PatientQueryKeys.doctorUpdatesUnread(),
-    );
+    queryClient.invalidateQueries(PatientQueryKeys.doctorUpdatesUnread());
   }
 
   void _refreshNotificationsUnread() {
     if (!mounted) return;
     final queryClient = QueryClientProvider.of(context);
-    queryClient.invalidateQueries(
-      PatientQueryKeys.notificationsUnread(),
-    );
-    queryClient.invalidateQueries(
-      PatientQueryKeys.notifications(),
-    );
+    queryClient.invalidateQueries(PatientQueryKeys.notificationsUnread());
+    queryClient.invalidateQueries(PatientQueryKeys.notifications());
   }
 
   void _handleRealtimeDoctorUpdate() {
     if (!mounted) return;
     final queryClient = QueryClientProvider.of(context);
-    queryClient.invalidateQueries(
-      PatientQueryKeys.doctorUpdatesUnread(),
-    );
-    queryClient.invalidateQueries(
-      PatientQueryKeys.profileFull(),
-    );
+    queryClient.invalidateQueries(PatientQueryKeys.doctorUpdatesUnread());
+    queryClient.invalidateQueries(PatientQueryKeys.profileFull());
     _refreshNotificationsUnread();
   }
 
@@ -377,8 +370,8 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
         : 'System announcement';
     final message =
         notification['message']?.toString().trim().isNotEmpty == true
-            ? notification['message']!.toString()
-            : 'You have a new system notification.';
+        ? notification['message']!.toString()
+        : 'You have a new system notification.';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -391,7 +384,7 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
           actions: [
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(AppCopy.text('text.ok_85e4b82f')),
             ),
           ],
         ),
@@ -404,13 +397,13 @@ class _PatientDashboardShellPageState extends State<PatientDashboardShellPage>
   String _titleForIndex(int index) {
     switch (index) {
       case 1:
-        return 'Update INR';
+        return AppCopy.text('text.update_inr_6061f393');
       case 2:
-        return 'Dosage Management';
+        return AppCopy.text('text.dosage_management_e665ec7f');
       case 3:
-        return 'Health Reports';
+        return AppCopy.text('text.health_reports_28813ca0');
       case 4:
-        return 'My Profile';
+        return AppCopy.text('text.my_profile_bbf9687a');
       case 0:
       default:
         return 'Dashboard';

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/app/app.dart';
@@ -6,6 +7,7 @@ import 'package:frontend/core/di/app_dependencies.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await AppProperties.instance.initialize();
   await QueryCache.instance.initialize();
   await NetworkPolicy.instance.initialize();
   await AppDependencies.pushNotifications.initialize();

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -34,6 +35,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final search = _searchController.text.trim();
     final canManage = AdminAccessScope.can(
       context,
@@ -79,7 +81,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                 onPressed: () =>
                     showAddDoctorDialog(context, onSuccess: _refresh),
                 icon: const Icon(Icons.add),
-                label: const Text('Add Doctor'),
+                label: Text(AppCopy.text('text.add_doctor_364f0b4f')),
               )
             : null;
 
@@ -92,7 +94,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Manage Doctors',
+                      AppCopy.text('text.manage_doctors_a96c5192'),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 12),
@@ -101,7 +103,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                       child: FilledButton.tonalIcon(
                         onPressed: _refresh,
                         icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Refresh'),
+                        label: Text(AppCopy.text('text.refresh_815aad4')),
                       ),
                     ),
                   ],
@@ -113,11 +115,14 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search doctors by name or ID...',
+                  hintText: AppCopy.text(
+                    'text.search_doctors_by_name_or_id_900da867',
+                  ),
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
-                  fillColor:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
                     borderSide: BorderSide.none,
@@ -148,7 +153,9 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                         padding: const EdgeInsets.only(right: 8),
                         child: InputChip(
                           label: Text(
-                            _statusFilter == 'true' ? 'Active' : 'Inactive',
+                            _statusFilter == 'true'
+                                ? AppCopy.text('text.active_1f89134f')
+                                : AppCopy.text('text.inactive_901aca78'),
                           ),
                           onDeleted: () => setState(() {
                             _statusFilter = null;
@@ -173,7 +180,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                         _departmentFilter = null;
                         _page = 1;
                       }),
-                      child: const Text('Clear All'),
+                      child: Text(AppCopy.text('text.clear_all_de7f94e5')),
                     ),
                   ],
                 ),
@@ -185,7 +192,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
               child: Row(
                 children: [
                   FilterChip(
-                    label: const Text('All'),
+                    label: Text(AppCopy.text('text.all_75afe364')),
                     selected: _statusFilter == null,
                     onSelected: (_) => setState(() {
                       _statusFilter = null;
@@ -194,7 +201,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('Active'),
+                    label: Text(AppCopy.text('text.active_1f89134f')),
                     selected: _statusFilter == 'true',
                     onSelected: (_) => setState(() {
                       _statusFilter = 'true';
@@ -203,7 +210,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('Inactive'),
+                    label: Text(AppCopy.text('text.inactive_901aca78')),
                     selected: _statusFilter == 'false',
                     onSelected: (_) => setState(() {
                       _statusFilter = 'false';
@@ -220,42 +227,36 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
               child: query.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : query.isError
-                      ? ApiErrorState(
-                          error: query.error,
-                          onRetry: _refresh,
-                        )
-                      : doctorsList.isEmpty
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.medical_services_outlined,
-                                    size: 48,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text('No doctors found'),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: EdgeInsets.only(
-                                bottom: canManage ? 80 : 16,
-                              ),
-                              itemCount: doctorsList.length,
-                              itemBuilder: (context, index) {
-                                final doc =
-                                    doctorsList[index] as Map<String, dynamic>;
-                                return _DoctorListTile(
-                                  doctor: doc,
-                                  onRefresh: _refresh,
-                                  canManage: canManage,
-                                  canStatus: canStatus,
-                                  canResetCredentials: canResetCredentials,
-                                );
-                              },
-                            ),
+                  ? ApiErrorState(error: query.error, onRetry: _refresh)
+                  : doctorsList.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.medical_services_outlined,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(AppCopy.text('text.no_doctors_found_f5b3396e')),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.only(bottom: canManage ? 80 : 16),
+                      itemCount: doctorsList.length,
+                      itemBuilder: (context, index) {
+                        final doc = doctorsList[index] as Map<String, dynamic>;
+                        return _DoctorListTile(
+                          doctor: doc,
+                          onRefresh: _refresh,
+                          canManage: canManage,
+                          canStatus: canStatus,
+                          canResetCredentials: canResetCredentials,
+                        );
+                      },
+                    ),
             ),
 
             // Pagination
@@ -272,10 +273,19 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.chevron_left_rounded),
-                      onPressed:
-                          _page > 1 ? () => setState(() => _page--) : null,
+                      onPressed: _page > 1
+                          ? () => setState(() => _page--)
+                          : null,
                     ),
-                    Text('Page $_page of $totalPages'),
+                    Text(
+                      AppCopy.text(
+                        'text.page_value1_of_value2_bd90d60a',
+                        arguments: {
+                          'value1': (_page).toString(),
+                          'value2': (totalPages).toString(),
+                        },
+                      ),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.chevron_right_rounded),
                       onPressed: _page < totalPages
@@ -291,7 +301,11 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
         if (showPageScaffold) {
           return Scaffold(
             appBar: AppBar(
-              title: Text(canManage ? 'Manage Doctors' : 'Doctors'),
+              title: Text(
+                canManage
+                    ? AppCopy.text('text.manage_doctors_a96c5192')
+                    : AppCopy.text('text.doctors_bb5ef753'),
+              ),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded),
@@ -314,11 +328,7 @@ class _DoctorManagementPageState extends State<DoctorManagementPage> {
             Positioned(
               right: 16,
               bottom: 16,
-              child: SafeArea(
-                top: false,
-                left: false,
-                child: addDoctorFab,
-              ),
+              child: SafeArea(top: false, left: false, child: addDoctorFab),
             ),
           ],
         );
@@ -344,16 +354,20 @@ class _DoctorListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
-    final profile = doctor['profile_id'] as Map<String, dynamic>? ??
+    final profile =
+        doctor['profile_id'] as Map<String, dynamic>? ??
         doctor['doctor_profile'] as Map<String, dynamic>? ??
         {};
-    final name = profile['name'] as String? ??
+    final name =
+        profile['name'] as String? ??
         doctor['login_id'] as String? ??
         'Unknown';
     final department = profile['department'] as String? ?? 'General';
     final isActive = doctor['is_active'] as bool? ?? true;
-    final id = doctor['_id'] as String? ??
+    final id =
+        doctor['_id'] as String? ??
         doctor['id'] as String? ??
         doctor['user_id'] as String? ??
         '';
@@ -389,7 +403,9 @@ class _DoctorListTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                isActive ? 'Active' : 'Inactive',
+                isActive
+                    ? AppCopy.text('text.active_1f89134f')
+                    : AppCopy.text('text.inactive_901aca78'),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: isActive
                       ? theme.colorScheme.onPrimaryContainer
@@ -404,21 +420,23 @@ class _DoctorListTile extends StatelessWidget {
                     _handleAction(context, action, id, name, profile, isActive),
                 itemBuilder: (_) => [
                   if (canManage)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'edit',
                       child: ListTile(
                         leading: Icon(Icons.edit_rounded, size: 20),
-                        title: Text('Edit'),
+                        title: Text(AppCopy.text('text.edit_c2c76cb1')),
                         contentPadding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
                   if (canResetCredentials)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'password',
                       child: ListTile(
                         leading: Icon(Icons.lock_reset_rounded, size: 20),
-                        title: Text('Reset Password'),
+                        title: Text(
+                          AppCopy.text('text.reset_password_e61eb009'),
+                        ),
                         contentPadding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
                       ),
@@ -435,7 +453,9 @@ class _DoctorListTile extends StatelessWidget {
                           color: isActive ? Colors.red : Colors.green,
                         ),
                         title: Text(
-                          isActive ? 'Deactivate' : 'Activate',
+                          isActive
+                              ? AppCopy.text('text.deactivate_7fcfb5f3')
+                              : AppCopy.text('text.activate_3b8f0190'),
                           style: TextStyle(
                             color: isActive ? Colors.red : Colors.green,
                           ),

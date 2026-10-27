@@ -1,3 +1,4 @@
+import { getServerCopy } from '@alias/services/presentation-copy.service'
 import { config } from '@alias/config'
 import crypto from 'crypto'
 import NotificationDelivery, {
@@ -664,9 +665,10 @@ export async function processNotificationDelivery(deliveryId: string): Promise<{
   // (medication names, doses, patient names, patientId, reminderType). In-app
   // records keep full content; push only carries a generic prompt plus an
   // opaque notification id so the app fetches details after auth.
+  const copy = await getServerCopy()
   const payload: PushPayload = {
-    title: 'VitaLink',
-    body: 'You have a new VitaLink update',
+    title: copy('branding.appName'),
+    body: copy('notification.push.message'),
     data: {
       notification_id: String(delivery.notification_id),
     },

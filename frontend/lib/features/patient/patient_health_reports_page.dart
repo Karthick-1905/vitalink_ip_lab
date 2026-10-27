@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
@@ -49,6 +50,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return _buildPageContainer(
       bodyDecoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -58,9 +60,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: PortalLayout.pagePadding(
-          embedInShell: widget.embedInShell,
-        ),
+        padding: PortalLayout.pagePadding(embedInShell: widget.embedInShell),
         child: Container(
           padding: PortalLayout.cardInsetsComfortable,
           decoration: BoxDecoration(
@@ -113,12 +113,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           border: isSelected
-              ? Border(
-                  bottom: BorderSide(
-                    color: Colors.pink[400]!,
-                    width: 3,
-                  ),
-                )
+              ? Border(bottom: BorderSide(color: Colors.pink[400]!, width: 3))
               : null,
         ),
         child: Text(
@@ -161,8 +156,12 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
         mutationFn: (variables) => _submitHealthLog(variables),
         onSuccess: (data, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Side effects reported successfully!'),
+            SnackBar(
+              content: Text(
+                AppCopy.text(
+                  'text.side_effects_reported_successfully_354f478f',
+                ),
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -186,8 +185,8 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Check all that apply:',
+            Text(
+              AppCopy.text('text.check_all_that_apply_728b47f1'),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -199,10 +198,7 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
             // Checkboxes
             ..._sideEffects.keys.map((effect) {
               return CheckboxListTile(
-                title: Text(
-                  effect,
-                  style: const TextStyle(fontSize: 14),
-                ),
+                title: Text(effect, style: const TextStyle(fontSize: 14)),
                 value: _sideEffects[effect],
                 onChanged: (value) {
                   setState(() {
@@ -216,8 +212,10 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
             }),
 
             const SizedBox(height: 20),
-            const Text(
-              'Describe any other side effects you are experiencing',
+            Text(
+              AppCopy.text(
+                'text.describe_any_other_side_effects_you_are_experien_5ca8ee53',
+              ),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -229,7 +227,9 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
               controller: _descriptionController,
               maxLines: 5,
               decoration: InputDecoration(
-                hintText: 'Enter additional details...',
+                hintText: AppCopy.text(
+                  'text.enter_additional_details_6a556176',
+                ),
                 hintStyle: TextStyle(color: Colors.grey.shade400),
                 filled: true,
                 fillColor: Colors.grey.shade50,
@@ -243,8 +243,10 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Color(0xFF0084FF), width: 2),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF0084FF),
+                    width: 2,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.all(16),
               ),
@@ -267,8 +269,8 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 ),
                 child: mutation.isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Submit Report',
+                    : Text(
+                        AppCopy.text('text.submit_report_2084ec21'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -312,8 +314,10 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
         mutationFn: (variables) => _submitHealthLog(variables),
         onSuccess: (data, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Report submitted successfully!'),
+            SnackBar(
+              content: Text(
+                AppCopy.text('text.report_submitted_successfully_d47538ca'),
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -364,8 +368,10 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: Color(0xFF0084FF), width: 2),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF0084FF),
+                    width: 2,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.all(16),
               ),
@@ -380,8 +386,12 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                     : () {
                         if (_descriptionController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter a description'),
+                            SnackBar(
+                              content: Text(
+                                AppCopy.text(
+                                  'text.please_enter_a_description_e6db0fcc',
+                                ),
+                              ),
                               backgroundColor: Colors.orange,
                             ),
                           );
@@ -402,8 +412,8 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
                 ),
                 child: mutation.isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Submit Report',
+                    : Text(
+                        AppCopy.text('text.submit_report_2084ec21'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -438,19 +448,19 @@ class _PatientHealthReportsPageState extends State<PatientHealthReportsPage> {
 
     if (description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-              'Please select at least one side effect or enter a description'),
+            AppCopy.text(
+              'text.please_select_at_least_one_side_effect_or_enter__c3513a17',
+            ),
+          ),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
-    mutation.mutate({
-      'type': 'SIDE_EFFECT',
-      'description': description,
-    });
+    mutation.mutate({'type': 'SIDE_EFFECT', 'description': description});
   }
 
   Future<void> _submitHealthLog(Map<String, dynamic> variables) async {

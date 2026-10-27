@@ -44,6 +44,138 @@ tags:
 security:
   - bearerAuth: []
 paths:
+  /app-properties:
+    get:
+      operationId: getPublishedApplicationProperties
+      tags: [System]
+      summary: Read public published presentation properties
+      security: []
+      description: Returns schemaVersion 1, a monotonically increasing publication revision, and merged catalogue defaults plus published overrides. Draft/history/actor data is never included. Available during maintenance.
+      responses:
+        '200':
+          description: Published snapshot in the standard response envelope.
+          headers:
+            ETag:
+              schema: {type: string}
+              description: Hash of the complete published snapshot.
+            Cache-Control:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: {$ref: '#/components/schemas/PresentationSnapshot'}
+        '304':
+          description: Snapshot matches If-None-Match.
+        '429':
+          description: Request limit exceeded.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RateLimitResponse'}
+  /app-properties/assets/{id}:
+    get:
+      operationId: getPublicBrandImage
+      tags: [System]
+      summary: Read an uploaded public branding image
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string, pattern: '^[a-f0-9]{64}$'}
+      responses:
+        '200':
+          description: Immutable public image, cached for one year.
+          content:
+            image/png:
+              schema: {type: string, format: binary}
+            image/jpeg:
+              schema: {type: string, format: binary}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /admin/config/presentation:
+    get:
+      operationId: getAdminPresentationProperties
+      tags: [Admin]
+      summary: Read presentation draft, defaults and publication history
+      description: Global Application Admin only, with platform.system_config.read. Response is no-store.
+      responses:
+        '200':
+          description: Standard envelope containing the presentation state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: {$ref: '#/components/schemas/PresentationAdminState'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    put:
+      operationId: mutatePresentationProperties
+      tags: [Admin]
+      summary: Save draft, publish saved draft or restore a publication
+      description: Global Application Admin only, with platform.system_config.manage. Uses an atomic expectedVersion comparison. Restoring creates a new revision. Latest 20 history entries are retained. Unknown property keys, invalid colors/images and changed template placeholders are rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, expectedVersion]
+              properties:
+                action: {type: string, enum: [save, publish, rollback]}
+                expectedVersion: {type: integer, minimum: 0}
+                properties:
+                  $ref: '#/components/schemas/PresentationPropertyMap'
+                  description: Complete override map, at most 256 KiB, required for save; omitted for publish/rollback. Default-equivalent values are removed.
+                revision:
+                  type: integer
+                  minimum: 0
+                  description: Retained target publication revision required for rollback.
+      responses:
+        '200':
+          description: Updated state in the standard envelope. Existing auditing may add audit_recorded=false on post-commit audit failure.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: {$ref: '#/components/schemas/PresentationAdminState'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/config/presentation/assets:
+    post:
+      operationId: uploadPublicBrandImage
+      tags: [Admin]
+      summary: Upload public branding artwork
+      description: Global Application Admin with platform.system_config.manage. Accepts base64 PNG/JPEG bytes up to 512 KiB and 2048 pixels per side, validated by signature and dimensions. Content-addressed images are public immediately, independently of draft publication. Existing private patient uploads are separate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contentBase64]
+              properties:
+                contentBase64: {type: string, maxLength: 699052, contentEncoding: base64}
+      responses:
+        '201':
+          description: Standard envelope containing a brand-asset reference for an image property.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      asset: {type: string, pattern: '^brand-asset:[a-f0-9]{64}$'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /:
     get:
       tags: [System]
@@ -3184,6 +3316,41 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
 
   schemas:
+    PresentationPropertyMap:
+      type: object
+      additionalProperties: {type: string, maxLength: 4000}
+      description: Known catalogue keys only. Theme values use six-digit hex colors. Images use their bundled default, an HTTPS URL without credentials/fragments, or a brand-asset reference. Required template placeholders must match defaults.
+    PresentationSnapshot:
+      type: object
+      required: [schemaVersion, revision, properties]
+      properties:
+        schemaVersion: {type: integer, const: 1}
+        revision: {type: integer, minimum: 0}
+        properties: {$ref: '#/components/schemas/PresentationPropertyMap'}
+    PresentationAdminState:
+      type: object
+      properties:
+        _id: {type: string, const: global}
+        schemaVersion: {type: integer, const: 1}
+        version: {type: integer, minimum: 0}
+        published_revision: {type: integer, minimum: 0}
+        defaults: {$ref: '#/components/schemas/PresentationPropertyMap'}
+        draft: {$ref: '#/components/schemas/PresentationPropertyMap'}
+        published: {$ref: '#/components/schemas/PresentationPropertyMap'}
+        updated_by: {type: string}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        history:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            properties:
+              revision: {type: integer}
+              properties: {$ref: '#/components/schemas/PresentationPropertyMap'}
+              published_at: {type: string, format: date-time}
+              published_by: {type: string}
+              restored_from: {type: integer}
     ApiResponseBase:
       type: object
       required: [statusCode, message, success]

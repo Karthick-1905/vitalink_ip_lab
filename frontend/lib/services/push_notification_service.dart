@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -9,10 +10,10 @@ import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/app/routers.dart';
 
-const _androidChannel = AndroidNotificationChannel(
+AndroidNotificationChannel get _androidChannel => AndroidNotificationChannel(
   'vitalink_updates',
-  'VitaLink updates',
-  description: 'Updates from your care team.',
+  AppCopy.text('notification.channelName'),
+  description: AppCopy.text('text.updates_from_your_care_team_8a1059a2'),
   importance: Importance.high,
 );
 
@@ -24,7 +25,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// Handles Android notification permission, FCM registration, and foreground banners.
 class PushNotificationService {
   PushNotificationService({required ApiClient apiClient})
-      : _apiClient = apiClient;
+    : _apiClient = apiClient;
 
   final ApiClient _apiClient;
   final FlutterLocalNotificationsPlugin _localNotifications =
@@ -51,19 +52,20 @@ class PushNotificationService {
     );
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_androidChannel);
 
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleRemoteMessage);
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) _handleRemoteMessage(initialMessage);
-    _tokenRefreshSubscription =
-        FirebaseMessaging.instance.onTokenRefresh.listen(
-      (token) => unawaited(_registerToken(token)),
-      onError: (Object error, StackTrace stackTrace) =>
-          debugPrint('FCM token refresh failed: $error'),
-    );
+    _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
+        .listen(
+          (token) => unawaited(_registerToken(token)),
+          onError: (Object error, StackTrace stackTrace) =>
+              debugPrint('FCM token refresh failed: $error'),
+        );
     _initialized = true;
   }
 
@@ -107,13 +109,15 @@ class PushNotificationService {
     if (notification == null) return;
     await _localNotifications.show(
       notification.hashCode,
-      notification.title ?? 'VitaLink update',
+      notification.title ?? AppCopy.text('notification.push.title'),
       notification.body ?? '',
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'vitalink_updates',
-          'VitaLink updates',
-          channelDescription: 'Updates from your care team.',
+          AppCopy.text('notification.channelName'),
+          channelDescription: AppCopy.text(
+            'text.updates_from_your_care_team_8a1059a2',
+          ),
           importance: Importance.high,
           priority: Priority.high,
         ),
@@ -144,8 +148,9 @@ class PushNotificationService {
 
   void _openInrScreen() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      AppRouter.navigatorKey.currentState
-          ?.pushNamed(AppRoutes.patientUpdateINR);
+      AppRouter.navigatorKey.currentState?.pushNamed(
+        AppRoutes.patientUpdateINR,
+      );
     });
   }
 

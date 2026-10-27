@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend/core/di/theme.dart';
@@ -44,14 +45,17 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final data = widget.history;
     final today = DateTime.tryParse(data?['today']?.toString() ?? '');
     if (today == null) {
-      return const Card(
+      return Card(
         child: Padding(
           padding: EdgeInsets.all(20),
           child: Text(
-            'Dose history unavailable. Refresh the patient record to try again.',
+            AppCopy.text(
+              'text.dose_history_unavailable_refresh_the_patient_rec_b011c6fc',
+            ),
           ),
         ),
       );
@@ -105,13 +109,10 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.calendar_month_outlined,
-                color: AppColors.secondary,
-              ),
+              Icon(Icons.calendar_month_outlined, color: AppColors.secondary),
               const SizedBox(width: 10),
               Text(
-                'Dose history',
+                AppCopy.text('text.dose_history_3df58db8'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -120,7 +121,10 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Dose recording by day • ${data?['timezone']}',
+            AppCopy.text(
+              'text.dose_recording_by_day_value1_2963fc16',
+              arguments: {'value1': (data?['timezone']).toString()},
+            ),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
@@ -130,7 +134,14 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
             children: [
               for (final period in <int?>[null, 7, 14])
                 ChoiceChip(
-                  label: Text(period == null ? 'Month' : 'Last $period days'),
+                  label: Text(
+                    period == null
+                        ? AppCopy.text('text.month_a8761ba5')
+                        : AppCopy.text(
+                            'text.last_value1_days_d2fb672a',
+                            arguments: {'value1': (period).toString()},
+                          ),
+                  ),
                   selected: _window == period,
                   onSelected: (_) => setState(() {
                     _window = period;
@@ -144,7 +155,7 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  tooltip: 'Previous month',
+                  tooltip: AppCopy.text('text.previous_month_d6437b6'),
                   onPressed: month.isAfter(minMonth)
                       ? () => setState(() {
                           _month = DateTime(month.year, month.month - 1);
@@ -158,7 +169,7 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 IconButton(
-                  tooltip: 'Next month',
+                  tooltip: AppCopy.text('text.next_month_711101f6'),
                   onPressed: month.isBefore(maxMonth)
                       ? () => setState(() {
                           _month = DateTime(month.year, month.month + 1);
@@ -187,7 +198,13 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
           const SizedBox(height: 16),
           if (elapsed > 0)
             Semantics(
-              label: '$taken taken and $gaps not recorded',
+              label: AppCopy.text(
+                'text.value1_taken_and_value2_not_recorded_2a342581',
+                arguments: {
+                  'value1': (taken).toString(),
+                  'value2': (gaps).toString(),
+                },
+              ),
               child: Row(
                 children: [
                   if (taken > 0)
@@ -240,10 +257,10 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
                             selected: _selected == entry['date'],
                             button: true,
                             label:
-                                '${entry['date']}: ${labels[entry['state']]}',
+                                "${(entry['date']).toString()}: ${(labels[entry['state']]).toString()}",
                             child: Tooltip(
                               message:
-                                  '${entry['date']} • ${labels[entry['state']]}',
+                                  "${(entry['date']).toString()} • ${(labels[entry['state']]).toString()}",
                               child: Material(
                                 color: _color(
                                   entry['state'],
@@ -251,7 +268,7 @@ class _DoseHistoryCardState extends State<DoseHistoryCard> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   side: _selected == entry['date']
-                                      ? const BorderSide(
+                                      ? BorderSide(
                                           color: AppColors.secondary,
                                           width: 2,
                                         )

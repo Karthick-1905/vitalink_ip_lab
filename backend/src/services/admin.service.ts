@@ -1,3 +1,4 @@
+import { getServerCopy } from '@alias/services/presentation-copy.service'
 import crypto from 'crypto'
 import { StatusCodes } from 'http-status-codes'
 import { User, DoctorProfile, PatientProfile, AuditLog, AdminProfile, Hospital, Invoice } from '@alias/models'
@@ -2354,8 +2355,8 @@ export async function reassignPatient(patientLoginId: string, newDoctorId: strin
     patientUserId: patientUser._id,
     changedByDoctorId: actorUserId(actor) || doctorUser._id,
     changeType: 'DOCTOR_REASSIGNED',
-    title: 'Doctor assignment changed',
-    message: `Your care has been reassigned to ${doctorProfile.name || doctorUser.login_id}.`,
+    title: (await getServerCopy())('notification.reassigned.title'),
+    message: (await getServerCopy())('notification.reassigned.message', { doctor: doctorProfile.name || doctorUser.login_id }),
     changedFields: ['assigned_doctor_id'],
   })
 

@@ -42,6 +42,8 @@ import PatientProfile from './patientprofile.model'
 import AdminProfile from './adminprofile.model'
 import AuditLog from './auditlog.model'
 import SystemConfig from './systemconfig.model'
+import AppProperties from './appproperties.model'
+import BrandAsset from './brandasset.model'
 import Notification from './notification.model'
 import Hospital from './hospital.model'
 import Invoice from './invoice.model'
@@ -62,6 +64,8 @@ export {
   AdminProfile,
   AuditLog,
   SystemConfig,
+  AppProperties,
+  BrandAsset,
   Notification,
   Hospital,
   Invoice,

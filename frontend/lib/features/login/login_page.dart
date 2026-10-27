@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -19,8 +20,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const Color _primaryPurple = Color(0xFF6B5FB5);
-  static const Color _lightPurple = Color(0xFF9B8FD9);
+  static Color get _primaryPurple =>
+      AppProperties.instance.color('theme.loginPrimary');
+  static Color get _lightPurple =>
+      AppProperties.instance.color('theme.loginLight');
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final GlobalKey<FormState> _otpFormKey = GlobalKey<FormState>();
@@ -81,8 +84,10 @@ class _LoginPageState extends State<LoginPage> {
     // Temporary / expired passwords must be replaced before any clinical UI.
     if (response.user.mustChangePassword) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please set a new password to continue'),
+        SnackBar(
+          content: Text(
+            AppCopy.text('text.please_set_a_new_password_to_continue_609f84d9'),
+          ),
         ),
       );
       Navigator.of(context).pushNamedAndRemoveUntil(
@@ -93,9 +98,9 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Login successful')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppCopy.text('text.login_successful_d81697f4'))),
+    );
 
     if (response.user.isAdmin) {
       Navigator.of(
@@ -103,8 +108,8 @@ class _LoginPageState extends State<LoginPage> {
       ).pushNamedAndRemoveUntil(AppRoutes.adminDashboard, (previous) => false);
     } else if (response.user.isDoctor || response.user.isPatient) {
       // First-run only: show onboarding once after install + first login.
-      final alreadyOnboarded =
-          await AppDependencies.secureStorage.isOnboardingCompleted();
+      final alreadyOnboarded = await AppDependencies.secureStorage
+          .isOnboardingCompleted();
       if (!mounted) return;
 
       if (alreadyOnboarded) {
@@ -123,17 +128,19 @@ class _LoginPageState extends State<LoginPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login failed: unknown user role from server'),
+        SnackBar(
+          content: Text(
+            AppCopy.text(
+              'text.login_failed_unknown_user_role_from_server_c5b5b4e3',
+            ),
+          ),
         ),
       );
     }
   }
 
   void _handleError(Object error, {bool returnToLoginForm = false}) {
-    final message = error is ApiException
-        ? error.message
-        : error.toString();
+    final message = error is ApiException ? error.message : error.toString();
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -255,8 +262,8 @@ class _LoginPageState extends State<LoginPage> {
       final message = challenge.isExpired
           ? 'This code has expired. Return to login and try again.'
           : !challenge.hasResendsRemaining
-              ? 'Resend limit reached.'
-              : 'Please wait before requesting another code.';
+          ? 'Resend limit reached.'
+          : 'Please wait before requesting another code.';
       _handleError(ApiException(message, kind: ApiErrorKind.rateLimited));
       return;
     }
@@ -276,7 +283,14 @@ class _LoginPageState extends State<LoginPage> {
       });
       _syncOtpResendTicker();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('OTP sent to ${updatedChallenge.maskedPhone}')),
+        SnackBar(
+          content: Text(
+            AppCopy.text(
+              'text.otp_sent_to_value1_1bc024e3',
+              arguments: {'value1': (updatedChallenge.maskedPhone).toString()},
+            ),
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -363,7 +377,7 @@ class _LoginPageState extends State<LoginPage> {
     await Clipboard.setData(ClipboardData(text: secret));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Setup key copied.')),
+      SnackBar(content: Text(AppCopy.text('text.setup_key_copied_f651cae7'))),
     );
   }
 
@@ -382,6 +396,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -482,7 +497,7 @@ class _LoginPageState extends State<LoginPage> {
 
                             // Welcome text with nice font
                             Text(
-                              'Welcome Back',
+                              AppCopy.text('text.welcome_back_cb897846'),
                               style: GoogleFonts.poppins(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w600,
@@ -494,8 +509,8 @@ class _LoginPageState extends State<LoginPage> {
                             // Doctor-patient illustration
                             SizedBox(
                               height: screenHeight * 0.25,
-                              child: Image.asset(
-                                'assets/images/doctor_patient.png',
+                              child: PropertyImage(
+                                'asset.loginIllustration',
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
@@ -504,7 +519,7 @@ class _LoginPageState extends State<LoginPage> {
                                       color: _lightPurple.withAlpha(25),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: Icon(
                                         Icons.medical_services_outlined,
                                         size: 80,
@@ -541,11 +556,11 @@ class _LoginPageState extends State<LoginPage> {
                               children: [
                                 SizedBox(
                                   height: 45,
-                                  child: Image.asset(
-                                    'assets/images/psg_logo_2.png',
+                                  child: PropertyImage(
+                                    'asset.hospitalLogo',
                                     fit: BoxFit.contain,
                                     filterQuality: FilterQuality.medium,
-                                    errorBuilder: (_, _, _) => const Icon(
+                                    errorBuilder: (_, _, _) => Icon(
                                       Icons.account_balance_outlined,
                                       size: 40,
                                       color: _primaryPurple,
@@ -555,11 +570,11 @@ class _LoginPageState extends State<LoginPage> {
                                 const SizedBox(width: 20),
                                 SizedBox(
                                   height: 45,
-                                  child: Image.asset(
-                                    'assets/images/psg_ims.png',
+                                  child: PropertyImage(
+                                    'asset.instituteLogo',
                                     fit: BoxFit.contain,
                                     filterQuality: FilterQuality.medium,
-                                    errorBuilder: (_, _, _) => const Icon(
+                                    errorBuilder: (_, _, _) => Icon(
                                       Icons.local_hospital_outlined,
                                       size: 40,
                                       color: _primaryPurple,
@@ -588,7 +603,9 @@ class _LoginPageState extends State<LoginPage> {
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   Text(
-                                    'Forgot your password? Contact your administrator to reset it.',
+                                    AppCopy.text(
+                                      'text.forgot_your_password_contact_your_administrator__fda6db8a',
+                                    ),
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       color: Colors.grey[600],
@@ -666,12 +683,12 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           _buildTextField(
             controller: _emailController,
-            hintText: 'Username',
+            hintText: AppCopy.text('text.username_1c08d4d9'),
             icon: Icons.person_outline,
             validator: (value) {
               final v = value?.trim() ?? '';
               if (v.isEmpty) {
-                return 'Username is required';
+                return AppCopy.text('text.username_is_required_6d2b33f8');
               }
               return null;
             },
@@ -679,7 +696,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 16),
           _buildTextField(
             controller: _passwordController,
-            hintText: 'Password',
+            hintText: AppCopy.text('text.password_2cc30838'),
             icon: Icons.lock_outline,
             obscureText: _obscurePassword,
             suffixIcon: IconButton(
@@ -695,17 +712,19 @@ class _LoginPageState extends State<LoginPage> {
             validator: (value) {
               final v = value ?? '';
               if (v.isEmpty) {
-                return 'Password is required';
+                return AppCopy.text('text.password_is_required_dd9a7069');
               }
               if (v.length < 6) {
-                return 'Must be at least 6 characters';
+                return AppCopy.text(
+                  'text.must_be_at_least_6_characters_47e98c07',
+                );
               }
               return null;
             },
           ),
           const SizedBox(height: 28),
           _buildPrimaryButton(
-            label: 'LOGIN',
+            label: AppCopy.text('text.login_acd20e52'),
             isLoading: mutation.isLoading,
             onPressed: mutation.isLoading ? null : () => _submit(mutation),
           ),
@@ -724,22 +743,22 @@ class _LoginPageState extends State<LoginPage> {
     final statusMessage = challenge.isExpired
         ? 'This code has expired. Return to login and try again.'
         : !challenge.hasAttemptsRemaining
-            ? 'No verification attempts remaining.'
-            : !challenge.hasResendsRemaining
-                ? 'Resend limit reached.'
-                : cooldownSeconds != null && cooldownSeconds > 0
-                    ? 'Resend available in ${cooldownSeconds}s'
-                    : null;
+        ? 'No verification attempts remaining.'
+        : !challenge.hasResendsRemaining
+        ? 'Resend limit reached.'
+        : cooldownSeconds != null && cooldownSeconds > 0
+        ? 'Resend available in ${cooldownSeconds}s'
+        : null;
     final resendDetail = resendCount != null && maxResends != null
         ? 'Resends used: $resendCount of $maxResends'
         : null;
     final resendLabel = _isResendingOtp
         ? 'Sending'
         : !challenge.hasResendsRemaining
-            ? 'Resend limit reached'
-            : cooldownSeconds != null && cooldownSeconds > 0
-                ? 'Resend in ${cooldownSeconds}s'
-                : 'Resend OTP';
+        ? 'Resend limit reached'
+        : cooldownSeconds != null && cooldownSeconds > 0
+        ? 'Resend in ${cooldownSeconds}s'
+        : 'Resend OTP';
 
     return Form(
       key: _otpFormKey,
@@ -758,7 +777,7 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.verified_user_outlined,
                       color: _primaryPurple,
                       size: 22,
@@ -769,7 +788,7 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Verify your phone',
+                            AppCopy.text('text.verify_your_phone_56e7aa4f'),
                             style: GoogleFonts.poppins(
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
@@ -778,7 +797,12 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Enter the OTP sent to ${challenge.maskedPhone}.',
+                            AppCopy.text(
+                              'text.enter_the_otp_sent_to_value1_90c726e6',
+                              arguments: {
+                                'value1': (challenge.maskedPhone).toString(),
+                              },
+                            ),
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               height: 1.45,
@@ -788,7 +812,10 @@ class _LoginPageState extends State<LoginPage> {
                           if (attempts != null) ...[
                             const SizedBox(height: 6),
                             Text(
-                              '$attempts attempts remaining',
+                              AppCopy.text(
+                                'text.value1_attempts_remaining_500126b5',
+                                arguments: {'value1': (attempts).toString()},
+                              ),
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: const Color(0xFF5D6475),
@@ -806,21 +833,21 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 18),
           _buildTextField(
             controller: _otpController,
-            hintText: 'OTP code',
+            hintText: AppCopy.text('text.otp_code_e5c04063'),
             icon: Icons.pin_outlined,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               final v = value?.trim() ?? '';
               if (v.isEmpty) {
-                return 'OTP code is required';
+                return AppCopy.text('text.otp_code_is_required_ec6eb2e6');
               }
               return null;
             },
           ),
           const SizedBox(height: 16),
           _buildPrimaryButton(
-            label: 'VERIFY OTP',
+            label: AppCopy.text('text.verify_otp_21f14245'),
             isLoading: _isVerifyingOtp,
             onPressed: canVerify ? _verifyOtp : null,
           ),
@@ -846,7 +873,7 @@ class _LoginPageState extends State<LoginPage> {
                       ? null
                       : _returnToLogin,
                   icon: const Icon(Icons.arrow_back_outlined, size: 18),
-                  label: const Text('Back'),
+                  label: Text(AppCopy.text('text.back_c2954bc2')),
                 ),
               ),
             ],
@@ -897,7 +924,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
+                Icon(
                   Icons.admin_panel_settings_outlined,
                   color: _primaryPurple,
                   size: 22,
@@ -908,7 +935,9 @@ class _LoginPageState extends State<LoginPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Authenticator verification',
+                        AppCopy.text(
+                          'text.authenticator_verification_873e6003',
+                        ),
                         style: GoogleFonts.poppins(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
@@ -917,7 +946,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Enter the 6-digit code from your authenticator app.',
+                        AppCopy.text(
+                          'text.enter_the_6_digit_code_from_your_authenticator_a_7feb1b8c',
+                        ),
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           height: 1.45,
@@ -927,7 +958,10 @@ class _LoginPageState extends State<LoginPage> {
                       if (attempts != null) ...[
                         const SizedBox(height: 6),
                         Text(
-                          '$attempts attempts remaining',
+                          AppCopy.text(
+                            'text.value1_attempts_remaining_500126b5',
+                            arguments: {'value1': (attempts).toString()},
+                          ),
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: const Color(0xFF5D6475),
@@ -943,7 +977,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 18),
           _buildTextField(
             controller: _otpController,
-            hintText: 'Authenticator code',
+            hintText: AppCopy.text('text.authenticator_code_fcb600fd'),
             icon: Icons.pin_outlined,
             keyboardType: TextInputType.number,
             inputFormatters: [
@@ -952,14 +986,20 @@ class _LoginPageState extends State<LoginPage> {
             ],
             validator: (value) {
               final v = value?.trim() ?? '';
-              if (v.isEmpty) return 'Authenticator code is required';
-              if (v.length != 6) return 'Enter the 6-digit code';
+              if (v.isEmpty) {
+                return AppCopy.text(
+                  'text.authenticator_code_is_required_452a11c',
+                );
+              }
+              if (v.length != 6) {
+                return AppCopy.text('text.enter_the_6_digit_code_fdf4a3a5');
+              }
               return null;
             },
           ),
           const SizedBox(height: 16),
           _buildPrimaryButton(
-            label: 'VERIFY',
+            label: AppCopy.text('text.verify_831765a4'),
             isLoading: _isVerifyingOtp,
             onPressed: _isVerifyingOtp ? null : _verifyTotp,
           ),
@@ -967,7 +1007,7 @@ class _LoginPageState extends State<LoginPage> {
           TextButton.icon(
             onPressed: _isVerifyingOtp ? null : _returnToLogin,
             icon: const Icon(Icons.arrow_back_outlined, size: 18),
-            label: const Text('Back'),
+            label: Text(AppCopy.text('text.back_c2954bc2')),
           ),
         ],
       ),
@@ -977,15 +1017,16 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildEnrollmentForm(LoginTotpChallenge challenge) {
     final attempts = challenge.attemptsRemaining;
     final material = _enrollmentMaterial;
-    final canActivate = !_isVerifyingOtp &&
+    final canActivate =
+        !_isVerifyingOtp &&
         !_isSettingUpEnrollment &&
         material != null &&
         challenge.canVerifyNow;
     final statusMessage = challenge.isExpired
         ? 'This enrollment step expired. Return to login and try again.'
         : !challenge.hasAttemptsRemaining
-            ? 'No verification attempts remaining.'
-            : null;
+        ? 'No verification attempts remaining.'
+        : null;
 
     return Form(
       key: _otpFormKey,
@@ -1001,18 +1042,14 @@ class _LoginPageState extends State<LoginPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.qr_code_2_outlined,
-                  color: _primaryPurple,
-                  size: 22,
-                ),
+                Icon(Icons.qr_code_2_outlined, color: _primaryPurple, size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Set up authenticator',
+                        AppCopy.text('text.set_up_authenticator_663ba1cb'),
                         style: GoogleFonts.poppins(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
@@ -1021,7 +1058,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Your administrator account requires an authenticator app before you can sign in. Scan the QR code, then enter the 6-digit code.',
+                        AppCopy.text(
+                          'text.your_administrator_account_requires_an_authentic_480ccfde',
+                        ),
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           height: 1.45,
@@ -1031,7 +1070,10 @@ class _LoginPageState extends State<LoginPage> {
                       if (attempts != null) ...[
                         const SizedBox(height: 6),
                         Text(
-                          '$attempts attempts remaining',
+                          AppCopy.text(
+                            'text.value1_attempts_remaining_500126b5',
+                            arguments: {'value1': (attempts).toString()},
+                          ),
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: const Color(0xFF5D6475),
@@ -1058,7 +1100,7 @@ class _LoginPageState extends State<LoginPage> {
             )
           else if (material == null)
             _buildPrimaryButton(
-              label: 'LOAD SETUP',
+              label: AppCopy.text('text.load_setup_36cd3efc'),
               isLoading: _isSettingUpEnrollment,
               onPressed: _isSettingUpEnrollment ? null : _setupEnrollment,
             )
@@ -1090,7 +1132,9 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 12),
             Text(
-              'If you cannot scan the code, enter this setup key in your authenticator app.',
+              AppCopy.text(
+                'text.if_you_cannot_scan_the_code_enter_this_setup_key_4dfa3f25',
+              ),
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -1119,7 +1163,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   IconButton(
                     onPressed: _copyEnrollmentSecret,
-                    tooltip: 'Copy setup key',
+                    tooltip: AppCopy.text('text.copy_setup_key_7c660c72'),
                     icon: const Icon(Icons.copy_outlined, size: 18),
                   ),
                 ],
@@ -1128,7 +1172,7 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 16),
             _buildTextField(
               controller: _otpController,
-              hintText: 'Authenticator code',
+              hintText: AppCopy.text('text.authenticator_code_fcb600fd'),
               icon: Icons.pin_outlined,
               keyboardType: TextInputType.number,
               inputFormatters: [
@@ -1137,14 +1181,20 @@ class _LoginPageState extends State<LoginPage> {
               ],
               validator: (value) {
                 final v = value?.trim() ?? '';
-                if (v.isEmpty) return 'Authenticator code is required';
-                if (v.length != 6) return 'Enter the 6-digit code';
+                if (v.isEmpty) {
+                  return AppCopy.text(
+                    'text.authenticator_code_is_required_452a11c',
+                  );
+                }
+                if (v.length != 6) {
+                  return AppCopy.text('text.enter_the_6_digit_code_fdf4a3a5');
+                }
                 return null;
               },
             ),
             const SizedBox(height: 16),
             _buildPrimaryButton(
-              label: 'ACTIVATE AND SIGN IN',
+              label: AppCopy.text('text.activate_and_sign_in_a1d6d80d'),
               isLoading: _isVerifyingOtp,
               onPressed: canActivate ? _activateEnrollment : null,
             ),
@@ -1155,7 +1205,7 @@ class _LoginPageState extends State<LoginPage> {
                 ? null
                 : _returnToLogin,
             icon: const Icon(Icons.arrow_back_outlined, size: 18),
-            label: const Text('Back'),
+            label: Text(AppCopy.text('text.back_c2954bc2')),
           ),
           if (statusMessage != null)
             Padding(

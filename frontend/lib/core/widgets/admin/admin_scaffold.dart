@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/app/routers.dart';
@@ -49,6 +50,7 @@ class AdminScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final width = MediaQuery.sizeOf(context).width;
     final isDesktop = width >= desktopBreakpoint;
     final showSidebar = showsSidebar(context);
@@ -67,9 +69,7 @@ class AdminScaffold extends StatelessWidget {
     );
 
     if (showSidebar) {
-      final railWidth = isDesktop
-          ? extendedSidebarWidth
-          : compactSidebarWidth;
+      final railWidth = isDesktop ? extendedSidebarWidth : compactSidebarWidth;
       return Scaffold(
         body: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -106,7 +106,9 @@ class AdminScaffold extends StatelessWidget {
         leading: Builder(
           builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu),
-            tooltip: 'Open administrator navigation',
+            tooltip: AppCopy.text(
+              'text.open_administrator_navigation_23cb90ea',
+            ),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
@@ -147,6 +149,7 @@ class _AdminSideNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.surface,
@@ -171,7 +174,7 @@ class _AdminSideNav extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'VitaLink',
+                          AppCopy.text('branding.appName'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -254,7 +257,7 @@ class _AdminSideNav extends StatelessWidget {
                       color: theme.colorScheme.error,
                     ),
                     label: Text(
-                      'Logout',
+                      AppCopy.text('text.logout_877a6a0b'),
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
                   )
@@ -264,7 +267,7 @@ class _AdminSideNav extends StatelessWidget {
                       Icons.logout_rounded,
                       color: theme.colorScheme.error,
                     ),
-                    tooltip: 'Logout',
+                    tooltip: AppCopy.text('text.logout_877a6a0b'),
                   ),
           ),
         ],

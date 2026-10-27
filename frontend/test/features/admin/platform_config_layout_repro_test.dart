@@ -58,10 +58,9 @@ class _Repo extends AdminRepository {
         'services': {'status': 'healthy'},
       });
 
-  @override
   Future<Map<String, dynamic>> getHospitalOperationsHealth() async => {
-        'status': 'healthy',
-      };
+    'status': 'healthy',
+  };
 }
 
 AdminAccessModel _appAdminAccess() {
@@ -94,71 +93,70 @@ void main() {
     await QueryCache.instance.clear();
   });
 
-  testWidgets(
-    'platform config title keeps readable width in admin shell',
-    (tester) async {
-      tester.view.physicalSize = const Size(1280, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets('platform config title keeps readable width in admin shell', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-      final controller = AdminAccessController(
-        repository: _AccessRepo(_appAdminAccess()),
-        refreshInterval: Duration.zero,
-      );
-      await controller.refresh();
-      addTearDown(controller.dispose);
+    final controller = AdminAccessController(
+      repository: _AccessRepo(_appAdminAccess()),
+      refreshInterval: Duration.zero,
+    );
+    await controller.refresh();
+    addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        QueryClientProvider(
-          client: AppDependencies.createQueryClient(),
-          child: MaterialApp(
-            home: AdminAccessScope(
-              controller: controller,
-              child: AdminDashboardPage(repository: _Repo()),
-            ),
+    await tester.pumpWidget(
+      QueryClientProvider(
+        client: AppDependencies.createQueryClient(),
+        child: MaterialApp(
+          home: AdminAccessScope(
+            controller: controller,
+            child: AdminDashboardPage(repository: _Repo()),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Platform Configuration').last);
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Platform Configuration').last);
+    await tester.pumpAndSettle();
 
-      final subtitle = find.textContaining('Global runtime settings');
-      expect(subtitle, findsOneWidget);
-      final subtitleBox = tester.renderObject<RenderBox>(subtitle);
-      expect(
-        subtitleBox.size.width,
-        greaterThan(200),
-        reason: 'Title/subtitle must not collapse to single-character wrap',
-      );
-      // Single-character wrap would make this ~20 * char-count tall.
-      expect(subtitleBox.size.height, lessThan(80));
+    final subtitle = find.textContaining('Global runtime settings');
+    expect(subtitle, findsOneWidget);
+    final subtitleBox = tester.renderObject<RenderBox>(subtitle);
+    expect(
+      subtitleBox.size.width,
+      greaterThan(200),
+      reason: 'Title/subtitle must not collapse to single-character wrap',
+    );
+    // Single-character wrap would make this ~20 * char-count tall.
+    expect(subtitleBox.size.height, lessThan(80));
 
-      // Page title instance (not the sidebar label) must be wide and short.
-      final pageTitles = find.text('Platform Configuration');
-      final pageTitleBox = pageTitles
-          .evaluate()
-          .map((e) => e.renderObject! as RenderBox)
-          .reduce((a, b) => a.size.width >= b.size.width ? a : b);
-      expect(pageTitleBox.size.width, greaterThan(200));
-      expect(pageTitleBox.size.height, lessThan(40));
+    // Page title instance (not the sidebar label) must be wide and short.
+    final pageTitles = find.text('Platform Configuration');
+    final pageTitleBox = pageTitles
+        .evaluate()
+        .map((e) => e.renderObject! as RenderBox)
+        .reduce((a, b) => a.size.width >= b.size.width ? a : b);
+    expect(pageTitleBox.size.width, greaterThan(200));
+    expect(pageTitleBox.size.height, lessThan(40));
 
-      // Header must not use Expanded-around-title (that caused the glyph column).
-      expect(find.byType(AdminPageHeader), findsOneWidget);
+    // Header must not use Expanded-around-title (that caused the glyph column).
+    expect(find.byType(AdminPageHeader), findsOneWidget);
 
-      expect(find.text('Medical Thresholds'), findsOneWidget);
-      expect(
-        find.byKey(const Key('save-platform-configuration')),
-        findsOneWidget,
-      );
+    expect(find.text('Medical Thresholds'), findsOneWidget);
+    expect(
+      find.byKey(const Key('save-platform-configuration')),
+      findsOneWidget,
+    );
 
-      // Sidebar is a fixed-width panel, not NavigationRail.
-      expect(find.byType(NavigationRail), findsNothing);
-      expect(find.text('VitaLink'), findsWidgets);
-    },
-  );
+    // Sidebar is a fixed-width panel, not NavigationRail.
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.text('VitaLink'), findsWidgets);
+  });
 
   testWidgets(
     'administrator accounts title keeps readable width in admin shell',
@@ -201,38 +199,37 @@ void main() {
     },
   );
 
-  testWidgets(
-    'sidebar stays compact-width on tablet breakpoint',
-    (tester) async {
-      tester.view.physicalSize = const Size(700, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets('sidebar stays compact-width on tablet breakpoint', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(700, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-      final controller = AdminAccessController(
-        repository: _AccessRepo(_appAdminAccess()),
-        refreshInterval: Duration.zero,
-      );
-      await controller.refresh();
-      addTearDown(controller.dispose);
+    final controller = AdminAccessController(
+      repository: _AccessRepo(_appAdminAccess()),
+      refreshInterval: Duration.zero,
+    );
+    await controller.refresh();
+    addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        QueryClientProvider(
-          client: AppDependencies.createQueryClient(),
-          child: MaterialApp(
-            home: AdminAccessScope(
-              controller: controller,
-              child: AdminDashboardPage(repository: _Repo()),
-            ),
+    await tester.pumpWidget(
+      QueryClientProvider(
+        client: AppDependencies.createQueryClient(),
+        child: MaterialApp(
+          home: AdminAccessScope(
+            controller: controller,
+            child: AdminDashboardPage(repository: _Repo()),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.byType(NavigationRail), findsNothing);
-      // Compact mode uses icon buttons with tooltips instead of labels.
-      expect(find.byTooltip('Platform Configuration'), findsOneWidget);
-      expect(find.text('Platform Configuration'), findsNothing);
-    },
-  );
+    expect(find.byType(NavigationRail), findsNothing);
+    // Compact mode uses icon buttons with tooltips instead of labels.
+    expect(find.byTooltip('Platform Configuration'), findsOneWidget);
+    expect(find.text('Platform Configuration'), findsNothing);
+  });
 }

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:frontend/features/doctor/widgets/report_review_sheet.dart';
 import 'dart:async';
 
@@ -60,6 +61,7 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
       children: [
         _buildHeader(),
@@ -84,7 +86,7 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Patient Reports',
+            AppCopy.text('text.patient_reports_c22ba0a9'),
             style: GoogleFonts.outfit(
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -151,7 +153,13 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'OP #${_selectedPatientOp ?? 'N/A'}',
+                                AppCopy.text(
+                                  'text.op_value1_38c57f2b',
+                                  arguments: {
+                                    'value1': (_selectedPatientOp ?? 'N/A')
+                                        .toString(),
+                                  },
+                                ),
                                 style: GoogleFonts.outfit(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w500,
@@ -161,7 +169,9 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                             ],
                           )
                         : Text(
-                            'Select patient to view reports',
+                            AppCopy.text(
+                              'text.select_patient_to_view_reports_2e7c5299',
+                            ),
                             style: GoogleFonts.outfit(
                               fontSize: 15.5,
                               fontWeight: FontWeight.w500,
@@ -238,7 +248,7 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
           ),
           PortalLayout.sectionSpacer,
           Text(
-            'No Patient Selected',
+            AppCopy.text('text.no_patient_selected_983f52fc'),
             style: GoogleFonts.outfit(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -249,7 +259,9 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
             child: Text(
-              'Please select a patient from the dropdown above to view their INR report history.',
+              AppCopy.text(
+                'text.please_select_a_patient_from_the_dropdown_above__8cdb7ce3',
+              ),
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 fontSize: 15,
@@ -348,7 +360,9 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                   ),
                   PortalLayout.sectionSpacer,
                   Text(
-                    'Pull down to refresh after a patient uploads a new INR report.',
+                    AppCopy.text(
+                      'text.pull_down_to_refresh_after_a_patient_uploads_a_n_d05d2b8c',
+                    ),
                     style: GoogleFonts.outfit(
                       color: Colors.grey.withValues(alpha: 0.85),
                       fontSize: 13,
@@ -423,9 +437,11 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
     client.invalidateQueries(DoctorQueryKeys.patientReports(op));
     client.invalidateQueries(DoctorQueryKeys.patients());
     client.invalidateQueries(DoctorQueryKeys.patientDetail(op));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Report review saved')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppCopy.text('text.report_review_saved_94bda632')),
+      ),
+    );
   }
 }
 
@@ -470,6 +486,7 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
@@ -492,7 +509,7 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
             child: Row(
               children: [
                 Text(
-                  'Select Patient',
+                  AppCopy.text('text.select_patient_d1dca630'),
                   style: GoogleFonts.outfit(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -512,7 +529,9 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
               controller: _searchController,
               onChanged: _filter,
               decoration: InputDecoration(
-                hintText: 'Search by name or OP number...',
+                hintText: AppCopy.text(
+                  'text.search_by_name_or_op_number_a9148b68',
+                ),
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: const Color(0xFFF3F4F6),
@@ -554,7 +573,15 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                     ),
                   ),
                   title: Text(
-                    canSelect ? '${p.name}  ·  OP #$patientOp' : p.name,
+                    canSelect
+                        ? AppCopy.text(
+                            'text.value1_op_value2_8ec19247',
+                            arguments: {
+                              'value1': (p.name).toString(),
+                              'value2': (patientOp).toString(),
+                            },
+                          )
+                        : p.name,
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.w600,
                       color: canSelect
@@ -563,7 +590,9 @@ class _PatientSearchSheetState extends State<_PatientSearchSheet> {
                     ),
                   ),
                   subtitle: Text(
-                    canSelect ? 'Tap to select' : 'OP/Login ID unavailable',
+                    canSelect
+                        ? AppCopy.text('text.tap_to_select_9375b5f9')
+                        : AppCopy.text('text.op_login_id_unavailable_2388dde7'),
                     style: GoogleFonts.outfit(fontSize: 12),
                   ),
                   onTap: canSelect

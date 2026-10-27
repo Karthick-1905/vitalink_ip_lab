@@ -18,6 +18,8 @@ erDiagram
     USER ||--o{ NOTIFICATION : "user_id"
     NOTIFICATION ||--o| NOTIFICATION_DELIVERY : "notification_id"
     USER ||--o{ NOTIFICATION_DELIVERY : "user_id"
+    USER o|--o| APP_PROPERTIES : "updated_by"
+    USER ||--o{ BRAND_ASSET : "created_by"
     USER ||--o{ AUDIT_LOG : "user_id"
     HOSPITAL o|--o{ AUDIT_LOG : "event_hospital_id"
     USER ||--o{ FILE_ASSET : "owner_user_id and created_by"
@@ -30,6 +32,21 @@ erDiagram
     ADMIN_ROLE_POLICY ||--o{ ADMIN_ROLE_POLICY_REVISION : "role_key versions"
     ADMIN_ROLE_POLICY_REVISION o|--o{ ADMIN_ROLE_POLICY_REVISION : "restored_from_revision_id"
 
+    APP_PROPERTIES {
+        string _id PK
+        number version
+        number published_revision
+        object draft
+        object published
+        array history
+        ObjectId updated_by FK
+    }
+    BRAND_ASSET {
+        string _id PK
+        string content_type
+        binary bytes
+        ObjectId created_by FK
+    }
     USER {
         ObjectId _id PK
         string login_id UK

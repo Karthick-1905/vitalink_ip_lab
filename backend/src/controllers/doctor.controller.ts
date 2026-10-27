@@ -1,3 +1,4 @@
+import { getServerCopy } from '@alias/services/presentation-copy.service'
 import { Request, Response } from 'express'
 import { ApiError, ApiResponse, asyncHandler, getSafeInrTargetRange } from '@alias/utils'
 import { StatusCodes } from 'http-status-codes'
@@ -519,7 +520,7 @@ export const reassignPatient = asyncHandler(async (
           patientUser._id,
           currentDoctorUser._id,
           'DOCTOR_REASSIGNED',
-          'Doctor assignment changed',
+          (await getServerCopy())('notification.reassigned.title'),
           `Your case was reassigned to doctor ${new_doctor_id}.`,
           ['assigned_doctor_id'],
           {
@@ -662,8 +663,8 @@ export const editPatientDosage = asyncHandler(async (
     patientUser._id,
     doctor._id,
     'DOSAGE_UPDATED',
-    'Dosage updated',
-    'Your weekly dosage plan was updated by your doctor.',
+    (await getServerCopy())('notification.dosageUpdated.title'),
+    (await getServerCopy())('notification.dosageUpdated.message'),
     ['weekly_dosage']
   )
 
@@ -781,8 +782,8 @@ export const updateReport = asyncHandler(async (req: Request<UpdateReportInput['
       patientUser._id,
       doctor._id,
       'REPORT_UPDATED',
-      'Report updated',
-      'Your uploaded INR report has new doctor notes or status updates.',
+      (await getServerCopy())('notification.reportUpdated.title'),
+      (await getServerCopy())('notification.reportUpdated.message'),
       changedFields
     )
   }
@@ -839,8 +840,8 @@ export const updateNextReview = asyncHandler(async (
     patientUser._id,
     doctor._id,
     'NEXT_REVIEW_UPDATED',
-    'Next review updated',
-    `Your next review date was updated to ${date}.`,
+    (await getServerCopy())('notification.reviewUpdated.title'),
+    (await getServerCopy())('notification.reviewUpdated.message', { date }),
     ['medical_config.next_review_date']
   )
 
@@ -875,8 +876,8 @@ export const UpdateInstructions = asyncHandler(async (
     patientUser._id,
     doctor._id,
     'INSTRUCTIONS_UPDATED',
-    'Instructions updated',
-    'Your doctor updated your care instructions.',
+    (await getServerCopy())('notification.instructionsUpdated.title'),
+    (await getServerCopy())('notification.instructionsUpdated.message'),
     ['medical_config.instructions']
   )
 

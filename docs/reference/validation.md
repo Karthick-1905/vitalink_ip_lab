@@ -179,3 +179,27 @@ A Zen browser check of the deployed dashboard reproduced the missing Personal Se
 - Docker Desktop could not start because its inference listener failed. The full Docker/Testcontainers backend suite was not run in this task. The native MongoDB preview is a separate disposable local database; no hosted/shared database or deployment was modified.
 - Documentation contract passed with 117 matching API operations, 18 model markers, and byte-identical OpenAPI copies. Strict MkDocs build and OpenAPI lint passed; lint retained 106 warnings. All 28 Mermaid diagrams rendered. Structurizr inputs did not change, so its Docker validator was not rerun. `git diff --check` passed.
 - The running Flutter web app was inspected with the local doctor account: attention categories, individual target context within patient records, monthly dose states, and calendar navigation were verified. The final overview shows only attention labels, and the calendar footer text is removed. Hospital acceptance and production rollout remain unverified.
+
+## Runtime presentation properties, 2026-10-27
+
+Implemented a public versioned property snapshot, administrator draft/save/publish/restore workflow, separate public image uploads, Flutter bundled defaults and scoped cache, startup/resume refresh, shared branding images, supported theme colors, and routine server notification templates. The catalogue contains 881 properties. Stable route/API/permission identifiers and clinical enforcement remain in code. No hosted database, deployment, provider account or real patient record was changed.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Backend TypeScript build | Pass | `npm.cmd run build --prefix backend` |
+| Complete backend suite | Pass | 45 suites, 676 tests with `npm.cmd test --prefix backend -- --runInBand`; isolated Docker MongoDB/Redis fixtures |
+| Complete Flutter suite | Pass | 166 tests with `flutter test --no-pub` from frontend |
+| Static analysis | Pass | `dart analyze --format machine frontend/lib frontend/test`; no diagnostics after lint cleanup |
+| Release web build | Pass | `flutter build web --release --no-pub`; generated build/web and successful Wasm dry run |
+| Property catalogue | Pass | `python scripts/properties/sync.py --check`; identical JSON defaults, generated Dart map, and valid static consumers |
+| Documentation contract | Pass | 122 matching API operations, 20 matching models, identical OpenAPI copies, six workflow YAML files |
+| Strict MkDocs build | Pass | `mkdocs build --strict` |
+| OpenAPI lint | Pass with existing warnings | `npm.cmd run lint:openapi --prefix backend`; 106 warnings |
+| Mermaid | Pass | All 28 diagrams extracted and rendered |
+| Structurizr | Pass | `structurizr/cli:2025.11.09 validate` |
+| Editor layout and permissions | Pass | Draft/search/save, read-only controls and desktop/mobile widget checks; mechanical UI detector returned no findings |
+| Diff whitespace | Pass | `git diff --check` |
+
+New integration coverage verifies unpublished drafts remain private, public reads do not create state, ETag revalidation, concurrent-edit conflict rejection, atomic publication, rollback to initial defaults, protected management endpoints, service-level role/read-only restrictions, image content addressing and public bytes, image limits, template placeholder integrity, and exact maintenance exemptions. Flutter coverage verifies offline cached startup, background-refresh persistence, absence of auth headers on public requests, invalid/stale snapshot rejection, bundled fallback and form-state preservation across property changes.
+
+Production rollout, real-device offline/resume behavior, external image hosting and end-to-end acceptance on the deployed application remain unverified. Configuration is global; hospital-specific overrides, installed launcher/splash metadata and unreferenced-image cleanup are not implemented.

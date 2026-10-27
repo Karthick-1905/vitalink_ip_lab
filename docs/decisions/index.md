@@ -20,4 +20,6 @@ These records use MADR headings. They document important decisions already embod
 
 | [0015](0015-doctor-attention-and-review-state.md) | Accepted for local implementation | Explainable doctor attention, explicit report review, and dose recording history |
 
+| [0016](0016-runtime-presentation-properties.md) | Accepted for local implementation | Versioned presentation properties, offline defaults, publication and rollback |
+
 Future architecture changes should add a new decision or explicitly supersede an existing record. Historical accepted records should not be rewritten to imply a decision was never made.

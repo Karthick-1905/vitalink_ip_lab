@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/constants/layout.dart';
@@ -10,10 +11,7 @@ import 'package:frontend/core/widgets/common/api_error_state.dart';
 import 'package:frontend/core/widgets/common/page_skeleton.dart';
 
 class NotificationCenterPage extends StatefulWidget {
-  const NotificationCenterPage({
-    super.key,
-    required this.forDoctor,
-  });
+  const NotificationCenterPage({super.key, required this.forDoctor});
 
   final bool forDoctor;
 
@@ -27,6 +25,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final pageTop = isDark
@@ -58,7 +57,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         final data = query.data ?? <String, dynamic>{};
         final notifications =
             (data['notifications'] as List?)?.cast<Map<String, dynamic>>() ??
-                <Map<String, dynamic>>[];
+            <Map<String, dynamic>>[];
         final unreadCount = (data['unreadCount'] as num?)?.toInt() ?? 0;
         final filteredNotifications = _showUnreadOnly
             ? notifications.where((item) => item['isRead'] != true).toList()
@@ -70,7 +69,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             backgroundColor: pageTop,
             elevation: 0,
             scrolledUnderElevation: 0,
-            title: const Text('Notifications'),
+            title: Text(AppCopy.text('text.notifications_381d190f')),
             actions: [
               TextButton.icon(
                 onPressed: (!_markAllLoading && unreadCount > 0)
@@ -84,8 +83,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                       )
                     : const Icon(Icons.done_all_rounded, size: 18),
                 label: _markAllLoading
-                    ? const Text('Updating')
-                    : const Text('Mark all read'),
+                    ? Text(AppCopy.text('text.updating_7b1c87a7'))
+                    : Text(AppCopy.text('text.mark_all_read_227d7889')),
               ),
               const SizedBox(width: 8),
             ],
@@ -101,61 +100,59 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             child: query.isLoading
                 ? const _LoadingState()
                 : query.isError
-                    ? ApiErrorState(
-                        error: query.error,
-                        onRetry: () => query.refetch(),
-                      )
-                    : notifications.isEmpty
-                        ? const _EmptyState(isFiltered: false)
-                        : RefreshIndicator(
-                            onRefresh: () async => query.refetch(),
-                            child: CustomScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              slivers: [
-                                SliverToBoxAdapter(
-                                  child: _NotificationSummaryCard(
-                                    totalCount: notifications.length,
-                                    unreadCount: unreadCount,
-                                    showUnreadOnly: _showUnreadOnly,
-                                    onToggleFilter: (value) {
-                                      setState(() => _showUnreadOnly = value);
-                                    },
+                ? ApiErrorState(
+                    error: query.error,
+                    onRetry: () => query.refetch(),
+                  )
+                : notifications.isEmpty
+                ? const _EmptyState(isFiltered: false)
+                : RefreshIndicator(
+                    onRefresh: () async => query.refetch(),
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: _NotificationSummaryCard(
+                            totalCount: notifications.length,
+                            unreadCount: unreadCount,
+                            showUnreadOnly: _showUnreadOnly,
+                            onToggleFilter: (value) {
+                              setState(() => _showUnreadOnly = value);
+                            },
+                          ),
+                        ),
+                        if (filteredNotifications.isEmpty)
+                          const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _EmptyState(isFiltered: true),
+                          )
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(
+                              PortalLayout.pageGutter,
+                              AppSpacing.xs - 2,
+                              PortalLayout.pageGutter,
+                              PortalLayout.pageBottomStandalone,
+                            ),
+                            sliver: SliverList.separated(
+                              itemCount: filteredNotifications.length,
+                              separatorBuilder: (_, _) =>
+                                  PortalLayout.itemSpacer,
+                              itemBuilder: (context, index) {
+                                final item = filteredNotifications[index];
+                                return _NotificationTile(
+                                  item: item,
+                                  onTap: () => _markSingleAsReadIfNeeded(
+                                    item,
+                                    query.refetch,
                                   ),
-                                ),
-                                if (filteredNotifications.isEmpty)
-                                  const SliverFillRemaining(
-                                    hasScrollBody: false,
-                                    child: _EmptyState(isFiltered: true),
-                                  )
-                                else
-                                  SliverPadding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      PortalLayout.pageGutter,
-                                      AppSpacing.xs - 2,
-                                      PortalLayout.pageGutter,
-                                      PortalLayout.pageBottomStandalone,
-                                    ),
-                                    sliver: SliverList.separated(
-                                      itemCount: filteredNotifications.length,
-                                      separatorBuilder: (_, _) =>
-                                          PortalLayout.itemSpacer,
-                                      itemBuilder: (context, index) {
-                                        final item =
-                                            filteredNotifications[index];
-                                        return _NotificationTile(
-                                          item: item,
-                                          onTap: () =>
-                                              _markSingleAsReadIfNeeded(
-                                            item,
-                                            query.refetch,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                              ],
+                                );
+                              },
                             ),
                           ),
+                      ],
+                    ),
+                  ),
           ),
         );
       },
@@ -211,16 +208,14 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({
-    required this.item,
-    required this.onTap,
-  });
+  const _NotificationTile({required this.item, required this.onTap});
 
   final Map<String, dynamic> item;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isRead = item['isRead'] == true;
@@ -234,14 +229,8 @@ class _NotificationTile extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isRead
-                ? [
-                    scheme.surface,
-                    scheme.surface,
-                  ]
-                : [
-                    scheme.primary.withValues(alpha: 0.08),
-                    scheme.surface,
-                  ],
+                ? [scheme.surface, scheme.surface]
+                : [scheme.primary.withValues(alpha: 0.08), scheme.surface],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -285,7 +274,8 @@ class _NotificationTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item['title']?.toString() ?? 'Notification',
+                        item['title']?.toString() ??
+                            AppCopy.text('text.notification_146a2866'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.1,
@@ -313,7 +303,7 @@ class _NotificationTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      'NEW',
+                      AppCopy.text('text.new_aad4ae31'),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: scheme.onSecondaryContainer,
                         fontWeight: FontWeight.w700,
@@ -343,7 +333,9 @@ class _NotificationTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  isRead ? 'Read' : 'Unread',
+                  isRead
+                      ? AppCopy.text('text.read_4f0befe5')
+                      : AppCopy.text('text.unread_eb8c982'),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -363,6 +355,7 @@ class _PriorityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final visual = _priorityVisual(priority, Theme.of(context).colorScheme);
 
     return Container(
@@ -399,6 +392,7 @@ class _NotificationSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
@@ -428,7 +422,7 @@ class _NotificationSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Inbox',
+              AppCopy.text('text.inbox_880e46db'),
               style: theme.textTheme.titleLarge?.copyWith(
                 color: scheme.onSurface,
                 fontWeight: FontWeight.w800,
@@ -438,12 +432,12 @@ class _NotificationSummaryCard extends StatelessWidget {
             Row(
               children: [
                 _StatBadge(
-                  label: 'Unread',
+                  label: AppCopy.text('text.unread_eb8c982'),
                   value: unreadCount.toString(),
                 ),
                 const SizedBox(width: 8),
                 _StatBadge(
-                  label: 'Total',
+                  label: AppCopy.text('text.total_ad066d9d'),
                   value: totalCount.toString(),
                 ),
               ],
@@ -453,7 +447,7 @@ class _NotificationSummaryCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _FilterPill(
-                    label: 'All',
+                    label: AppCopy.text('text.all_75afe364'),
                     selected: !showUnreadOnly,
                     onTap: () => onToggleFilter(false),
                   ),
@@ -461,7 +455,7 @@ class _NotificationSummaryCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _FilterPill(
-                    label: 'Unread',
+                    label: AppCopy.text('text.unread_eb8c982'),
                     selected: showUnreadOnly,
                     onTap: () => onToggleFilter(true),
                   ),
@@ -476,16 +470,14 @@ class _NotificationSummaryCard extends StatelessWidget {
 }
 
 class _StatBadge extends StatelessWidget {
-  const _StatBadge({
-    required this.label,
-    required this.value,
-  });
+  const _StatBadge({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
@@ -497,16 +489,14 @@ class _StatBadge extends StatelessWidget {
       ),
       child: RichText(
         text: TextSpan(
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: scheme.onSurface,
-          ),
+          style: theme.textTheme.labelLarge?.copyWith(color: scheme.onSurface),
           children: [
             TextSpan(
               text: value,
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
             TextSpan(
-              text: ' $label',
+              text: " ${(label).toString()}",
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ],
@@ -529,6 +519,7 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
@@ -566,6 +557,7 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return const Padding(
       padding: EdgeInsets.fromLTRB(16, 20, 16, 24),
       child: ListSkeleton(itemCount: 5, shrinkWrap: true),
@@ -580,6 +572,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final title = isFiltered ? 'No unread notifications' : 'All caught up';
@@ -631,10 +624,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _PriorityVisual {
-  const _PriorityVisual({
-    required this.color,
-    required this.icon,
-  });
+  const _PriorityVisual({required this.color, required this.icon});
 
   final Color color;
   final IconData icon;
@@ -643,27 +633,29 @@ class _PriorityVisual {
 _PriorityVisual _priorityVisual(String priority, ColorScheme scheme) {
   return switch (priority) {
     'URGENT' => _PriorityVisual(
-        color: scheme.error,
-        icon: Icons.notification_important_rounded,
-      ),
+      color: scheme.error,
+      icon: Icons.notification_important_rounded,
+    ),
     'HIGH' => _PriorityVisual(
-        color: AppColors.warning,
-        icon: Icons.priority_high_rounded,
-      ),
+      color: AppColors.warning,
+      icon: Icons.priority_high_rounded,
+    ),
     'LOW' => _PriorityVisual(
-        color: AppColors.success,
-        icon: Icons.task_alt_rounded,
-      ),
+      color: AppColors.success,
+      icon: Icons.task_alt_rounded,
+    ),
     _ => _PriorityVisual(
-        color: scheme.primary,
-        icon: Icons.notifications_active_rounded,
-      ),
+      color: scheme.primary,
+      icon: Icons.notifications_active_rounded,
+    ),
   };
 }
 
 String _formatTimeAgo(dynamic raw) {
   final timestamp = raw?.toString();
-  if (timestamp == null || timestamp.isEmpty) return 'Unknown time';
+  if (timestamp == null || timestamp.isEmpty) {
+    return AppCopy.text('text.unknown_time_b6ebfaf2');
+  }
 
   final createdAt = DateTime.tryParse(timestamp)?.toLocal();
   if (createdAt == null) return timestamp;
@@ -671,10 +663,25 @@ String _formatTimeAgo(dynamic raw) {
   final now = DateTime.now();
   final diff = now.difference(createdAt);
 
-  if (diff.inMinutes < 1) return 'Just now';
-  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-  if (diff.inDays < 1) return '${diff.inHours}h ago';
-  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  if (diff.inMinutes < 1) return AppCopy.text('text.just_now_8440e32f');
+  if (diff.inHours < 1) {
+    return AppCopy.text(
+      'text.value1_m_ago_bb8a165d',
+      arguments: {'value1': (diff.inMinutes).toString()},
+    );
+  }
+  if (diff.inDays < 1) {
+    return AppCopy.text(
+      'text.value1_h_ago_ac584f3e',
+      arguments: {'value1': (diff.inHours).toString()},
+    );
+  }
+  if (diff.inDays < 7) {
+    return AppCopy.text(
+      'text.value1_d_ago_a78c0d92',
+      arguments: {'value1': (diff.inDays).toString()},
+    );
+  }
 
   const months = <String>[
     'Jan',
@@ -691,5 +698,5 @@ String _formatTimeAgo(dynamic raw) {
     'Dec',
   ];
   final month = months[createdAt.month - 1];
-  return '$month ${createdAt.day}, ${createdAt.year}';
+  return "${(month).toString()} ${(createdAt.day).toString()}, ${(createdAt.year).toString()}";
 }

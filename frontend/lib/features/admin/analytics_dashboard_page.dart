@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -41,8 +42,9 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
     final complianceFuture = canLoadAnalytics
         ? _loadWithAuthStatus(_repo.getCompliance)
         : Future.value(const _AuthLoadResult<InrComplianceStats>.skipped());
-    final workloadFuture =
-        Future.value(const _AuthLoadResult<DoctorWorkloadStats>.skipped());
+    final workloadFuture = Future.value(
+      const _AuthLoadResult<DoctorWorkloadStats>.skipped(),
+    );
 
     final stats = await statsFuture;
     final trends = await trendsFuture;
@@ -79,14 +81,16 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       anyCapabilities: [
         ...AdminCapabilities.dashboardRead,
         ...AdminCapabilities.analyticsRead,
       ],
       deniedTitle: 'Analytics not available',
-      deniedMessage:
-          'Your current administrator policy does not include dashboard or analytics access.',
+      deniedMessage: AppCopy.text(
+        'text.your_current_administrator_policy_does_not_inclu_f685c4c9',
+      ),
       builder: (context) {
         final access = AdminAccessScope.accessOf(context)!;
         final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
@@ -152,7 +156,9 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          'Analytics Dashboard',
+                                          AppCopy.text(
+                                            'text.analytics_dashboard_1fbbb8d7',
+                                          ),
                                           style: Theme.of(
                                             context,
                                           ).textTheme.titleLarge,
@@ -166,7 +172,9 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Analytics Dashboard',
+                                        AppCopy.text(
+                                          'text.analytics_dashboard_1fbbb8d7',
+                                        ),
                                         style: Theme.of(
                                           context,
                                         ).textTheme.titleLarge,
@@ -221,7 +229,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Analytics Dashboard'),
+            title: Text(AppCopy.text('text.analytics_dashboard_1fbbb8d7')),
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 16),
@@ -282,6 +290,7 @@ class _AnalyticsLoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final message = error is ApiException
         ? (error as ApiException).message
         : 'Analytics could not be loaded.';
@@ -296,7 +305,7 @@ class _AnalyticsLoadError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(AppCopy.text('text.try_again_213e90fa')),
             ),
           ],
         ),
@@ -320,6 +329,7 @@ class _AnalyticsStaleBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final material = MaterialLocalizations.of(context);
     final timestamp = loadedAt == null
         ? 'Previously loaded data is shown.'
@@ -340,7 +350,7 @@ class _AnalyticsStaleBanner extends StatelessWidget {
               TextButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
+                label: Text(AppCopy.text('text.retry_8036af59')),
               ),
           ],
         ),
@@ -360,16 +370,29 @@ class _PeriodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return DropdownButton<String>(
       value: selectedPeriod,
       underline: const SizedBox(),
       isDense: true,
       icon: const Icon(Icons.calendar_today_rounded, size: 20),
-      items: const [
-        DropdownMenuItem(value: '7d', child: Text('7 Days')),
-        DropdownMenuItem(value: '30d', child: Text('30 Days')),
-        DropdownMenuItem(value: '90d', child: Text('90 Days')),
-        DropdownMenuItem(value: '1y', child: Text('1 Year')),
+      items: [
+        DropdownMenuItem(
+          value: '7d',
+          child: Text(AppCopy.text('text.7_days_3a1f3659')),
+        ),
+        DropdownMenuItem(
+          value: '30d',
+          child: Text(AppCopy.text('text.30_days_fa2aded9')),
+        ),
+        DropdownMenuItem(
+          value: '90d',
+          child: Text(AppCopy.text('text.90_days_adb6e437')),
+        ),
+        DropdownMenuItem(
+          value: '1y',
+          child: Text(AppCopy.text('text.1_year_ccdcb985')),
+        ),
       ],
       onChanged: (value) {
         if (value != null) {
@@ -388,11 +411,13 @@ class _SummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (denied && stats == null) {
-      return const _DeniedPanel(
-        title: 'Dashboard aggregates unavailable',
-        message:
-            'Your policy does not include dashboard aggregate access (tenant.dashboard.read or platform.analytics.read).',
+      return _DeniedPanel(
+        title: AppCopy.text('text.dashboard_aggregates_unavailable_7f4ffde3'),
+        message: AppCopy.text(
+          'text.your_policy_does_not_include_dashboard_aggregate_93f8aa94',
+        ),
       );
     }
     final s = stats;
@@ -400,19 +425,19 @@ class _SummaryCards extends StatelessWidget {
       builder: (context, constraints) {
         final cards = [
           _SummaryCard(
-            title: 'Total Patients',
+            title: AppCopy.text('text.total_patients_170282a9'),
             value: s?.patientStats.total.toString() ?? '--',
             icon: Icons.people_rounded,
             color: Colors.blue,
           ),
           _SummaryCard(
-            title: 'Critical INR',
+            title: AppCopy.text('text.critical_inr_7392a67f'),
             value: s?.patientStats.criticalInr?.toString() ?? '--',
             icon: Icons.warning_rounded,
             color: Colors.red,
           ),
           _SummaryCard(
-            title: 'Active Doctors',
+            title: AppCopy.text('text.active_doctors_2dd5bbbb'),
             value: s?.doctorStats.active.toString() ?? '--',
             icon: Icons.medical_services_rounded,
             color: Colors.green,
@@ -452,6 +477,7 @@ class _DeniedPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -501,6 +527,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -537,6 +564,7 @@ class _ChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -566,19 +594,26 @@ class _TrendsChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (denied && trends == null) {
       return _ChartCard(
-        title: 'Registration Trends',
-        child: const Center(
-          child: Text('Access denied for this analytics capability'),
+        title: AppCopy.text('text.registration_trends_ead2ade4'),
+        child: Center(
+          child: Text(
+            AppCopy.text(
+              'text.access_denied_for_this_analytics_capability_92bf0fab',
+            ),
+          ),
         ),
       );
     }
     final data = trends?.dataPoints ?? [];
     if (data.isEmpty) {
       return _ChartCard(
-        title: 'Registration Trends',
-        child: const Center(child: Text('No data available')),
+        title: AppCopy.text('text.registration_trends_ead2ade4'),
+        child: Center(
+          child: Text(AppCopy.text('text.no_data_available_fde1f819')),
+        ),
       );
     }
 
@@ -593,7 +628,7 @@ class _TrendsChart extends StatelessWidget {
     final maxY = ((maxP > maxD ? maxP : maxD) * 1.2).ceilToDouble();
 
     return _ChartCard(
-      title: 'Registration Trends',
+      title: AppCopy.text('text.registration_trends_ead2ade4'),
       child: LineChart(
         LineChartData(
           gridData: FlGridData(show: true, drawVerticalLine: false),
@@ -672,42 +707,49 @@ class _ComplianceChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (denied && compliance == null) {
       return _ChartCard(
-        title: 'INR Compliance',
-        child: const Center(
-          child: Text('Access denied for this analytics capability'),
+        title: AppCopy.text('text.inr_compliance_8acc45e7'),
+        child: Center(
+          child: Text(
+            AppCopy.text(
+              'text.access_denied_for_this_analytics_capability_92bf0fab',
+            ),
+          ),
         ),
       );
     }
     final c = compliance;
     if (c == null || c.total == 0) {
       return _ChartCard(
-        title: 'INR Compliance',
-        child: const Center(child: Text('No data available')),
+        title: AppCopy.text('text.inr_compliance_8acc45e7'),
+        child: Center(
+          child: Text(AppCopy.text('text.no_data_available_fde1f819')),
+        ),
       );
     }
 
     final items = [
       _ComplianceLegendItem(
-        label: 'In Range',
+        label: AppCopy.text('text.in_range_a08d6c07'),
         color: Colors.green,
         percentage: c.inRangePercentage,
       ),
       _ComplianceLegendItem(
-        label: 'Out of Range',
+        label: AppCopy.text('text.out_of_range_b913d075'),
         color: Colors.orange,
         percentage: c.outOfRangePercentage,
       ),
       _ComplianceLegendItem(
-        label: 'No Data',
+        label: AppCopy.text('text.no_data_fd6263ee'),
         color: Colors.blueGrey,
         percentage: c.noDataPercentage,
       ),
     ].where((item) => item.percentage > 0).toList();
 
     return _ChartCard(
-      title: 'INR Compliance',
+      title: AppCopy.text('text.inr_compliance_8acc45e7'),
       child: Column(
         children: [
           Expanded(
@@ -720,7 +762,8 @@ class _ComplianceChart extends StatelessWidget {
                       (item) => PieChartSectionData(
                         color: item.color,
                         value: item.percentage,
-                        title: '${item.percentage.toStringAsFixed(0)}%',
+                        title:
+                            "${(item.percentage.toStringAsFixed(0)).toString()}%",
                         radius: 50,
                         titleStyle: const TextStyle(
                           fontSize: 14,
@@ -742,7 +785,7 @@ class _ComplianceChart extends StatelessWidget {
                   (item) => _LegendChip(
                     color: item.color,
                     label:
-                        '${item.label} (${item.percentage.toStringAsFixed(0)}%)',
+                        "${(item.label).toString()} (${(item.percentage.toStringAsFixed(0)).toString()}%)",
                   ),
                 )
                 .toList(),
@@ -773,6 +816,7 @@ class _LegendChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(

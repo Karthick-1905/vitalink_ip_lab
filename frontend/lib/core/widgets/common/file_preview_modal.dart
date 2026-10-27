@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -117,7 +118,7 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
       final cleaned = last.split('?').first;
       if (cleaned.isNotEmpty) return cleaned;
     } catch (_) {}
-    return 'Report File';
+    return AppCopy.text('text.report_file_b91e0fd7');
   }
 
   Future<void> _openExternally() async {
@@ -127,7 +128,11 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
       if (!await canLaunchUrl(uri)) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cannot open this file externally')),
+          SnackBar(
+            content: Text(
+              AppCopy.text('text.cannot_open_this_file_externally_e4152cb0'),
+            ),
+          ),
         );
         return;
       }
@@ -136,7 +141,14 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
       debugPrint('Error opening file externally: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error opening file: $e')),
+        SnackBar(
+          content: Text(
+            AppCopy.text(
+              'text.error_opening_file_value1_348be11b',
+              arguments: {'value1': (e).toString()},
+            ),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isOpeningExternal = false);
@@ -145,6 +157,7 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final isPdf = _detectedFileType == 'pdf';
 
     return Scaffold(
@@ -155,14 +168,16 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.close),
-          tooltip: 'Close',
+          tooltip: AppCopy.text('text.close_cd86acc3'),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isPdf ? 'PDF Report' : 'File Preview',
+              isPdf
+                  ? AppCopy.text('text.pdf_report_7fc33bf1')
+                  : AppCopy.text('text.file_preview_db75cdb3'),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -184,7 +199,7 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
         actions: [
           if (isPdf)
             IconButton(
-              tooltip: 'Zoom out',
+              tooltip: AppCopy.text('text.zoom_out_8570fe3a'),
               onPressed: () {
                 if (!_pdfController.isReady) return;
                 unawaited(_pdfController.zoomDown());
@@ -193,7 +208,7 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
             ),
           if (isPdf)
             IconButton(
-              tooltip: 'Zoom in',
+              tooltip: AppCopy.text('text.zoom_in_a3583899'),
               onPressed: () {
                 if (!_pdfController.isReady) return;
                 unawaited(_pdfController.zoomUp());
@@ -201,7 +216,7 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
               icon: const Icon(Icons.zoom_in),
             ),
           IconButton(
-            tooltip: 'Open externally',
+            tooltip: AppCopy.text('text.open_externally_6c6bbb3f'),
             onPressed: _isOpeningExternal ? null : _openExternally,
             icon: _isOpeningExternal
                 ? const SizedBox(
@@ -225,7 +240,9 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
         !uri.hasAuthority ||
         uri.host.isEmpty) {
       return _ErrorPane(
-        message: 'This report link is invalid or expired.',
+        message: AppCopy.text(
+          'text.this_report_link_is_invalid_or_expired_df867650',
+        ),
         onDark: true,
         onRetryExternal: _openExternally,
       );
@@ -233,8 +250,9 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
 
     if (_pdfLoadingTimedOut) {
       return _ErrorPane(
-        message:
-            'Could not load this PDF in the app. The link may have expired, or the file is unavailable.',
+        message: AppCopy.text(
+          'text.could_not_load_this_pdf_in_the_app_the_link_may__abb77d3',
+        ),
         detail: 'Loading timed out after 45 seconds.',
         onDark: true,
         onRetryExternal: _openExternally,
@@ -276,8 +294,17 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
                 const SizedBox(height: 16),
                 Text(
                   progress == null
-                      ? 'Loading PDF…'
-                      : 'Loading PDF… ${(progress * 100).clamp(0, 100).toStringAsFixed(0)}%',
+                      ? AppCopy.text('text.loading_pdf_c87f749b')
+                      : AppCopy.text(
+                          'text.loading_pdf_value1_ae98c980',
+                          arguments: {
+                            'value1':
+                                ((progress * 100)
+                                        .clamp(0, 100)
+                                        .toStringAsFixed(0))
+                                    .toString(),
+                          },
+                        ),
                   style: const TextStyle(
                     color: Colors.white70,
                     fontWeight: FontWeight.w500,
@@ -290,8 +317,9 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
         errorBannerBuilder: (context, error, stackTrace, documentRef) {
           _cancelPdfLoadTimeout();
           return _ErrorPane(
-            message:
-                'Could not load this PDF in the app. The link may have expired, or the file is unavailable.',
+            message: AppCopy.text(
+              'text.could_not_load_this_pdf_in_the_app_the_link_may__abb77d3',
+            ),
             detail: error.toString(),
             onDark: true,
             onRetryExternal: _openExternally,
@@ -335,8 +363,9 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
       return ColoredBox(
         color: const Color(0xFFF9FAFB),
         child: _ErrorPane(
-          message:
-              'Could not load this image in the app. The link may have expired, or the file is unavailable.',
+          message: AppCopy.text(
+            'text.could_not_load_this_image_in_the_app_the_link_ma_b0e005c6',
+          ),
           detail: 'Loading timed out after 45 seconds.',
           onRetryExternal: _openExternally,
         ),
@@ -355,7 +384,7 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
             errorBuilder: (context, error, stackTrace) {
               _imageLoadingTimer?.cancel();
               return _ErrorPane(
-                message: 'Failed to load image.',
+                message: AppCopy.text('text.failed_to_load_image_eaf8ce9c'),
                 onRetryExternal: _openExternally,
               );
             },
@@ -377,7 +406,7 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
                 child: CircularProgressIndicator(
                   value: loadingProgress.expectedTotalBytes != null
                       ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
+                            loadingProgress.expectedTotalBytes!
                       : null,
                 ),
               );
@@ -404,6 +433,7 @@ class _ErrorPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final onSurface = onDark ? Colors.white : const Color(0xFF374151);
     final muted = onDark ? Colors.white70 : const Color(0xFF6B7280);
 
@@ -439,7 +469,7 @@ class _ErrorPane extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetryExternal,
                 icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('Open externally'),
+                label: Text(AppCopy.text('text.open_externally_6c6bbb3f')),
                 style: onDark
                     ? OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,

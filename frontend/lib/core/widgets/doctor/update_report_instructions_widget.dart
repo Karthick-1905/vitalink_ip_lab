@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/features/doctor/models/report_model.dart';
@@ -64,6 +65,7 @@ class _UpdateReportInstructionsWidgetState
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return FutureBuilder<Map<String, dynamic>>(
       future: _reportFuture,
       builder: (context, snapshot) {
@@ -101,7 +103,7 @@ class _UpdateReportInstructionsWidgetState
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          const Text('Loading report...'),
+          Text(AppCopy.text('text.loading_report_78ab2a27')),
         ],
       ),
     );
@@ -112,21 +114,17 @@ class _UpdateReportInstructionsWidgetState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: Colors.red[400],
-          ),
+          Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
           const SizedBox(height: 16),
           Text(
-            'Error loading report',
+            AppCopy.text('text.error_loading_report_e9d570d1'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: widget.onCancel,
             icon: const Icon(Icons.close),
-            label: const Text('Close'),
+            label: Text(AppCopy.text('text.close_cd86acc3')),
           ),
         ],
       ),
@@ -145,14 +143,14 @@ class _UpdateReportInstructionsWidgetState
           ),
           const SizedBox(height: 16),
           Text(
-            'No report data',
+            AppCopy.text('text.no_report_data_a6aa36bc'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: widget.onCancel,
             icon: const Icon(Icons.close),
-            label: const Text('Close'),
+            label: Text(AppCopy.text('text.close_cd86acc3')),
           ),
         ],
       ),
@@ -174,17 +172,27 @@ class _UpdateReportInstructionsWidgetState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Update Report',
+                        AppCopy.text('text.update_report_7cd6170e'),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'INR: ${report.inrValue.toStringAsFixed(2)} • ${DateFormat('MMM dd, yyyy').format(report.testDate)}',
+                        AppCopy.text(
+                          'text.inr_value1_value2_4b732249',
+                          arguments: {
+                            'value1': (report.inrValue.toStringAsFixed(
+                              2,
+                            )).toString(),
+                            'value2': (DateFormat(
+                              'MMM dd, yyyy',
+                            ).format(report.testDate)).toString(),
+                          },
+                        ),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -230,15 +238,13 @@ class _UpdateReportInstructionsWidgetState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Report Reference',
+                              AppCopy.text('text.report_reference_b27fc26e'),
                               style: Theme.of(context).textTheme.labelMedium,
                             ),
                             const SizedBox(height: 4),
                             Text(
                               report.id,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
+                              style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     fontFamily: 'monospace',
                                     color: Colors.grey[600],
@@ -253,10 +259,10 @@ class _UpdateReportInstructionsWidgetState
                 const SizedBox(height: 24),
                 // Notes Field
                 Text(
-                  'Doctor\'s Notes',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  AppCopy.text('text.doctor_s_notes_2512e421'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -264,7 +270,9 @@ class _UpdateReportInstructionsWidgetState
                   maxLines: 5,
                   minLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Add or update notes about this report...',
+                    hintText: AppCopy.text(
+                      'text.add_or_update_notes_about_this_report_ff47e46',
+                    ),
                     hintStyle: TextStyle(color: Colors.grey[400]),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -305,10 +313,8 @@ class _UpdateReportInstructionsWidgetState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Mark as Critical',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
+                              AppCopy.text('text.mark_as_critical_12577a41'),
+                              style: Theme.of(context).textTheme.labelMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: _isCritical ? Colors.red[700] : null,
@@ -316,13 +322,11 @@ class _UpdateReportInstructionsWidgetState
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Flag this report for immediate attention',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
+                              AppCopy.text(
+                                'text.flag_this_report_for_immediate_attention_1777c4c1',
+                              ),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: Colors.grey[600]),
                             ),
                           ],
                         ),
@@ -347,7 +351,7 @@ class _UpdateReportInstructionsWidgetState
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text('Cancel'),
+                        child: Text(AppCopy.text('text.cancel_35afca3b')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -366,10 +370,11 @@ class _UpdateReportInstructionsWidgetState
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white),
+                                    Colors.white,
+                                  ),
                                 ),
                               )
-                            : const Text('Update Report'),
+                            : Text(AppCopy.text('text.update_report_7cd6170e')),
                       ),
                     ),
                   ],
@@ -395,8 +400,10 @@ class _UpdateReportInstructionsWidgetState
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Report updated successfully'),
+          SnackBar(
+            content: Text(
+              AppCopy.text('text.report_updated_successfully_2aea82b9'),
+            ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
@@ -407,7 +414,12 @@ class _UpdateReportInstructionsWidgetState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(
+              AppCopy.text(
+                'text.error_value1_caf169bf',
+                arguments: {'value1': (e).toString()},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );

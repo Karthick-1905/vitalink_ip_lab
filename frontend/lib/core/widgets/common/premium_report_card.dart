@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -39,9 +40,11 @@ class PremiumReportCard extends StatelessWidget {
   Future<void> _launchURL(BuildContext context, String? urlString) async {
     if (urlString == null || urlString.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('No file URL available')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppCopy.text('text.no_file_url_available_c71ad1a2')),
+          ),
+        );
       }
       return;
     }
@@ -58,7 +61,14 @@ class PremiumReportCard extends StatelessWidget {
           uri.host.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Invalid URL format: $urlString')),
+            SnackBar(
+              content: Text(
+                AppCopy.text(
+                  'text.invalid_url_format_value1_916abf8e',
+                  arguments: {'value1': (urlString).toString()},
+                ),
+              ),
+            ),
           );
         }
         return;
@@ -73,7 +83,12 @@ class PremiumReportCard extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error opening file: $e'),
+            content: Text(
+              AppCopy.text(
+                'text.error_opening_file_value1_348be11b',
+                arguments: {'value1': (e).toString()},
+              ),
+            ),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -83,6 +98,7 @@ class PremiumReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final double? inr = report['inr_value'] is num
         ? (report['inr_value'] as num).toDouble()
         : double.tryParse(report['inr_value']?.toString() ?? '');
@@ -175,7 +191,22 @@ class PremiumReportCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Recorded at ${_formatDate(report['test_date'], includeTime: true).contains(',') ? _formatDate(report['test_date'], includeTime: true).split(',').last.trim() : 'N/A'}',
+                            AppCopy.text(
+                              'text.recorded_at_value1_443c286e',
+                              arguments: {
+                                'value1':
+                                    (_formatDate(
+                                              report['test_date'],
+                                              includeTime: true,
+                                            ).contains(',')
+                                            ? _formatDate(
+                                                report['test_date'],
+                                                includeTime: true,
+                                              ).split(',').last.trim()
+                                            : 'N/A')
+                                        .toString(),
+                              },
+                            ),
                             style: GoogleFonts.outfit(
                               color: const Color(0xFF9CA3AF),
                               fontSize: 12,
@@ -196,7 +227,13 @@ class PremiumReportCard extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'INR ${inr?.toStringAsFixed(1) ?? 'N/A'}',
+                          AppCopy.text(
+                            'text.inr_value1_e8fc32c4',
+                            arguments: {
+                              'value1': (inr?.toStringAsFixed(1) ?? 'N/A')
+                                  .toString(),
+                            },
+                          ),
                           style: GoogleFonts.outfit(
                             color: statusColor,
                             fontWeight: FontWeight.w900,
@@ -251,7 +288,7 @@ class PremiumReportCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'CLINICAL NOTES',
+                                AppCopy.text('text.clinical_notes_5498eb1d'),
                                 style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 11,
@@ -284,7 +321,7 @@ class PremiumReportCard extends StatelessWidget {
                           Expanded(
                             child: _ActionButton(
                               icon: Icons.picture_as_pdf_outlined,
-                              label: 'VIEW PDF',
+                              label: AppCopy.text('text.view_pdf_a0211886'),
                               color: const Color(0xFF1E1E5E),
                               onPressed:
                                   onViewFilePressed ??
@@ -298,7 +335,9 @@ class PremiumReportCard extends StatelessWidget {
                           Expanded(
                             child: _ActionButton(
                               icon: Icons.edit_note_rounded,
-                              label: 'REVIEW REPORT',
+                              label: AppCopy.text(
+                                'text.review_report_9457244d',
+                              ),
                               color: const Color(0xFF6366F1),
                               onPressed: onUpdatePressed ?? () {},
                               isPrimary: true,
@@ -334,6 +373,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return SizedBox(
       height: 48,
       child: OutlinedButton.icon(

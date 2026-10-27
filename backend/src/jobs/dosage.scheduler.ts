@@ -1,3 +1,4 @@
+import { getServerCopy } from '@alias/services/presentation-copy.service'
 import cron from 'node-cron'
 import Notification from '@alias/models/notification.model'
 import PatientProfile from '@alias/models/patientprofile.model'
@@ -84,8 +85,9 @@ export async function runDosageReminderPass(
         const reminderKey = `dosage:${userId}:${dueWindow}`
         // In-app notification may include therapy details; push delivery is
         // sanitized separately in notification-delivery.service.
-        const title = 'Time for your medication'
-        const message = `Take your ${drugName} dose - ${dose}mg today.`
+        const copy = await getServerCopy()
+        const title = copy('notification.dosage.title')
+        const message = copy('notification.dosage.message', { drugName, dose })
         const data = {
           route: 'patient-take-dosage',
           patientId: String(patient._id),

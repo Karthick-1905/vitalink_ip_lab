@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:frontend/features/doctor/widgets/patient_attention_summary.dart';
 import 'dart:async';
 
@@ -124,7 +125,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
           actions: [
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(AppCopy.text('text.ok_85e4b82f')),
             ),
           ],
         ),
@@ -149,6 +150,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<int>(
       options: QueryOptions<int>(
         queryKey: DoctorQueryKeys.notificationsUnread(),
@@ -295,14 +297,14 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
   String _titleForIndex(int index) {
     switch (index) {
       case 1:
-        return 'Add Patient';
+        return AppCopy.text('text.add_patient_243c1f9d');
       case 2:
         return 'Reports';
       case 3:
         return 'Profile';
       case 0:
       default:
-        return 'Patient Overview';
+        return AppCopy.text('text.patient_overview_55ab78f9');
     }
   }
 }
@@ -328,6 +330,7 @@ class _PatientsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<List<PatientModel>>(
       options: QueryOptions<List<PatientModel>>(
         queryKey: DoctorQueryKeys.patients(),
@@ -352,13 +355,26 @@ class _PatientsView extends StatelessWidget {
                   final selection = _ToggleGroup(
                     children: [
                       _TogglePill(
-                        label:
-                            'Needs attention (${patients.where((p) => p.attentionReasons.isNotEmpty).length})',
+                        label: AppCopy.text(
+                          'text.needs_attention_value1_143944af',
+                          arguments: {
+                            'value1':
+                                (patients
+                                        .where(
+                                          (p) => p.attentionReasons.isNotEmpty,
+                                        )
+                                        .length)
+                                    .toString(),
+                          },
+                        ),
                         isActive: onlyAttention,
                         onTap: () => onAttentionChanged(true),
                       ),
                       _TogglePill(
-                        label: 'All patients (${patients.length})',
+                        label: AppCopy.text(
+                          'text.all_patients_value1_9b60fd61',
+                          arguments: {'value1': (patients.length).toString()},
+                        ),
                         isActive: !onlyAttention,
                         onTap: () => onAttentionChanged(false),
                       ),
@@ -369,7 +385,9 @@ class _PatientsView extends StatelessWidget {
                     onToggle: onToggleView,
                   );
                   final refresh = IconButton(
-                    tooltip: 'Refresh patient overview',
+                    tooltip: AppCopy.text(
+                      'text.refresh_patient_overview_4d662000',
+                    ),
                     onPressed: () => query.refetch(),
                     icon: const Icon(Icons.refresh),
                   );
@@ -409,8 +427,10 @@ class _PatientsView extends StatelessWidget {
                   compact: true,
                 ),
               if (query.isError && query.hasData)
-                const Text(
-                  'Showing the last loaded patient data. Refresh failed; use Retry above.',
+                Text(
+                  AppCopy.text(
+                    'text.showing_the_last_loaded_patient_data_refresh_fai_46adcc1e',
+                  ),
                 ),
               if (query.hasData || (!query.isLoading && !query.isError))
                 isTableView
@@ -437,6 +457,7 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -445,7 +466,10 @@ class _SearchBar extends StatelessWidget {
           child: const Icon(Icons.search, color: Color(0xFF6B7280)),
         ),
         prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-        hintText: 'Search $count patients by name or OP number',
+        hintText: AppCopy.text(
+          'text.search_value1_patients_by_name_or_op_number_89e85dcc',
+          arguments: {'value1': (count).toString()},
+        ),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -500,12 +524,12 @@ class _ToggleBar extends StatelessWidget {
   Widget build(BuildContext context) => _ToggleGroup(
     children: [
       _TogglePill(
-        label: 'Cards',
+        label: AppCopy.text('text.cards_2a273ae4'),
         isActive: !isTableView,
         onTap: () => onToggle(false),
       ),
       _TogglePill(
-        label: 'Table',
+        label: AppCopy.text('text.table_d70ceb7f'),
         isActive: isTableView,
         onTap: () => onToggle(true),
       ),
@@ -519,6 +543,7 @@ class _CardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (patients.isEmpty) return const _EmptyState();
     return Column(
       children: [
@@ -544,6 +569,7 @@ class _TableView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (patients.isEmpty) return const _EmptyState();
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -551,11 +577,13 @@ class _TableView extends StatelessWidget {
           DataTable(
                 dataRowMinHeight: 64,
                 dataRowMaxHeight: double.infinity,
-                columns: const [
-                  DataColumn(label: Text('Name')),
-                  DataColumn(label: Text('OP #')),
-                  DataColumn(label: Text('Attention')),
-                  DataColumn(label: Text('Action')),
+                columns: [
+                  DataColumn(label: Text(AppCopy.text('text.name_fe07306'))),
+                  DataColumn(label: Text(AppCopy.text('text.op_bb558927'))),
+                  DataColumn(
+                    label: Text(AppCopy.text('text.attention_8c14359')),
+                  ),
+                  DataColumn(label: Text(AppCopy.text('text.action_a77a91f'))),
                 ],
                 rows: patients
                     .asMap()
@@ -597,7 +625,7 @@ class _TableView extends StatelessWidget {
                                           });
                                     }
                                   : null,
-                              child: const Text('View'),
+                              child: Text(AppCopy.text('text.view_5e4baa18')),
                             ),
                           ),
                         ],
@@ -626,12 +654,15 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
-          children: const [
+          children: [
             Icon(Icons.search_off, size: 36, color: Colors.black54),
             SizedBox(height: AppSpacing.xs),
             Text(
-              'No patients match this view. Try All patients or clear your search.',
+              AppCopy.text(
+                'text.no_patients_match_this_view_try_all_patients_or__71870c3',
+              ),
             ),
           ],
         )
@@ -683,6 +714,7 @@ class _PatientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return PressScale(
       onTap: () => _navigateToPatient(context),
       child:
@@ -697,7 +729,12 @@ class _PatientCard extends StatelessWidget {
                 ),
                 PortalLayout.metaSpacer,
                 Text(
-                  'OP #: ${patient.opNumber ?? 'N/A'}',
+                  AppCopy.text(
+                    'text.op_value1_3a304631',
+                    arguments: {
+                      'value1': (patient.opNumber ?? 'N/A').toString(),
+                    },
+                  ),
                   style: const TextStyle(color: Colors.black54, fontSize: 12),
                 ),
                 const SizedBox(height: 12),
@@ -707,7 +744,7 @@ class _PatientCard extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => _navigateToPatient(context),
-                    child: const Text('View Details'),
+                    child: Text(AppCopy.text('text.view_details_e2c15a0e')),
                   ),
                 ),
               ]

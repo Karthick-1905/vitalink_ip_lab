@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,6 +31,7 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       anyCapabilities: AdminCapabilities.billingRead,
       builder: (context) {
@@ -51,24 +53,26 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
             final q = _search.text.toLowerCase();
             final invoices = all.where((item) {
               final invoice = item as Map<String, dynamic>;
-              return '${invoice['id']} ${invoice['hospitalName']} ${invoice['plan']}'
+              return "${(invoice['id']).toString()} ${(invoice['hospitalName']).toString()} ${(invoice['plan']).toString()}"
                   .toLowerCase()
                   .contains(q);
             }).toList();
             final content = AdminListShell(
-              title: 'Billing & Invoices',
+              title: AppCopy.text('text.billing_invoices_940223a6'),
               subtitle: canGenerate || canCheckout
-                  ? 'Review invoices and use only the billing actions allowed by your policy.'
-                  : 'Read-only invoice access.',
+                  ? AppCopy.text(
+                      'text.review_invoices_and_use_only_the_billing_actions_1c831526',
+                    )
+                  : AppCopy.text('text.read_only_invoice_access_dc170d49'),
               searchController: _search,
-              searchHint: 'Search invoices',
+              searchHint: AppCopy.text('text.search_invoices_9793a623'),
               onSearch: () => setState(() {}),
               actions: [
                 if (canGenerate)
                   FilledButton.icon(
                     onPressed: _confirmInvoiceGeneration,
                     icon: const Icon(Icons.receipt_long_rounded),
-                    label: const Text('Generate'),
+                    label: Text(AppCopy.text('text.generate_c75562b2')),
                   ),
               ],
               child: AdminQueryBody<Map<String, dynamic>>(
@@ -89,7 +93,9 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'No invoices match your search',
+                              AppCopy.text(
+                                'text.no_invoices_match_your_search_46af4e86',
+                              ),
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           ],
@@ -99,7 +105,8 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
                         padding: const EdgeInsets.all(16),
                         itemCount: invoices.length,
                         itemBuilder: (context, index) {
-                          final invoice = invoices[index] as Map<String, dynamic>;
+                          final invoice =
+                              invoices[index] as Map<String, dynamic>;
                           final id = '${invoice['id']}';
                           final status = '${invoice['status'] ?? 'Pending'}';
                           return AdminRecordCard(
@@ -129,7 +136,11 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
                                     PopupMenuItem(
                                       enabled: status != 'Paid',
                                       value: 'checkout',
-                                      child: const Text('Create checkout'),
+                                      child: Text(
+                                        AppCopy.text(
+                                          'text.create_checkout_8080183',
+                                        ),
+                                      ),
                                       onTap: () => Future.microtask(
                                         () => _startInvoiceCheckout(id),
                                       ),
@@ -151,23 +162,25 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
   Future<void> _confirmInvoiceGeneration() async {
     final period = TextEditingController(
       text:
-          '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}',
+          "${(DateTime.now().year).toString()}-${(DateTime.now().month.toString().padLeft(2, '0')).toString()}",
     );
     final billingPeriod = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Generate invoices?'),
+        title: Text(AppCopy.text('text.generate_invoices_3a71a10f')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'This creates invoices for every active hospital. Existing invoices for the same billing period will be kept.',
+            Text(
+              AppCopy.text(
+                'text.this_creates_invoices_for_every_active_hospital__fd2e08c',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: period,
-              decoration: const InputDecoration(
-                labelText: 'Billing period (YYYY-MM)',
+              decoration: InputDecoration(
+                labelText: AppCopy.text('text.billing_period_yyyy_mm_6f4d4df1'),
                 hintText: '2026-07',
               ),
               keyboardType: TextInputType.datetime,
@@ -177,7 +190,7 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             onPressed: () {
@@ -186,13 +199,17 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
                 Navigator.pop(dialogContext, value);
               } else {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('Enter a billing period as YYYY-MM.'),
+                  SnackBar(
+                    content: Text(
+                      AppCopy.text(
+                        'text.enter_a_billing_period_as_yyyy_mm_cbcf052b',
+                      ),
+                    ),
                   ),
                 );
               }
             },
-            child: const Text('Generate'),
+            child: Text(AppCopy.text('text.generate_c75562b2')),
           ),
         ],
       ),
@@ -209,7 +226,14 @@ class _BillingInvoicesPageState extends State<BillingInvoicesPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '$created created; $existing already existed for $billingPeriod.',
+            AppCopy.text(
+              'text.value1_created_value2_already_existed_for_value3_62a2236c',
+              arguments: {
+                'value1': (created).toString(),
+                'value2': (existing).toString(),
+                'value3': (billingPeriod).toString(),
+              },
+            ),
           ),
         ),
       );

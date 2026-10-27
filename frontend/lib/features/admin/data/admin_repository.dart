@@ -473,6 +473,19 @@ class AdminRepository {
 
   // ─── System Config ───
 
+  Future<Map<String, dynamic>> getPresentationProperties() =>
+      _apiClient.get('${AppStrings.adminConfigPath}/presentation');
+
+  Future<Map<String, dynamic>> updatePresentationProperties(
+    Map<String, dynamic> data,
+  ) => _apiClient.put('${AppStrings.adminConfigPath}/presentation', data: data);
+
+  Future<Map<String, dynamic>> uploadBrandImage(String contentBase64) =>
+      _apiClient.post(
+        '${AppStrings.adminConfigPath}/presentation/assets',
+        data: {'contentBase64': contentBase64},
+      );
+
   Future<Map<String, dynamic>> getSystemConfig() async {
     return await _apiClient.get(AppStrings.adminConfigPath);
   }

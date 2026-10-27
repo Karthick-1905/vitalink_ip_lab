@@ -193,6 +193,8 @@ def extract_implemented_routes() -> set[str]:
                 routes.add(f"{method.upper()} {base}{route_path}")
 
     index_text = (route_dir / "index.ts").read_text(encoding="utf-8")
+    for match in direct_pattern.finditer(index_text):
+        routes.add(f"{match.group(1).upper()} {match.group(2)}")
     webhook = re.search(r"router\.post\(\s*['\"](/webhooks/payment)['\"]", index_text)
     if not webhook:
         fail("Could not find payment webhook route in backend/src/routes/index.ts")

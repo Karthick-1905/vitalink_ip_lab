@@ -44,6 +44,8 @@ import {
   restoreAdminRolePolicySchema, updateAdminRolePolicySchema,
 } from '@alias/validators/admin-role-policy.validator'
 
+import { readAdminProperties, writeAdminProperties, uploadBrandAsset } from '@alias/controllers/app-properties.controller'
+
 const router = Router()
 
 // All admin routes require authentication + ADMIN role, with mutation auditing
@@ -272,3 +274,15 @@ registerAdminRoute(router, {
 }, getDoctorById)
 
 export default router
+
+// Presentation properties share the established global configuration capabilities.
+registerAdminRoute(router, {
+  method: 'get', path: '/config/presentation', capability: 'platform.system_config.read', scope: 'global', mutation: false, surface: 'admin',
+}, readAdminProperties)
+registerAdminRoute(router, {
+  method: 'put', path: '/config/presentation', capability: 'platform.system_config.manage', scope: 'global', mutation: true, surface: 'admin',
+}, writeAdminProperties)
+
+registerAdminRoute(router, {
+  method: 'post', path: '/config/presentation/assets', capability: 'platform.system_config.manage', scope: 'global', mutation: true, surface: 'admin',
+}, uploadBrandAsset)

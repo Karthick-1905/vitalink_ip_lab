@@ -1,3 +1,5 @@
+import 'package:frontend/features/admin/presentation_properties_editor.dart';
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/network/api_client.dart';
@@ -50,18 +52,20 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
       final discard = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Discard unsaved changes?'),
-          content: const Text(
-            'Reloading replaces your local platform configuration draft.',
+          title: Text(AppCopy.text('text.discard_unsaved_changes_8f433e17')),
+          content: Text(
+            AppCopy.text(
+              'text.reloading_replaces_your_local_platform_configura_30c92c3b',
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Keep editing'),
+              child: Text(AppCopy.text('text.keep_editing_d233d38c')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Discard and reload'),
+              child: Text(AppCopy.text('text.discard_and_reload_fe48f2d1')),
             ),
           ],
         ),
@@ -115,7 +119,9 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
             content: Text(
               error is ApiException
                   ? error.message
-                  : 'Could not refresh platform configuration.',
+                  : AppCopy.text(
+                      'text.could_not_refresh_platform_configuration_7c25e52d',
+                    ),
             ),
           ),
         );
@@ -131,18 +137,20 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Save platform configuration?'),
-        content: const Text(
-          'These global settings take effect across VitaLink. Personal MFA and health information are not changed.',
+        title: Text(AppCopy.text('text.save_platform_configuration_7bd39c1e')),
+        content: Text(
+          AppCopy.text(
+            'text.these_global_settings_take_effect_across_vitalin_95764777',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Save configuration'),
+            child: Text(AppCopy.text('text.save_configuration_d495a0fa')),
           ),
         ],
       ),
@@ -165,7 +173,11 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
       if (!mounted) return;
       setState(() => _hasUnsavedChanges = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Platform configuration saved.')),
+        SnackBar(
+          content: Text(
+            AppCopy.text('text.platform_configuration_saved_380683d3'),
+          ),
+        ),
       );
     } catch (error) {
       if (mounted) {
@@ -187,12 +199,14 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       anyCapabilities: const [AdminCapabilities.platformSystemConfigRead],
       roles: const {AdminRole.appAdmin},
       scope: AdminScope.global,
-      deniedMessage:
-          'Global runtime configuration is available only to an Application Admin with platform configuration access.',
+      deniedMessage: AppCopy.text(
+        'text.global_runtime_configuration_is_available_only_t_669cabef',
+      ),
       builder: (context) {
         if (!_hasLoaded && !_isLoading && _error == null) {
           WidgetsBinding.instance.addPostFrameCallback(
@@ -209,13 +223,16 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
             padding: const EdgeInsets.all(16),
             children: [
               AdminPageHeader(
-                title: 'Platform Configuration',
-                subtitle:
-                    'Global runtime settings. Personal MFA and service health are separate surfaces.',
+                title: AppCopy.text('text.platform_configuration_25fccd7c'),
+                subtitle: AppCopy.text(
+                  'text.global_runtime_settings_personal_mfa_and_service_e8e8cdb6',
+                ),
                 actions: [
                   IconButton(
                     onPressed: _isLoading ? null : _load,
-                    tooltip: 'Reload platform configuration',
+                    tooltip: AppCopy.text(
+                      'text.reload_platform_configuration_8cb43b29',
+                    ),
                     icon: const Icon(Icons.refresh_rounded),
                   ),
                   if (canManage)
@@ -225,7 +242,7 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
                           ? null
                           : _save,
                       icon: const Icon(Icons.save_outlined),
-                      label: const Text('Save'),
+                      label: Text(AppCopy.text('text.save_4d2d5d68')),
                     ),
                 ],
               ),
@@ -260,7 +277,9 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
                 Text(
                   _error is ApiException
                       ? (_error as ApiException).message
-                      : 'Could not load platform configuration.',
+                      : AppCopy.text(
+                          'text.could_not_load_platform_configuration_b9ea7288',
+                        ),
                 ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
@@ -268,7 +287,7 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
                       ? null
                       : () => _load(discardDraft: true),
                   icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Try again'),
+                  label: Text(AppCopy.text('text.try_again_213e90fa')),
                 ),
               ],
             ),
@@ -278,11 +297,13 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
     }
     return [
       if (!canManage)
-        const Card(
+        Card(
           child: Padding(
             padding: EdgeInsets.all(14),
             child: Text(
-              'Read-only configuration access. Change controls are hidden.',
+              AppCopy.text(
+                'text.read_only_configuration_access_change_controls_a_5290a11e',
+              ),
             ),
           ),
         ),
@@ -295,10 +316,19 @@ class _PlatformConfigurationPageState extends State<PlatformConfigurationPage> {
         ),
       if (_error != null && _hasLoaded) const SizedBox(height: 12),
       if (_hasUnsavedChanges)
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(bottom: 12),
-          child: Text('You have unsaved configuration changes.'),
+          child: Text(
+            AppCopy.text(
+              'text.you_have_unsaved_configuration_changes_ff0f5a7b',
+            ),
+          ),
         ),
+      PresentationPropertiesEditor(
+        repository: _repository,
+        canManage: canManage,
+      ),
+      const SizedBox(height: 16),
       PlatformConfigurationSection(
         inrLowController: _inrLowController,
         inrHighController: _inrHighController,
@@ -330,6 +360,7 @@ class _ConfigurationStaleBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final timestamp = loadedAt == null
         ? 'Previously loaded configuration is shown.'
         : 'Showing configuration loaded ${MaterialLocalizations.of(context).formatFullDate(loadedAt!.toLocal())} at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(loadedAt!.toLocal()))}.';
@@ -343,7 +374,10 @@ class _ConfigurationStaleBanner extends StatelessWidget {
         child: Row(
           children: [
             Expanded(child: Text('$timestamp $message')),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(AppCopy.text('text.retry_8036af59')),
+            ),
           ],
         ),
       ),
@@ -377,6 +411,7 @@ class PlatformConfigurationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -392,8 +427,8 @@ class PlatformConfigurationSection extends StatelessWidget {
                 child: TextFormField(
                   controller: inrLowController,
                   enabled: !readOnly,
-                  decoration: const InputDecoration(
-                    labelText: 'INR Critical Low',
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.inr_critical_low_b5920f27'),
                     suffixText: 'INR',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
@@ -408,7 +443,9 @@ class PlatformConfigurationSection extends StatelessWidget {
                     }
                     final high = double.tryParse(inrHighController.text);
                     if (high != null && n >= high) {
-                      return 'Must be below critical high';
+                      return AppCopy.text(
+                        'text.must_be_below_critical_high_8fc276d7',
+                      );
                     }
                     return null;
                   },
@@ -419,8 +456,8 @@ class PlatformConfigurationSection extends StatelessWidget {
                 child: TextFormField(
                   controller: inrHighController,
                   enabled: !readOnly,
-                  decoration: const InputDecoration(
-                    labelText: 'INR Critical High',
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.inr_critical_high_37f35dbb'),
                     suffixText: 'INR',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
@@ -435,7 +472,9 @@ class PlatformConfigurationSection extends StatelessWidget {
                     }
                     final low = double.tryParse(inrLowController.text);
                     if (low != null && n <= low) {
-                      return 'Must be above critical low';
+                      return AppCopy.text(
+                        'text.must_be_above_critical_low_d204284b',
+                      );
                     }
                     return null;
                   },
@@ -454,8 +493,8 @@ class PlatformConfigurationSection extends StatelessWidget {
           TextFormField(
             controller: sessionTimeoutController,
             enabled: !readOnly,
-            decoration: const InputDecoration(
-              labelText: 'Session Timeout',
+            decoration: InputDecoration(
+              labelText: AppCopy.text('text.session_timeout_2a002d78'),
               suffixText: 'min',
             ),
             keyboardType: TextInputType.number,
@@ -481,7 +520,9 @@ class PlatformConfigurationSection extends StatelessWidget {
                 child: TextFormField(
                   controller: maxRequestsController,
                   enabled: !readOnly,
-                  decoration: const InputDecoration(labelText: 'Max Requests'),
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.max_requests_901ab1b5'),
+                  ),
                   keyboardType: TextInputType.number,
                   onChanged: onFieldChanged,
                   validator: (v) {
@@ -497,8 +538,8 @@ class PlatformConfigurationSection extends StatelessWidget {
                 child: TextFormField(
                   controller: windowDurationController,
                   enabled: !readOnly,
-                  decoration: const InputDecoration(
-                    labelText: 'Window Duration',
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.window_duration_97c02813'),
                     suffixText: 'min',
                   ),
                   keyboardType: TextInputType.number,
@@ -550,6 +591,7 @@ class _PlatformConfigCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -19,6 +20,7 @@ class DoctorProfileContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -91,7 +93,7 @@ class DoctorProfileContent extends StatelessWidget {
         // Info Cards — tight group
         DoctorInfoCard(
           icon: Icons.people,
-          label: 'Patients',
+          label: AppCopy.text('text.patients_7364b4f7'),
           value: profile.patientsCount.toString(),
           color: const Color(0xFF6366F1),
         ),
@@ -100,7 +102,7 @@ class DoctorProfileContent extends StatelessWidget {
         if (profile.contactNumber != null) ...[
           DoctorInfoCard(
             icon: Icons.phone,
-            label: 'Contact',
+            label: AppCopy.text('text.contact_73ac94c3'),
             value: profile.contactNumber!,
             color: const Color(0xFF10B981),
           ),
@@ -128,6 +130,7 @@ class DoctorAvatarPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final parts = name.trim().split(' ').where((e) => e.isNotEmpty).toList();
     String initials;
     if (parts.isEmpty) {
@@ -166,6 +169,7 @@ class DoctorInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -227,6 +231,7 @@ class DoctorProfileDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -243,8 +248,8 @@ class DoctorProfileDetails extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Profile Information',
+          Text(
+            AppCopy.text('text.profile_information_8209ba9c'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -252,16 +257,25 @@ class DoctorProfileDetails extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          DoctorDetailRow(label: 'Name', value: profile.name),
+          DoctorDetailRow(
+            label: AppCopy.text('text.name_fe07306'),
+            value: profile.name,
+          ),
           const SizedBox(height: 12),
-          DoctorDetailRow(label: 'Department', value: profile.department),
+          DoctorDetailRow(
+            label: AppCopy.text('text.department_90770c67'),
+            value: profile.department,
+          ),
           if (profile.contactNumber != null) ...[
             const SizedBox(height: 12),
-            DoctorDetailRow(label: 'Contact', value: profile.contactNumber!),
+            DoctorDetailRow(
+              label: AppCopy.text('text.contact_73ac94c3'),
+              value: profile.contactNumber!,
+            ),
           ],
           const SizedBox(height: 12),
           DoctorDetailRow(
-            label: 'Total Patients',
+            label: AppCopy.text('text.total_patients_170282a9'),
             value: profile.patientsCount.toString(),
           ),
         ],
@@ -278,6 +292,7 @@ class DoctorDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -314,6 +329,7 @@ class DoctorActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -333,7 +349,7 @@ class DoctorActionButtons extends StatelessWidget {
             );
           },
           icon: const Icon(Icons.edit),
-          label: const Text('Edit Profile'),
+          label: Text(AppCopy.text('text.edit_profile_44227f2c')),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFF7643),
             foregroundColor: Colors.white,
@@ -347,7 +363,7 @@ class DoctorActionButtons extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: () => _showLogoutConfirmation(context),
           icon: const Icon(Icons.logout),
-          label: const Text('Logout'),
+          label: Text(AppCopy.text('text.logout_877a6a0b')),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.red,
             side: const BorderSide(color: Colors.red, width: 1.5),
@@ -442,8 +458,9 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
       if (_departmentController.text.trim() != widget.profile.department) {
         data['department'] = _departmentController.text.trim();
       }
-      final existingLocal =
-          PhoneUtils.toLocalDigits(widget.profile.contactNumber);
+      final existingLocal = PhoneUtils.toLocalDigits(
+        widget.profile.contactNumber,
+      );
       if (_contactController.text.trim() != existingLocal) {
         final contactNumber = PhoneUtils.formatForApi(_contactController.text);
         if (contactNumber != null) {
@@ -460,8 +477,10 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully'),
+          SnackBar(
+            content: Text(
+              AppCopy.text('text.profile_updated_successfully_d53e34c6'),
+            ),
             backgroundColor: Color(0xFF10B981),
           ),
         );
@@ -479,6 +498,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -525,12 +545,12 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Edit Profile',
+                            AppCopy.text('text.edit_profile_44227f2c'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -539,7 +559,9 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Update your profile information',
+                            AppCopy.text(
+                              'text.update_your_profile_information_bcf9318c',
+                            ),
                             style: TextStyle(
                               fontSize: 14,
                               color: Color(0xFF6B7280),
@@ -591,11 +613,11 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                 // Name field
                 _buildTextField(
                   controller: _nameController,
-                  label: 'Name',
+                  label: AppCopy.text('text.name_fe07306'),
                   icon: Icons.person_outline,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Name is required';
+                      return AppCopy.text('text.name_is_required_446a223b');
                     }
                     return null;
                   },
@@ -605,7 +627,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                 // Department field
                 _buildTextField(
                   controller: _departmentController,
-                  label: 'Department',
+                  label: AppCopy.text('text.department_90770c67'),
                   icon: Icons.business_outlined,
                 ),
                 const SizedBox(height: 16),
@@ -613,12 +635,16 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                 // Contact field
                 _buildTextField(
                   controller: _contactController,
-                  label: 'Contact Number',
+                  label: AppCopy.text('text.contact_number_b7360224'),
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
-                  helperText: '+91 is added automatically',
-                  validator: (value) =>
-                      PhoneUtils.validate(value, label: 'Contact'),
+                  helperText: AppCopy.text(
+                    'text.91_is_added_automatically_10a7eeeb',
+                  ),
+                  validator: (value) => PhoneUtils.validate(
+                    value,
+                    label: AppCopy.text('text.contact_73ac94c3'),
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -638,7 +664,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Cancel'),
+                        child: Text(AppCopy.text('text.cancel_35afca3b')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -664,7 +690,7 @@ class _DoctorEditProfileModalState extends State<DoctorEditProfileModal> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Save Changes'),
+                            : Text(AppCopy.text('text.save_changes_174a0119')),
                       ),
                     ),
                   ],

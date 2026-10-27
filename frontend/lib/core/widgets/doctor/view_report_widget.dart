@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/utils/inr_target_range.dart';
@@ -50,6 +51,7 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return FutureBuilder<Map<String, dynamic>>(
       future: _reportFuture,
       builder: (context, snapshot) {
@@ -73,8 +75,16 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
         final targetMax = targets.max;
 
         return _isPreviewMode
-            ? _buildPreviewMode(report, targetMin: targetMin, targetMax: targetMax)
-            : _buildDetailMode(report, targetMin: targetMin, targetMax: targetMax);
+            ? _buildPreviewMode(
+                report,
+                targetMin: targetMin,
+                targetMax: targetMax,
+              )
+            : _buildDetailMode(
+                report,
+                targetMin: targetMin,
+                targetMax: targetMax,
+              );
       },
     );
   }
@@ -86,7 +96,7 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          const Text('Loading report...'),
+          Text(AppCopy.text('text.loading_report_78ab2a27')),
         ],
       ),
     );
@@ -97,14 +107,10 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: Colors.red[400],
-          ),
+          Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
           const SizedBox(height: 16),
           Text(
-            'Error loading report',
+            AppCopy.text('text.error_loading_report_e9d570d1'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -113,16 +119,16 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
             child: Text(
               error,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: widget.onBack,
             icon: const Icon(Icons.arrow_back),
-            label: const Text('Go Back'),
+            label: Text(AppCopy.text('text.go_back_e2baa6be')),
           ),
         ],
       ),
@@ -141,14 +147,14 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No report data',
+            AppCopy.text('text.no_report_data_a6aa36bc'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: widget.onBack,
             icon: const Icon(Icons.arrow_back),
-            label: const Text('Go Back'),
+            label: Text(AppCopy.text('text.go_back_e2baa6be')),
           ),
         ],
       ),
@@ -175,10 +181,10 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                 ),
                 Expanded(
                   child: Text(
-                    'Report Details',
+                    AppCopy.text('text.report_details_5be3aa89'),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -223,8 +229,9 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'INR Value',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        AppCopy.text('text.inr_value_e1178645'),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
                               color: Colors.white70,
                               fontWeight: FontWeight.w500,
                             ),
@@ -267,7 +274,7 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                 const SizedBox(height: 24),
                 // Test Date
                 _buildInfoRow(
-                  label: 'Test Date',
+                  label: AppCopy.text('text.test_date_4b94a33b'),
                   value: DateFormat('MMM dd, yyyy').format(report.testDate),
                   icon: Icons.calendar_today,
                 ),
@@ -297,7 +304,9 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'CRITICAL - Immediate attention required',
+                              AppCopy.text(
+                                'text.critical_immediate_attention_required_5d818585',
+                              ),
                               style: TextStyle(
                                 color: Colors.red[700],
                                 fontWeight: FontWeight.w600,
@@ -308,13 +317,13 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                       );
                     }
                     return _buildInfoRow(
-                      label: 'Status',
+                      label: AppCopy.text('text.status_5ef20f'),
                       value: status,
                       icon: status == 'LOW'
                           ? Icons.arrow_downward
                           : status == 'HIGH'
-                              ? Icons.arrow_upward
-                              : Icons.check_circle,
+                          ? Icons.arrow_upward
+                          : Icons.check_circle,
                     );
                   },
                 ),
@@ -322,10 +331,10 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                 // Notes
                 if (report.notes != null && report.notes!.isNotEmpty) ...[
                   Text(
-                    'Notes',
+                    AppCopy.text('text.notes_ff01b6a'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -349,7 +358,9 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                       child: ElevatedButton.icon(
                         onPressed: () => setState(() => _isPreviewMode = true),
                         icon: const Icon(Icons.preview),
-                        label: const Text('Preview Report'),
+                        label: Text(
+                          AppCopy.text('text.preview_report_845efefb'),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF6366F1),
                           foregroundColor: Colors.white,
@@ -362,7 +373,7 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                       child: ElevatedButton.icon(
                         onPressed: () => _downloadReport(report),
                         icon: const Icon(Icons.download),
-                        label: const Text('Download'),
+                        label: Text(AppCopy.text('text.download_6964bb19')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
                           foregroundColor: Colors.white,
@@ -398,10 +409,10 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
               ),
               Expanded(
                 child: Text(
-                  'Report Preview',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  AppCopy.text('text.report_preview_76ceadab'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               IconButton(
@@ -427,10 +438,10 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'INR Test Report',
+                    AppCopy.text('text.inr_test_report_e89a9b82'),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -453,10 +464,9 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                     child: Column(
                       children: [
                         Text(
-                          'INR',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: Colors.white70,
-                              ),
+                          AppCopy.text('text.inr_dac398a4'),
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(color: Colors.white70),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -482,9 +492,9 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                       children: [
                         _buildPreviewRow(
                           'Test Date',
-                          DateFormat('MMM dd, yyyy • hh:mm a').format(
-                            report.testDate,
-                          ),
+                          DateFormat(
+                            'MMM dd, yyyy • hh:mm a',
+                          ).format(report.testDate),
                         ),
                         const SizedBox(height: 12),
                         _buildPreviewRow(
@@ -498,11 +508,7 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                         ),
                         if (report.isCritical) ...[
                           const SizedBox(height: 12),
-                          _buildPreviewRow(
-                            'Alert',
-                            'CRITICAL',
-                            isAlert: true,
-                          ),
+                          _buildPreviewRow('Alert', 'CRITICAL', isAlert: true),
                         ],
                       ],
                     ),
@@ -510,7 +516,7 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
                   if (report.notes != null && report.notes!.isNotEmpty) ...[
                     const SizedBox(height: 32),
                     Text(
-                      'Doctor\'s Notes',
+                      AppCopy.text('text.doctor_s_notes_2512e421'),
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     const SizedBox(height: 8),
@@ -551,16 +557,16 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
             children: [
               Text(
                 label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 4),
               Text(
                 value,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -569,26 +575,22 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     );
   }
 
-  Widget _buildPreviewRow(
-    String label,
-    String value, {
-    bool isAlert = false,
-  }) {
+  Widget _buildPreviewRow(String label, String value, {bool isAlert = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: Colors.grey[600]),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isAlert ? Colors.red[700] : Colors.black,
-              ),
+            fontWeight: FontWeight.w600,
+            color: isAlert ? Colors.red[700] : Colors.black,
+          ),
         ),
       ],
     );
@@ -599,21 +601,32 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
       if (report.fileUrl.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No file URL available')),
+            SnackBar(
+              content: Text(
+                AppCopy.text('text.no_file_url_available_c71ad1a2'),
+              ),
+            ),
           );
         }
         return;
       }
 
       debugPrint('Opening file preview: ${report.fileUrl}');
-      
+
       final uri = Uri.parse(report.fileUrl);
-      
+
       // Validate URL format
       if (!uri.hasScheme || (uri.scheme != 'http' && uri.scheme != 'https')) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Invalid URL format: ${report.fileUrl}')),
+            SnackBar(
+              content: Text(
+                AppCopy.text(
+                  'text.invalid_url_format_value1_916abf8e',
+                  arguments: {'value1': (report.fileUrl).toString()},
+                ),
+              ),
+            ),
           );
         }
         return;
@@ -624,7 +637,8 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
         await FilePreviewModal.show(
           context,
           fileUrl: report.fileUrl,
-          fileName: 'INR_Report_${DateFormat('yyyyMMdd').format(report.testDate)}.pdf',
+          fileName:
+              'INR_Report_${DateFormat('yyyyMMdd').format(report.testDate)}.pdf',
         );
       }
     } catch (e) {
@@ -632,7 +646,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error opening file: $e'),
+            content: Text(
+              AppCopy.text(
+                'text.error_opening_file_value1_348be11b',
+                arguments: {'value1': (e).toString()},
+              ),
+            ),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -640,14 +659,24 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     }
   }
 
-  Color _getINRColor(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+  Color _getINRColor(
+    double inrValue, {
+    bool isCritical = false,
+    double min = 2.0,
+    double max = 3.0,
+  }) {
     if (isCritical) return Colors.red;
     if (inrValue < min) return Colors.blue;
     if (inrValue > max) return Colors.red;
     return Colors.green;
   }
 
-  List<Color> _getINRGradientColors(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+  List<Color> _getINRGradientColors(
+    double inrValue, {
+    bool isCritical = false,
+    double min = 2.0,
+    double max = 3.0,
+  }) {
     if (isCritical || inrValue > max) {
       return [Colors.red[400]!, Colors.red[600]!];
     }
@@ -657,7 +686,12 @@ class _ViewReportWidgetState extends State<ViewReportWidget> {
     return [Colors.green[400]!, Colors.green[600]!];
   }
 
-  String _getINRStatus(double inrValue, {bool isCritical = false, double min = 2.0, double max = 3.0}) {
+  String _getINRStatus(
+    double inrValue, {
+    bool isCritical = false,
+    double min = 2.0,
+    double max = 3.0,
+  }) {
     return InrTargetRange.statusLabel(
       inrValue,
       isCritical: isCritical,
