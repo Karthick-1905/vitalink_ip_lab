@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/admin/admin_access_scope.dart';
 import 'package:frontend/features/admin/models/admin_access_model.dart';
@@ -22,13 +23,18 @@ class AdminAccessGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final controller = AdminAccessScope.maybeOf(context);
     if (controller == null) {
       return AccessDeniedState(
-        title: deniedTitle ?? 'Administrator access unavailable',
+        title:
+            deniedTitle ??
+            AppCopy.text('text.administrator_access_unavailable_30d06fa2'),
         message:
             deniedMessage ??
-            'This page must be opened from the administrator portal. Sign in again or contact an Application Admin if the problem continues.',
+            AppCopy.text(
+              'text.this_page_must_be_opened_from_the_administrator__f51217b3',
+            ),
       );
     }
 
@@ -37,16 +43,21 @@ class AdminAccessGate extends StatelessWidget {
       if (controller.isLoading || !controller.hasLoaded) {
         return Center(
           child: Semantics(
-            label: 'Loading administrator permissions',
+            label: AppCopy.text(
+              'text.loading_administrator_permissions_6fe12216',
+            ),
             child: CircularProgressIndicator(),
           ),
         );
       }
       return AccessDeniedState(
-        title: 'Could not verify administrator access',
-        message:
-            'VitaLink could not load your current permissions. Check your connection and try again. No administrative data was loaded.',
-        actionLabel: 'Try again',
+        title: AppCopy.text(
+          'text.could_not_verify_administrator_access_ff0520f9',
+        ),
+        message: AppCopy.text(
+          'text.vitalink_could_not_load_your_current_permissions_2b649673',
+        ),
+        actionLabel: AppCopy.text('text.try_again_213e90fa'),
         onAction: controller.refresh,
       );
     }
@@ -57,10 +68,14 @@ class AdminAccessGate extends StatelessWidget {
     final scopeAllowed = scope == null || access.scope == scope;
     if (!capabilityAllowed || !roleAllowed || !scopeAllowed) {
       return AccessDeniedState(
-        title: deniedTitle ?? 'You do not have access to this page',
+        title:
+            deniedTitle ??
+            AppCopy.text('text.you_do_not_have_access_to_this_page_4dc78fa6'),
         message:
             deniedMessage ??
-            'Your current administrator policy does not include this page. Ask an Application Admin to review your role policy if you need access.',
+            AppCopy.text(
+              'text.your_current_administrator_policy_does_not_inclu_63c48c24',
+            ),
       );
     }
 
@@ -84,13 +99,14 @@ class AccessDeniedState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Semantics(
           container: true,
-          label: '$title. $message',
+          label: "${(title).toString()}. ${(message).toString()}",
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: Card(
@@ -144,11 +160,13 @@ class AdminReadOnlyBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return Semantics(
       container: true,
-      label:
-          'System Auditor read-only mode. You can review permitted information but cannot make changes.',
+      label: AppCopy.text(
+        'text.system_auditor_read_only_mode_you_can_review_per_5c1ab2fa',
+      ),
       child: Material(
         color: theme.colorScheme.secondaryContainer,
         child: Padding(
@@ -162,7 +180,9 @@ class AdminReadOnlyBanner extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'System Auditor read-only mode: you can review permitted information, but all changes are disabled.',
+                  AppCopy.text(
+                    'text.system_auditor_read_only_mode_you_can_review_per_b168f8b6',
+                  ),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSecondaryContainer,
                     fontWeight: FontWeight.w600,

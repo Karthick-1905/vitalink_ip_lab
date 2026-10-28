@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -48,7 +49,9 @@ class _DosageEditorState extends State<DosageEditor> {
     _enabled = {};
     for (final (key, _) in _days) {
       final value = widget.initialDosage?[key];
-      final numValue = value is num ? value.toDouble() : (double.tryParse(value?.toString() ?? '0') ?? 0);
+      final numValue = value is num
+          ? value.toDouble()
+          : (double.tryParse(value?.toString() ?? '0') ?? 0);
       _controllers[key] = TextEditingController(
         text: numValue > 0 ? numValue.toString() : '',
       );
@@ -102,6 +105,7 @@ class _DosageEditorState extends State<DosageEditor> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -113,13 +117,13 @@ class _DosageEditorState extends State<DosageEditor> {
             child: TextButton.icon(
               onPressed: () => setState(() => _isEditing = true),
               icon: const Icon(Icons.edit, size: 18),
-              label: const Text('Edit'),
+              label: Text(AppCopy.text('text.edit_c2c76cb1')),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF6366F1),
               ),
             ),
           ),
-        
+
         // Days list
         ..._days.map((day) {
           final (key, label) = day;
@@ -130,10 +134,12 @@ class _DosageEditorState extends State<DosageEditor> {
             enabled: _enabled[key] ?? false,
             isEditing: _isEditing,
             onToggle: _isEditing ? (val) => _toggleDay(key, val) : null,
-            onChanged: _isEditing ? () => setState(() => _hasChanges = true) : null,
+            onChanged: _isEditing
+                ? () => setState(() => _hasChanges = true)
+                : null,
           );
         }),
-        
+
         // Action buttons when editing
         if (_isEditing && widget.onSave != null) ...[
           const SizedBox(height: 16),
@@ -158,7 +164,7 @@ class _DosageEditorState extends State<DosageEditor> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Cancel'),
+                  child: Text(AppCopy.text('text.cancel_35afca3b')),
                 ),
               ),
               const SizedBox(width: 12),
@@ -182,7 +188,7 @@ class _DosageEditorState extends State<DosageEditor> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Save Changes'),
+                  child: Text(AppCopy.text('text.save_changes_174a0119')),
                 ),
               ),
             ],
@@ -214,6 +220,7 @@ class _DosageRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -221,7 +228,9 @@ class _DosageRow extends StatelessWidget {
         color: enabled ? const Color(0xFFF0F4FF) : const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: enabled ? const Color(0xFF6366F1).withValues(alpha: 0.3) : const Color(0xFFE5E7EB),
+          color: enabled
+              ? const Color(0xFF6366F1).withValues(alpha: 0.3)
+              : const Color(0xFFE5E7EB),
         ),
       ),
       child: Row(
@@ -251,7 +260,9 @@ class _DosageRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: enabled ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                color: enabled
+                    ? const Color(0xFF1F2937)
+                    : const Color(0xFF9CA3AF),
               ),
             ),
           ),
@@ -262,14 +273,18 @@ class _DosageRow extends StatelessWidget {
               width: 100,
               child: TextField(
                 controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 textAlign: TextAlign.right,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  TextInputFormatter.withFunction((oldValue, newValue) =>
-                      RegExp(r'^\d*\.?\d*$').hasMatch(newValue.text)
-                          ? newValue
-                          : oldValue),
+                  TextInputFormatter.withFunction(
+                    (oldValue, newValue) =>
+                        RegExp(r'^\d*\.?\d*$').hasMatch(newValue.text)
+                        ? newValue
+                        : oldValue,
+                  ),
                 ],
                 onChanged: (_) => onChanged?.call(),
                 style: const TextStyle(
@@ -289,7 +304,10 @@ class _DosageRow extends StatelessWidget {
                     color: Color(0xFF6B7280),
                   ),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -302,7 +320,10 @@ class _DosageRow extends StatelessWidget {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF6366F1),
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -320,20 +341,26 @@ class _DosageRow extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    enabled ? (controller.text.isEmpty ? '0' : controller.text) : '0',
+                    enabled
+                        ? (controller.text.isEmpty ? '0' : controller.text)
+                        : '0',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: enabled ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                      color: enabled
+                          ? const Color(0xFF1F2937)
+                          : const Color(0xFF9CA3AF),
                     ),
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'mg',
+                    AppCopy.text('text.mg_6a2e2dcd'),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: enabled ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
+                      color: enabled
+                          ? const Color(0xFF6B7280)
+                          : const Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
@@ -363,6 +390,7 @@ class DosageDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (dosage == null || dosage!.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -371,13 +399,13 @@ class DosageDisplay extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE5E7EB)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.medication_outlined, color: Color(0xFF9CA3AF), size: 20),
             SizedBox(width: 8),
             Text(
-              'No dosage prescribed',
+              AppCopy.text('text.no_dosage_prescribed_e15d704'),
               style: TextStyle(
                 color: Color(0xFF6B7280),
                 fontStyle: FontStyle.italic,
@@ -392,7 +420,9 @@ class DosageDisplay extends StatelessWidget {
     bool allZero = true;
     for (final (key, _) in _days) {
       final value = dosage?[key];
-      final numValue = value is num ? value.toDouble() : (double.tryParse(value?.toString() ?? '0') ?? 0);
+      final numValue = value is num
+          ? value.toDouble()
+          : (double.tryParse(value?.toString() ?? '0') ?? 0);
       if (numValue > 0) {
         allZero = false;
         break;
@@ -407,13 +437,13 @@ class DosageDisplay extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE5E7EB)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.medication_outlined, color: Color(0xFF9CA3AF), size: 20),
             SizedBox(width: 8),
             Text(
-              'No dosage prescribed',
+              AppCopy.text('text.no_dosage_prescribed_e15d704'),
               style: TextStyle(
                 color: Color(0xFF6B7280),
                 fontStyle: FontStyle.italic,
@@ -429,7 +459,9 @@ class DosageDisplay extends StatelessWidget {
       children: _days.map((day) {
         final (key, label) = day;
         final value = dosage?[key];
-        final numValue = value is num ? value.toDouble() : (double.tryParse(value?.toString() ?? '0') ?? 0);
+        final numValue = value is num
+            ? value.toDouble()
+            : (double.tryParse(value?.toString() ?? '0') ?? 0);
         final isActive = numValue > 0;
 
         return Container(
@@ -439,7 +471,9 @@ class DosageDisplay extends StatelessWidget {
             color: isActive ? const Color(0xFFF0F4FF) : const Color(0xFFF9FAFB),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isActive ? const Color(0xFF6366F1).withValues(alpha: 0.3) : const Color(0xFFE5E7EB),
+              color: isActive
+                  ? const Color(0xFF6366F1).withValues(alpha: 0.3)
+                  : const Color(0xFFE5E7EB),
             ),
           ),
           child: Row(
@@ -449,7 +483,9 @@ class DosageDisplay extends StatelessWidget {
                 height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive ? const Color(0xFF6366F1) : const Color(0xFFD1D5DB),
+                  color: isActive
+                      ? const Color(0xFF6366F1)
+                      : const Color(0xFFD1D5DB),
                 ),
               ),
               const SizedBox(width: 12),
@@ -460,17 +496,30 @@ class DosageDisplay extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isActive ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                    color: isActive
+                        ? const Color(0xFF1F2937)
+                        : const Color(0xFF9CA3AF),
                   ),
                 ),
               ),
               const Spacer(),
               Text(
-                isActive ? '${numValue.toStringAsFixed(numValue.truncateToDouble() == numValue ? 0 : 1)} mg' : '—',
+                isActive
+                    ? AppCopy.text(
+                        'text.value1_mg_ec8b8037',
+                        arguments: {
+                          'value1': (numValue.toStringAsFixed(
+                            numValue.truncateToDouble() == numValue ? 0 : 1,
+                          )).toString(),
+                        },
+                      )
+                    : '—',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isActive ? const Color(0xFF6366F1) : const Color(0xFF9CA3AF),
+                  color: isActive
+                      ? const Color(0xFF6366F1)
+                      : const Color(0xFF9CA3AF),
                 ),
               ),
             ],

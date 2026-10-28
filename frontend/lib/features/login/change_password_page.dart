@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/app/routers.dart';
@@ -105,14 +106,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password updated. Please sign in with your new password.'),
+        SnackBar(
+          content: Text(
+            AppCopy.text(
+              'text.password_updated_please_sign_in_with_your_new_pa_ae58a5e7',
+            ),
+          ),
         ),
       );
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.login,
-        (_) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -137,32 +141,38 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       // Local navigation must still reach login.
     }
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRoutes.login,
-      (_) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
   }
 
   String? _validateConfirm(String? value) {
-    if (value == null || value.isEmpty) return 'Confirm your new password';
-    if (value != _newController.text) return 'Passwords do not match';
+    if (value == null || value.isEmpty) {
+      return AppCopy.text('text.confirm_your_new_password_75891019');
+    }
+    if (value != _newController.text) {
+      return AppCopy.text('text.passwords_do_not_match_a8bf4976');
+    }
     return null;
   }
 
   String? _validateNew(String? value) {
     final policyError = PasswordPolicy.validateStrong(
       value,
-      emptyMessage: 'New password is required',
+      emptyMessage: AppCopy.text('text.new_password_is_required_6115dcc7'),
     );
     if (policyError != null) return policyError;
     if (value == _currentController.text) {
-      return 'New password must differ from current password';
+      return AppCopy.text(
+        'text.new_password_must_differ_from_current_password_7cfb9fc3',
+      );
     }
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final errorText = _error is ApiException
         ? (_error as ApiException).message
         : _error?.toString();
@@ -177,7 +187,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           foregroundColor: const Color(0xFF1F2937),
           automaticallyImplyLeading: !_forced,
           title: Text(
-            _forced ? 'Set a new password' : 'Change password',
+            _forced
+                ? AppCopy.text('text.set_a_new_password_458f610f')
+                : AppCopy.text('text.change_password_87f6bf6e'),
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -195,7 +207,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Text(
-                        'Sign out',
+                        AppCopy.text('text.sign_out_8b4f3c70'),
                         style: GoogleFonts.poppins(
                           color: Colors.red.shade600,
                           fontWeight: FontWeight.w600,
@@ -234,8 +246,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               Expanded(
                                 child: Text(
                                   _forced
-                                      ? 'For security, replace your temporary password before using VitaLink. After saving, you will need to sign in again.'
-                                      : 'Choose a strong password. After saving, all sessions end and you must sign in again.',
+                                      ? AppCopy.text(
+                                          'text.for_security_replace_your_temporary_password_bef_cdf43e10',
+                                        )
+                                      : AppCopy.text(
+                                          'text.choose_a_strong_password_after_saving_all_sessio_74d1d73f',
+                                        ),
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     height: 1.45,
@@ -249,14 +265,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         const SizedBox(height: 24),
                         _PasswordField(
                           controller: _currentController,
-                          label: 'Current password',
+                          label: AppCopy.text('text.current_password_8eedf1f3'),
                           obscure: _obscureCurrent,
                           onToggle: () => setState(
                             () => _obscureCurrent = !_obscureCurrent,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Current password is required';
+                              return AppCopy.text(
+                                'text.current_password_is_required_e1775456',
+                              );
                             }
                             return null;
                           },
@@ -264,7 +282,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         const SizedBox(height: 16),
                         _PasswordField(
                           controller: _newController,
-                          label: 'New password',
+                          label: AppCopy.text('text.new_password_6a3aaab2'),
                           obscure: _obscureNew,
                           onToggle: () =>
                               setState(() => _obscureNew = !_obscureNew),
@@ -274,7 +292,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         const SizedBox(height: 16),
                         _PasswordField(
                           controller: _confirmController,
-                          label: 'Confirm new password',
+                          label: AppCopy.text(
+                            'text.confirm_new_password_b8965b2a',
+                          ),
                           obscure: _obscureConfirm,
                           onToggle: () => setState(
                             () => _obscureConfirm = !_obscureConfirm,
@@ -290,7 +310,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFFEF2F2),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFFECACA)),
+                              border: Border.all(
+                                color: const Color(0xFFFECACA),
+                              ),
                             ),
                             child: Text(
                               errorText,
@@ -305,12 +327,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         SizedBox(
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: _submitting || _signingOut ? null : _submit,
+                            onPressed: _submitting || _signingOut
+                                ? null
+                                : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _primaryPurple,
                               foregroundColor: Colors.white,
-                              disabledBackgroundColor:
-                                  _primaryPurple.withValues(alpha: 0.5),
+                              disabledBackgroundColor: _primaryPurple
+                                  .withValues(alpha: 0.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -327,8 +351,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                   )
                                 : Text(
                                     _forced
-                                        ? 'Save and continue'
-                                        : 'Update password',
+                                        ? AppCopy.text(
+                                            'text.save_and_continue_36bfe27a',
+                                          )
+                                        : AppCopy.text(
+                                            'text.update_password_84e58cad',
+                                          ),
                                     style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 15,
@@ -369,6 +397,7 @@ class _PasswordField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return TextFormField(
       controller: controller,
       obscureText: obscure,
@@ -384,7 +413,10 @@ class _PasswordField extends StatelessWidget {
         helperStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
         filled: true,
         fillColor: const Color(0xFFF9FAFB),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -404,9 +436,7 @@ class _PasswordField extends StatelessWidget {
         suffixIcon: IconButton(
           onPressed: onToggle,
           icon: Icon(
-            obscure
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
+            obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
             color: Colors.grey[600],
           ),
         ),

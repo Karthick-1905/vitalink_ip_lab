@@ -1,3 +1,5 @@
+import 'package:frontend/core/config/app_properties.dart';
+import 'package:frontend/features/doctor/widgets/patient_attention_summary.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -30,7 +32,9 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
 
   int _currentNavIndex = 0;
   bool _isTableView = false;
+  bool _onlyAttention = true;
   bool _notificationPopupScheduled = false;
+
   /// Lazy-mount tabs (same pattern as patient) so heavy screens load on demand.
   final Set<int> _activatedTabs = <int>{0};
   final List<Widget?> _tabCache = List<Widget?>.filled(_tabCount, null);
@@ -73,21 +77,22 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
     _refreshNotificationsUnread();
 
     final type = notification['type']?.toString();
-    // Patient INR uploads arrive as REPORT_AVAILABLE (and critical as URGENT).
+    // Patient INR uploads arrive as REPORT_AVAILABLE without inferred urgency.
     // Bust patient list + that patient's report cache so Reports tab updates.
     if (type == 'REPORT_AVAILABLE' || type == 'CRITICAL_ALERT') {
       final data = notification['data'];
       final dataMap = data is Map<String, dynamic>
           ? data
           : data is Map
-              ? Map<String, dynamic>.from(data)
-              : const <String, dynamic>{};
-      final patientOp = (dataMap['patient_login_id'] ??
-              dataMap['patient_op'] ??
-              dataMap['op_num'] ??
-              '')
-          .toString()
-          .trim();
+          ? Map<String, dynamic>.from(data)
+          : const <String, dynamic>{};
+      final patientOp =
+          (dataMap['patient_login_id'] ??
+                  dataMap['patient_op'] ??
+                  dataMap['op_num'] ??
+                  '')
+              .toString()
+              .trim();
       _refreshClinicalData(patientOp: patientOp.isEmpty ? null : patientOp);
     }
 
@@ -104,7 +109,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
     final title = notification['title']?.toString().trim().isNotEmpty == true
         ? notification['title']!.toString()
         : 'System announcement';
-    final message = notification['message']?.toString().trim().isNotEmpty == true
+    final message =
+        notification['message']?.toString().trim().isNotEmpty == true
         ? notification['message']!.toString()
         : 'You have a new notification.';
 
@@ -119,7 +125,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
           actions: [
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(AppCopy.text('text.ok_85e4b82f')),
             ),
           ],
         ),
@@ -133,15 +139,18 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return patients;
     return patients
-        .where((p) =>
-            p.name.toLowerCase().contains(query) ||
-            (p.opNumber ?? '').toLowerCase().contains(query) ||
-            (p.condition ?? '').toLowerCase().contains(query))
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(query) ||
+              (p.opNumber ?? '').toLowerCase().contains(query) ||
+              (p.condition ?? '').toLowerCase().contains(query),
+        )
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<int>(
       options: QueryOptions<int>(
         queryKey: DoctorQueryKeys.notificationsUnread(),
@@ -158,7 +167,9 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
           onNavChanged: _onNavChanged,
           notificationBadgeCount: unreadNotifications,
           onNotificationPressed: () async {
-            await Navigator.of(context).pushNamed(AppRoutes.doctorNotifications);
+            await Navigator.of(
+              context,
+            ).pushNamed(AppRoutes.doctorNotifications);
             _refreshNotificationsUnread();
           },
           bodyDecoration: const BoxDecoration(
@@ -226,6 +237,10 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
           onToggleView: (table) => setState(() => _isTableView = table),
           searchController: _searchController,
           filterPatients: _filteredPatients,
+          onlyAttention: _onlyAttention,
+          onAttentionChanged: (only) => setState(() {
+            _onlyAttention = only;
+          }),
         ),
       );
     }
@@ -282,14 +297,14 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage>
   String _titleForIndex(int index) {
     switch (index) {
       case 1:
-        return 'Add Patient';
+        return AppCopy.text('text.add_patient_243c1f9d');
       case 2:
-        return 'Reports';
+        return AppCopy.text('text.reports_769d4ae8');
       case 3:
-        return 'Profile';
+        return AppCopy.text('text.profile_cd17328e');
       case 0:
       default:
-        return 'Patients';
+        return AppCopy.text('text.patient_overview_55ab78f9');
     }
   }
 }
@@ -301,8 +316,12 @@ class _PatientsView extends StatelessWidget {
     required this.onToggleView,
     required this.searchController,
     required this.filterPatients,
+    required this.onlyAttention,
+    required this.onAttentionChanged,
   });
 
+  final bool onlyAttention;
+  final ValueChanged<bool> onAttentionChanged;
   final DoctorRepository repository;
   final bool isTableView;
   final ValueChanged<bool> onToggleView;
@@ -311,15 +330,19 @@ class _PatientsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<List<PatientModel>>(
       options: QueryOptions<List<PatientModel>>(
         queryKey: DoctorQueryKeys.patients(),
-        refetchOnWindowFocus: false,
+        staleTime: Duration.zero,
+        refetchOnWindowFocus: true,
         queryFn: repository.getPatients,
       ),
       builder: (context, query) {
         final patients = query.data ?? <PatientModel>[];
-        final filtered = filterPatients(patients);
+        final filtered = filterPatients(patients)
+            .where((p) => !onlyAttention || p.attentionReasons.isNotEmpty)
+            .toList();
 
         return SingleChildScrollView(
           padding: PortalLayout.doctorShellPadding,
@@ -327,28 +350,89 @@ class _PatientsView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ToggleBar(
-                isTableView: isTableView,
-                onToggle: onToggleView,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final selection = _ToggleGroup(
+                    children: [
+                      _TogglePill(
+                        label: AppCopy.text(
+                          'text.needs_attention_value1_143944af',
+                          arguments: {
+                            'value1':
+                                (patients
+                                        .where(
+                                          (p) => p.attentionReasons.isNotEmpty,
+                                        )
+                                        .length)
+                                    .toString(),
+                          },
+                        ),
+                        isActive: onlyAttention,
+                        onTap: () => onAttentionChanged(true),
+                      ),
+                      _TogglePill(
+                        label: AppCopy.text(
+                          'text.all_patients_value1_9b60fd61',
+                          arguments: {'value1': (patients.length).toString()},
+                        ),
+                        isActive: !onlyAttention,
+                        onTap: () => onAttentionChanged(false),
+                      ),
+                    ],
+                  );
+                  final views = _ToggleBar(
+                    isTableView: isTableView,
+                    onToggle: onToggleView,
+                  );
+                  final refresh = IconButton(
+                    tooltip: AppCopy.text(
+                      'text.refresh_patient_overview_4d662000',
+                    ),
+                    onPressed: () => query.refetch(),
+                    icon: const Icon(Icons.refresh),
+                  );
+                  if (constraints.maxWidth >= 560) {
+                    return Row(
+                      children: [
+                        selection,
+                        const Spacer(),
+                        views,
+                        const SizedBox(width: 8),
+                        refresh,
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: selection,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(children: [views, const Spacer(), refresh]),
+                    ],
+                  );
+                },
               ),
               PortalLayout.itemSpacer,
-              _SearchBar(
-                controller: searchController,
-                count: filtered.length,
-              ),
+              _SearchBar(controller: searchController, count: filtered.length),
               PortalLayout.sectionSpacerTight,
-              if (query.isLoading)
-                const ListSkeleton(
-                  itemCount: 4,
-                  shrinkWrap: true,
-                ),
+              if (query.isLoading && !query.hasData)
+                const ListSkeleton(itemCount: 4, shrinkWrap: true),
               if (query.isError)
                 ApiErrorState(
                   error: query.error,
                   onRetry: () => query.refetch(),
                   compact: true,
                 ),
-              if (!query.isLoading && !query.isError)
+              if (query.isError && query.hasData)
+                Text(
+                  AppCopy.text(
+                    'text.showing_the_last_loaded_patient_data_refresh_fai_46adcc1e',
+                  ),
+                ),
+              if (query.hasData || (!query.isLoading && !query.isError))
                 isTableView
                     ? _TableView(
                         filtered,
@@ -373,6 +457,7 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -381,7 +466,10 @@ class _SearchBar extends StatelessWidget {
           child: const Icon(Icons.search, color: Color(0xFF6B7280)),
         ),
         prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-        hintText: '$count Viewing Patients',
+        hintText: AppCopy.text(
+          'text.search_value1_patients_by_name_or_op_number_89e85dcc',
+          arguments: {'value1': (count).toString()},
+        ),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -405,49 +493,48 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
+class _ToggleGroup extends StatelessWidget {
+  final List<Widget> children;
+  const _ToggleGroup({required this.children});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.95),
+      borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: children),
+  );
+}
+
 class _ToggleBar extends StatelessWidget {
   const _ToggleBar({required this.isTableView, required this.onToggle});
   final bool isTableView;
   final ValueChanged<bool> onToggle;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        AnimatedContainer(
-          duration: AppMotion.duration(context, AppMotion.state),
-          curve: AppMotion.easeOutQuint,
-          padding: const EdgeInsets.all(AppSpacing.xxs),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              _TogglePill(
-                label: 'Cards',
-                isActive: !isTableView,
-                onTap: () => onToggle(false),
-              ),
-              _TogglePill(
-                label: 'Table',
-                isActive: isTableView,
-                onTap: () => onToggle(true),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => _ToggleGroup(
+    children: [
+      _TogglePill(
+        label: AppCopy.text('text.cards_2a273ae4'),
+        isActive: !isTableView,
+        onTap: () => onToggle(false),
+      ),
+      _TogglePill(
+        label: AppCopy.text('text.table_d70ceb7f'),
+        isActive: isTableView,
+        onTap: () => onToggle(true),
+      ),
+    ],
+  );
 }
 
 class _CardView extends StatelessWidget {
@@ -456,6 +543,7 @@ class _CardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (patients.isEmpty) return const _EmptyState();
     return Column(
       children: [
@@ -481,64 +569,82 @@ class _TableView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (patients.isEmpty) return const _EmptyState();
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Name')),
-          DataColumn(label: Text('OP #')),
-          DataColumn(label: Text('Age')),
-          DataColumn(label: Text('Gender')),
-          DataColumn(label: Text('Condition')),
-          DataColumn(label: Text('Action')),
-        ],
-        rows: patients
-            .asMap()
-            .entries
-            .map(
-              (entry) => DataRow(
-                cells: [
-                  DataCell(Text(entry.value.name)),
-                  DataCell(Text(entry.value.opNumber ?? '-')),
-                  DataCell(Text(entry.value.age?.toString() ?? '-')),
-                  DataCell(Text(entry.value.gender ?? '-')),
-                  DataCell(
-                    Text(entry.value.condition ?? 'Not Available'),
+      child:
+          DataTable(
+                dataRowMinHeight: 64,
+                dataRowMaxHeight: double.infinity,
+                columns: [
+                  DataColumn(label: Text(AppCopy.text('text.name_fe07306'))),
+                  DataColumn(label: Text(AppCopy.text('text.op_bb558927'))),
+                  DataColumn(
+                    label: Text(AppCopy.text('text.attention_8c14359')),
                   ),
-                  DataCell(
-                    TextButton(
-                      onPressed: entry.value.opNumber != null
-                          ? () {
-                              Navigator.of(context).push(
-                                FadeSlidePageRoute(
-                                  builder: (_) => ViewPatientPage(
-                                    opNumber: entry.value.opNumber!,
-                                    allPatients: patients,
-                                    initialIndex: entry.key,
-                                  ),
-                                ),
-                              );
-                            }
-                          : null,
-                      child: const Text('View'),
-                    ),
+                  DataColumn(label: Text(AppCopy.text('text.action_a77a91f'))),
+                ],
+                rows: patients
+                    .asMap()
+                    .entries
+                    .map(
+                      (entry) => DataRow(
+                        cells: [
+                          DataCell(Text(entry.value.name)),
+                          DataCell(Text(entry.value.opNumber ?? '-')),
+                          DataCell(
+                            SizedBox(
+                              width: 290,
+                              child: PatientAttentionSummary(
+                                patient: entry.value,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            TextButton(
+                              onPressed: entry.value.opNumber != null
+                                  ? () {
+                                      final client = QueryClientProvider.of(
+                                        context,
+                                      );
+                                      Navigator.of(context)
+                                          .push(
+                                            FadeSlidePageRoute(
+                                              builder: (_) => ViewPatientPage(
+                                                opNumber: entry.value.opNumber!,
+                                                allPatients: patients,
+                                                initialIndex: entry.key,
+                                              ),
+                                            ),
+                                          )
+                                          .then((_) {
+                                            client.invalidateQueries(
+                                              DoctorQueryKeys.patients(),
+                                            );
+                                          });
+                                    }
+                                  : null,
+                              child: Text(AppCopy.text('text.view_5e4baa18')),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    .toList(),
+              )
+              .decorated(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
                 ],
-              ),
-            )
-            .toList(),
-      ).decorated(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ).padding(all: AppSpacing.xxs),
+              )
+              .padding(all: AppSpacing.xxs),
     );
   }
 }
@@ -548,23 +654,31 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Column(
-      children: const [
-        Icon(Icons.search_off, size: 36, color: Colors.black54),
-        SizedBox(height: AppSpacing.xs),
-        Text('No patients found'),
-      ],
-    ).center().padding(vertical: PortalLayout.pageBottomStandalone).decorated(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    );
+          children: [
+            Icon(Icons.search_off, size: 36, color: Colors.black54),
+            SizedBox(height: AppSpacing.xs),
+            Text(
+              AppCopy.text(
+                'text.no_patients_match_this_view_try_all_patients_or__71870c3',
+              ),
+            ),
+          ],
+        )
+        .center()
+        .padding(vertical: PortalLayout.pageBottomStandalone)
+        .decorated(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        );
   }
 }
 
@@ -581,55 +695,72 @@ class _PatientCard extends StatelessWidget {
 
   void _navigateToPatient(BuildContext context) {
     if (patient.opNumber != null) {
-      Navigator.of(context).push(
-        FadeSlidePageRoute(
-          builder: (_) => ViewPatientPage(
-            opNumber: patient.opNumber!,
-            allPatients: allPatients,
-            initialIndex: index,
-          ),
-        ),
-      );
+      final client = QueryClientProvider.of(context);
+      Navigator.of(context)
+          .push(
+            FadeSlidePageRoute(
+              builder: (_) => ViewPatientPage(
+                opNumber: patient.opNumber!,
+                allPatients: allPatients,
+                initialIndex: index,
+              ),
+            ),
+          )
+          .then((_) {
+            client.invalidateQueries(DoctorQueryKeys.patients());
+          });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return PressScale(
       onTap: () => _navigateToPatient(context),
-      child: <Widget>[
-        Text(
-          patient.name,
-          style: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
-        ),
-        PortalLayout.metaSpacer,
-        Text('OP #: ${patient.opNumber ?? 'N/A'}',
-            style: const TextStyle(color: Colors.black54, fontSize: 12)),
-        Text('Age: ${patient.age ?? '-'}, Gender: ${patient.gender ?? '-'}',
-            style: const TextStyle(color: Colors.black54, fontSize: 12)),
-        const SizedBox(height: AppSpacing.sm - 2),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () => _navigateToPatient(context),
-            child: const Text('View Details'),
-          ),
-        ),
-      ]
-          .toColumn(crossAxisAlignment: CrossAxisAlignment.start)
-          .padding(all: PortalLayout.cardPadding)
-          .decorated(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+      child:
+          <Widget>[
+                Text(
+                  patient.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                PortalLayout.metaSpacer,
+                Text(
+                  AppCopy.text(
+                    'text.op_value1_3a304631',
+                    arguments: {
+                      'value1': (patient.opNumber ?? 'N/A').toString(),
+                    },
+                  ),
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                PatientAttentionSummary(patient: patient),
+                const SizedBox(height: AppSpacing.sm - 2),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => _navigateToPatient(context),
+                    child: Text(AppCopy.text('text.view_details_e2c15a0e')),
+                  ),
+                ),
+              ]
+              .toColumn(crossAxisAlignment: CrossAxisAlignment.start)
+              .padding(all: PortalLayout.cardPadding)
+              .decorated(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(PortalLayout.cardRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
     );
   }
 }
@@ -646,30 +777,23 @@ class _TogglePill extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppMotion.duration(context, AppMotion.state),
-        curve: AppMotion.easeOutQuint,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFFF7643) : Colors.transparent,
+  Widget build(BuildContext context) => Semantics(
+    selected: isActive,
+    child: TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(0, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        foregroundColor: isActive ? Colors.white : const Color(0xFF6B7280),
+        backgroundColor: isActive
+            ? const Color(0xFFFF7643)
+            : Colors.transparent,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(PortalLayout.controlRadius),
         ),
-        child: AnimatedDefaultTextStyle(
-          duration: AppMotion.duration(context, AppMotion.instant),
-          curve: AppMotion.easeOutQuint,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isActive ? Colors.white : const Color(0xFF6B7280),
-          ),
-          child: Text(label),
-        ),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
-    );
-  }
+      child: Text(label),
+    ),
+  );
 }

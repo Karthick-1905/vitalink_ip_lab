@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 
 /// Presents a consistent confirmation step before a consequential admin action.
@@ -15,7 +16,7 @@ Future<bool> showAdminActionConfirmation(
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),

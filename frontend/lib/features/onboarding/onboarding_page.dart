@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/app/routers.dart';
@@ -16,24 +17,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final SecureStorage _storage = SecureStorage();
   int _currentPage = 0;
 
-  final List<OnboardingData> _pages = [
+  List<OnboardingData> get _pages => [
     OnboardingData(
-      title: 'Smart Health Tracking',
-      description:
-          'Monitor your health vitals and INR levels with precision and ease using our advanced tracking system.',
-      image: 'assets/onboarding/tracking.png',
+      title: AppCopy.text('text.smart_health_tracking_349ab115'),
+      description: AppCopy.text(
+        'text.monitor_your_health_vitals_and_inr_levels_with_p_dd0260ab',
+      ),
+      image: 'asset.onboardingTracking',
     ),
     OnboardingData(
-      title: 'Team Collaboration',
-      description:
-          'Work together efficiently and manage your health journey in one centralized platform with doctors and caregivers.',
-      image: 'assets/onboarding/collaboration.png',
+      title: AppCopy.text('text.team_collaboration_9a5f44c9'),
+      description: AppCopy.text(
+        'text.work_together_efficiently_and_manage_your_health_14244bbc',
+      ),
+      image: 'asset.onboardingCollaboration',
     ),
     OnboardingData(
-      title: 'Real-time Alerts',
-      description:
-          'Stay informed with instant notifications for your dosage schedules and critical health report updates.',
-      image: 'assets/onboarding/alerts.png',
+      title: AppCopy.text('text.real_time_alerts_fbbb77b4'),
+      description: AppCopy.text(
+        'text.stay_informed_with_instant_notifications_for_you_4408f4ba',
+      ),
+      image: 'asset.onboardingAlerts',
     ),
   ];
 
@@ -125,6 +129,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -148,8 +153,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Skip',
+                  child: Text(
+                    AppCopy.text('text.skip_c197c7e2'),
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -250,12 +255,13 @@ class OnboardingContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
+          PropertyImage(
             data.image,
             height: MediaQuery.of(context).size.height * 0.4,
             fit: BoxFit.contain,

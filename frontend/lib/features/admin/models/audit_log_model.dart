@@ -1,3 +1,5 @@
+import 'package:frontend/core/config/app_properties.dart';
+
 class AuditLogModel {
   final String id;
   final String? userId;
@@ -149,43 +151,43 @@ enum AuditAction {
       case AuditAction.logout:
         return 'Logout';
       case AuditAction.loginFailed:
-        return 'Login Failed';
+        return AppCopy.text('text.login_failed_43d6db97');
       case AuditAction.userCreate:
-        return 'User Created';
+        return AppCopy.text('text.user_created_7beec762');
       case AuditAction.userUpdate:
-        return 'User Updated';
+        return AppCopy.text('text.user_updated_254cefe1');
       case AuditAction.userDeactivate:
-        return 'User Deactivated';
+        return AppCopy.text('text.user_deactivated_a49252d0');
       case AuditAction.userActivate:
-        return 'User Activated';
+        return AppCopy.text('text.user_activated_ae6f6e89');
       case AuditAction.userDelete:
-        return 'User Deleted';
+        return AppCopy.text('text.user_deleted_e81dcccf');
       case AuditAction.passwordReset:
-        return 'Password Reset';
+        return AppCopy.text('text.password_reset_69da06d7');
       case AuditAction.passwordChange:
-        return 'Password Changed';
+        return AppCopy.text('text.password_changed_3fb37b6c');
       case AuditAction.patientReassign:
-        return 'Patient Reassigned';
+        return AppCopy.text('text.patient_reassigned_17e935ff');
       case AuditAction.patientDischarge:
-        return 'Patient Discharged';
+        return AppCopy.text('text.patient_discharged_121078de');
       case AuditAction.inrSubmit:
-        return 'INR Submitted';
+        return AppCopy.text('text.inr_submitted_24640539');
       case AuditAction.inrUpdate:
-        return 'INR Updated';
+        return AppCopy.text('text.inr_updated_91649e4b');
       case AuditAction.dosageUpdate:
-        return 'Dosage Updated';
+        return AppCopy.text('text.dosage_updated_c9a78903');
       case AuditAction.healthLogCreate:
-        return 'Health Log Created';
+        return AppCopy.text('text.health_log_created_4c7cb91d');
       case AuditAction.configUpdate:
-        return 'Config Updated';
+        return AppCopy.text('text.config_updated_2f45da50');
       case AuditAction.notificationBroadcast:
-        return 'Notification Broadcast';
+        return AppCopy.text('text.notification_broadcast_2ba70d75');
       case AuditAction.batchOperation:
-        return 'Batch Operation';
+        return AppCopy.text('text.batch_operation_47e7f6a2');
       case AuditAction.profileUpdate:
-        return 'Profile Updated';
+        return AppCopy.text('text.profile_updated_4a574f25');
       case AuditAction.reportUpdate:
-        return 'Report Updated';
+        return AppCopy.text('text.report_updated_e8aabc3c');
     }
   }
 }

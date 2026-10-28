@@ -7,7 +7,11 @@ import admin_router from "./admin.routes";
 import statistics_router from "./statistics.routes";
 import { paymentWebhook } from "@alias/controllers/admin.controller";
 
+import { readPublishedProperties, readBrandAsset } from '@alias/controllers/app-properties.controller';
+
 const router = Router();
+router.get('/app-properties', readPublishedProperties);
+router.get('/app-properties/assets/:id', readBrandAsset);
 
 router.use("/devices", device_router)       
 router.use("/doctors", doctor_router)

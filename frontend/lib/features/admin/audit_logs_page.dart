@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -27,6 +28,7 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
         queryKey: AdminQueryKeys.auditLogs(
@@ -67,14 +69,14 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
                   children: [
                     Expanded(
                       child: Text(
-                        'System Audit Logs',
+                        AppCopy.text('text.system_audit_logs_2ffd9a72'),
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
                     IconButton.filledTonal(
                       icon: const Icon(Icons.refresh_rounded),
                       onPressed: _refresh,
-                      tooltip: 'Refresh',
+                      tooltip: AppCopy.text('text.refresh_815aad4'),
                     ),
                   ],
                 ),
@@ -135,7 +137,9 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
                         padding: const EdgeInsets.only(right: 8),
                         child: Chip(
                           label: Text(
-                            _successFilter == 'true' ? 'Success' : 'Failed',
+                            _successFilter == 'true'
+                                ? AppCopy.text('text.success_6d8303b0')
+                                : AppCopy.text('text.failed_5579c3d4'),
                           ),
                           backgroundColor: _successFilter == 'true'
                               ? Colors.green.withValues(alpha: 0.1)
@@ -167,31 +171,30 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
               child: query.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : query.isError
-                      ? ApiErrorState(
-                          error: query.error,
-                          onRetry: _refresh,
-                        )
-                      : logs.isEmpty
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.history_rounded,
-                                    size: 48,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text('No audit logs found'),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: logs.length,
-                              itemBuilder: (context, index) =>
-                                  _AuditLogTile(log: logs[index]),
-                            ),
+                  ? ApiErrorState(error: query.error, onRetry: _refresh)
+                  : logs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.history_rounded,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            AppCopy.text('text.no_audit_logs_found_54833b7c'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: logs.length,
+                      itemBuilder: (context, index) =>
+                          _AuditLogTile(log: logs[index]),
+                    ),
             ),
 
             // Pagination
@@ -208,10 +211,20 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.chevron_left_rounded),
-                      onPressed:
-                          _page > 1 ? () => setState(() => _page--) : null,
+                      onPressed: _page > 1
+                          ? () => setState(() => _page--)
+                          : null,
                     ),
-                    Text('Page $_page of ${totalPages > 0 ? totalPages : 1}'),
+                    Text(
+                      AppCopy.text(
+                        'text.page_value1_of_value2_bd90d60a',
+                        arguments: {
+                          'value1': (_page).toString(),
+                          'value2': (totalPages > 0 ? totalPages : 1)
+                              .toString(),
+                        },
+                      ),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.chevron_right_rounded),
                       onPressed: _page < totalPages
@@ -230,7 +243,7 @@ class _AuditLogsPageState extends State<AuditLogsPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('System Audit Logs'),
+            title: Text(AppCopy.text('text.system_audit_logs_2ffd9a72')),
             actions: [
               IconButton(
                 icon: const Icon(Icons.refresh_rounded),
@@ -264,10 +277,11 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Card(
       margin: const EdgeInsets.all(8),
       child: ExpansionTile(
-        title: const Text('Filters'),
+        title: Text(AppCopy.text('text.filters_b3aa6ec')),
         leading: const Icon(Icons.filter_list_rounded),
         childrenPadding: const EdgeInsets.all(16),
         children: [
@@ -275,8 +289,8 @@ class _FilterBar extends StatelessWidget {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Action',
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.action_a77a91f'),
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 12,
@@ -285,9 +299,9 @@ class _FilterBar extends StatelessWidget {
                   ),
                   initialValue: actionFilter,
                   items: [
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: null,
-                      child: Text('All Actions'),
+                      child: Text(AppCopy.text('text.all_actions_809a2cf7')),
                     ),
                     ...AuditAction.values.map(
                       (e) => DropdownMenuItem(
@@ -302,8 +316,8 @@ class _FilterBar extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Status',
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.status_5ef20f'),
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 12,
@@ -311,10 +325,19 @@ class _FilterBar extends StatelessWidget {
                     ),
                   ),
                   initialValue: successFilter,
-                  items: const [
-                    DropdownMenuItem(value: null, child: Text('All Status')),
-                    DropdownMenuItem(value: 'true', child: Text('Success')),
-                    DropdownMenuItem(value: 'false', child: Text('Failed')),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(AppCopy.text('text.all_status_96e23776')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'true',
+                      child: Text(AppCopy.text('text.success_6d8303b0')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'false',
+                      child: Text(AppCopy.text('text.failed_5579c3d4')),
+                    ),
                   ],
                   onChanged: onSuccessChanged,
                 ),
@@ -329,7 +352,7 @@ class _FilterBar extends StatelessWidget {
                   icon: const Icon(Icons.date_range_rounded),
                   label: Text(
                     startDate == null
-                        ? 'Select Date Range'
+                        ? AppCopy.text('text.select_date_range_6fbb8256')
                         : '$startDate - ${endDate ?? "now"}',
                   ),
                   onPressed: () async {
@@ -350,7 +373,7 @@ class _FilterBar extends StatelessWidget {
               const SizedBox(width: 16),
               TextButton.icon(
                 icon: const Icon(Icons.clear_all_rounded),
-                label: const Text('Clear All'),
+                label: Text(AppCopy.text('text.clear_all_de7f94e5')),
                 onPressed: onClear,
               ),
             ],
@@ -367,6 +390,7 @@ class _AuditLogTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final actionStr = log.action;
 
@@ -389,7 +413,11 @@ class _AuditLogTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(log.description.isEmpty ? 'No description' : log.description),
+            Text(
+              log.description.isEmpty
+                  ? AppCopy.text('text.no_description_9c7619b0')
+                  : log.description,
+            ),
             const SizedBox(height: 4),
             Row(
               children: [
@@ -417,7 +445,7 @@ class _AuditLogTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'FAILED',
+                      AppCopy.text('text.failed_d7e8fab4'),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.error,
                       ),

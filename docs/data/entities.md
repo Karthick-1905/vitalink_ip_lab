@@ -24,6 +24,8 @@ Doctor name, department, primary contact, phone verification state, profile-imag
 
 Primary clinical document. It embeds demographics and next of kin, medical configuration, medical history, seven-day dosage schedule, INR history, health logs, account/assignment-conflict state, profile-image metadata, file-operation leases, and purge progress. References include `hospital_id`, assigned doctor `User._id`, and file assets. `login_id`/OP number remains on `User`, not this profile.
 
+INR history entries now optionally persist `review_status` (`pending` or `reviewed`), `reviewed_at`, and `reviewed_by` referencing the doctor User. New uploads explicitly set pending. Historical entries without a status remain unknown; notes and notification reads are not proof of review. No default or retrospective migration labels older reports reviewed. No collection or index is added.
+
 ## Authentication and delivery factors
 
 <!-- model: AuthSession -->
@@ -134,3 +136,15 @@ One active runtime configuration with INR critical thresholds, session timeout, 
 | `notificationdeliveries` | required `expires_at` based on configured retention days |
 
 Audit logs, file assets, inactive users/profiles, policy revisions, invoices, and hospitals have no schema TTL. Their retention requirements are unconfirmed.
+
+## Public presentation configuration
+
+<!-- model: AppProperties -->
+### `AppProperties` / `appproperties`
+
+Global singleton with string `_id=global`, integer edit `version`, monotonic `published_revision`, draft and published string override maps, last `updated_by` User reference, and timestamps. Embedded history retains the latest 20 publication snapshots with actor, time and optional restored-from revision. Draft/publish/rollback use one `_id` plus expected-version conditioned MongoDB update. Only MongoDB's built-in unique `_id` index is needed. Public reads project merged defaults and published values only. Management lazily creates the singleton.
+
+<!-- model: BrandAsset -->
+### `BrandAsset` / `brandassets`
+
+Public branding image with SHA-256 string `_id`, validated PNG/JPEG `content_type`, binary `bytes` excluded from default selection, `created_by` User reference and timestamps. Maximum 512 KiB and 2048 pixels per side. Built-in unique `_id` makes repeated uploads idempotent. Read endpoint explicitly selects bytes and emits immutable public image responses. Separate from private tenant-scoped FileAsset records. No automatic upload cleanup is implemented.

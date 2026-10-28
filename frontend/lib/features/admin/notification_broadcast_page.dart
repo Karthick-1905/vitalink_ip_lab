@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/widgets/admin/admin_scaffold.dart';
@@ -76,8 +77,7 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
     });
     try {
       final res = await _repo.getAllDoctors(limit: 100, isActive: 'true');
-      final list =
-          (res['doctors'] as List? ?? []).cast<Map<String, dynamic>>();
+      final list = (res['doctors'] as List? ?? []).cast<Map<String, dynamic>>();
       if (mounted) {
         setState(() {
           _doctors = list;
@@ -103,8 +103,8 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
     });
     try {
       final res = await _repo.getAllPatients(limit: 100);
-      final list =
-          (res['patients'] as List? ?? []).cast<Map<String, dynamic>>();
+      final list = (res['patients'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
       if (mounted) {
         setState(() {
           _patients = list;
@@ -124,17 +124,19 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
   }
 
   String _doctorName(Map<String, dynamic> d) {
-    final profile = d['profile_id'] as Map<String, dynamic>? ??
+    final profile =
+        d['profile_id'] as Map<String, dynamic>? ??
         d['profile'] as Map<String, dynamic>? ??
         {};
     return profile['name'] as String? ??
         d['name'] as String? ??
         d['login_id'] as String? ??
-        'Unknown Doctor';
+        AppCopy.text('text.unknown_doctor_c72ff198');
   }
 
   String _doctorSubtitle(Map<String, dynamic> d) {
-    final profile = d['profile_id'] as Map<String, dynamic>? ??
+    final profile =
+        d['profile_id'] as Map<String, dynamic>? ??
         d['profile'] as Map<String, dynamic>? ??
         {};
     final dept = profile['department'] as String? ?? '';
@@ -151,24 +153,30 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
   }
 
   String _patientName(Map<String, dynamic> p) {
-    final profile = p['profile_id'] as Map<String, dynamic>? ??
+    final profile =
+        p['profile_id'] as Map<String, dynamic>? ??
         p['profile'] as Map<String, dynamic>? ??
         {};
-    final demographics =
-        profile['demographics'] as Map<String, dynamic>? ?? {};
+    final demographics = profile['demographics'] as Map<String, dynamic>? ?? {};
     return demographics['name'] as String? ??
         p['name'] as String? ??
         p['login_id'] as String? ??
-        'Unknown Patient';
+        AppCopy.text('text.unknown_patient_17474cdc');
   }
 
   String _patientSubtitle(Map<String, dynamic> p) {
-    final profile = p['profile_id'] as Map<String, dynamic>? ??
+    final profile =
+        p['profile_id'] as Map<String, dynamic>? ??
         p['profile'] as Map<String, dynamic>? ??
         {};
     final opNum =
         profile['op_number'] as String? ?? p['login_id'] as String? ?? '';
-    return opNum.isNotEmpty ? 'OP: $opNum' : '';
+    return opNum.isNotEmpty
+        ? AppCopy.text(
+            'text.op_value1_f163b800',
+            arguments: {'value1': (opNum).toString()},
+          )
+        : '';
   }
 
   String _patientId(Map<String, dynamic> p) {
@@ -186,8 +194,12 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
 
     if (isSpecific && (targetUserId == null || targetUserId.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select or enter a recipient User ID'),
+        SnackBar(
+          content: Text(
+            AppCopy.text(
+              'text.please_select_or_enter_a_recipient_user_id_28d20fd8',
+            ),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -211,16 +223,16 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Send Notification?'),
+        title: Text(AppCopy.text('text.send_notification_dbba3e03')),
         content: Text(confirmText),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Send'),
+            child: Text(AppCopy.text('text.send_f28e14cf')),
           ),
         ],
       ),
@@ -238,8 +250,10 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notification sent successfully'),
+          SnackBar(
+            content: Text(
+              AppCopy.text('text.notification_sent_successfully_7817e545'),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -258,7 +272,12 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send: $e'),
+            content: Text(
+              AppCopy.text(
+                'text.failed_to_send_value1_f4356b17',
+                arguments: {'value1': (e).toString()},
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -271,8 +290,7 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
   Widget _buildRecipientSelector(ThemeData theme) {
     final isDoctor = _target == 'SPECIFIC_DOCTOR';
     final isLoading = isDoctor ? _loadingDoctors : _loadingPatients;
-    final hasError =
-        (isDoctor ? _doctorsError : _patientsError) != null;
+    final hasError = (isDoctor ? _doctorsError : _patientsError) != null;
     final items = isDoctor ? _doctors : _patients;
     final title = isDoctor ? 'Target Doctor' : 'Target Patient';
 
@@ -321,8 +339,8 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                     ),
                     label: Text(
                       _useManualUserId
-                          ? 'Select from list'
-                          : 'Enter ID manually',
+                          ? AppCopy.text('text.select_from_list_eb26e21d')
+                          : AppCopy.text('text.enter_id_manually_82aab227'),
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -334,18 +352,28 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                 controller: _customUserIdCtrl,
                 decoration: InputDecoration(
                   labelText: isDoctor
-                      ? 'Doctor User ID (24-char hex)'
-                      : 'Patient User ID (24-char hex)',
-                  hintText: 'e.g. 507f1f77bcf86cd799439011',
+                      ? AppCopy.text('text.doctor_user_id_24_char_hex_7c1edd81')
+                      : AppCopy.text(
+                          'text.patient_user_id_24_char_hex_7e6c9f4d',
+                        ),
+                  hintText: AppCopy.text(
+                    'text.e_g_507f1f77bcf86cd799439011_200c1443',
+                  ),
                   prefixIcon: const Icon(Icons.tag_rounded),
                   border: const OutlineInputBorder(),
                 ),
                 enabled: !_isSending,
                 validator: (v) {
                   final val = v?.trim() ?? '';
-                  if (val.isEmpty) return 'Recipient User ID is required';
+                  if (val.isEmpty) {
+                    return AppCopy.text(
+                      'text.recipient_user_id_is_required_c9d47bc5',
+                    );
+                  }
                   if (!RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(val)) {
-                    return 'Must be a 24-character hexadecimal ID';
+                    return AppCopy.text(
+                      'text.must_be_a_24_character_hexadecimal_id_832572ee',
+                    );
                   }
                   return null;
                 },
@@ -362,7 +390,13 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Loading ${isDoctor ? 'doctors' : 'patients'}...',
+                      AppCopy.text(
+                        'text.loading_value1_727889a5',
+                        arguments: {
+                          'value1': (isDoctor ? 'doctors' : 'patients')
+                              .toString(),
+                        },
+                      ),
                       style: theme.textTheme.bodyMedium,
                     ),
                   ],
@@ -372,7 +406,9 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
+                  color: theme.colorScheme.errorContainer.withValues(
+                    alpha: 0.2,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -380,8 +416,20 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                   children: [
                     Text(
                       hasError
-                          ? 'Unable to load ${isDoctor ? 'doctors' : 'patients'} directory in current administrator scope.'
-                          : 'No active ${isDoctor ? 'doctors' : 'patients'} found.',
+                          ? AppCopy.text(
+                              'text.unable_to_load_value1_directory_in_current_admin_165633a3',
+                              arguments: {
+                                'value1': (isDoctor ? 'doctors' : 'patients')
+                                    .toString(),
+                              },
+                            )
+                          : AppCopy.text(
+                              'text.no_active_value1_found_218afb36',
+                              arguments: {
+                                'value1': (isDoctor ? 'doctors' : 'patients')
+                                    .toString(),
+                              },
+                            ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.error,
                         fontWeight: FontWeight.bold,
@@ -389,7 +437,9 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'You can enter the recipient\'s 24-character User ID directly below.',
+                      AppCopy.text(
+                        'text.you_can_enter_the_recipient_s_24_character_user__e643a2b1',
+                      ),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -400,18 +450,28 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                 controller: _customUserIdCtrl,
                 decoration: InputDecoration(
                   labelText: isDoctor
-                      ? 'Doctor User ID (24-char hex)'
-                      : 'Patient User ID (24-char hex)',
-                  hintText: 'e.g. 507f1f77bcf86cd799439011',
+                      ? AppCopy.text('text.doctor_user_id_24_char_hex_7c1edd81')
+                      : AppCopy.text(
+                          'text.patient_user_id_24_char_hex_7e6c9f4d',
+                        ),
+                  hintText: AppCopy.text(
+                    'text.e_g_507f1f77bcf86cd799439011_200c1443',
+                  ),
                   prefixIcon: const Icon(Icons.tag_rounded),
                   border: const OutlineInputBorder(),
                 ),
                 enabled: !_isSending,
                 validator: (v) {
                   final val = v?.trim() ?? '';
-                  if (val.isEmpty) return 'Recipient User ID is required';
+                  if (val.isEmpty) {
+                    return AppCopy.text(
+                      'text.recipient_user_id_is_required_c9d47bc5',
+                    );
+                  }
                   if (!RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(val)) {
-                    return 'Must be a 24-character hexadecimal ID';
+                    return AppCopy.text(
+                      'text.must_be_a_24_character_hexadecimal_id_832572ee',
+                    );
                   }
                   return null;
                 },
@@ -421,7 +481,9 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                 initialValue: _selectedUserId,
                 isExpanded: true,
                 decoration: InputDecoration(
-                  labelText: isDoctor ? 'Select Doctor' : 'Select Patient',
+                  labelText: isDoctor
+                      ? AppCopy.text('text.select_doctor_7204daf4')
+                      : AppCopy.text('text.select_patient_d1dca630'),
                   prefixIcon: Icon(
                     isDoctor
                         ? Icons.medical_services_rounded
@@ -431,7 +493,9 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                 ),
                 items: items.map((item) {
                   final id = isDoctor ? _doctorId(item) : _patientId(item);
-                  final name = isDoctor ? _doctorName(item) : _patientName(item);
+                  final name = isDoctor
+                      ? _doctorName(item)
+                      : _patientName(item);
                   final sub = isDoctor
                       ? _doctorSubtitle(item)
                       : _patientSubtitle(item);
@@ -460,7 +524,12 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                 },
                 validator: (v) {
                   if (v == null || v.isEmpty) {
-                    return 'Please select a ${isDoctor ? 'doctor' : 'patient'}';
+                    return AppCopy.text(
+                      'text.please_select_a_value1_476daac2',
+                      arguments: {
+                        'value1': (isDoctor ? 'doctor' : 'patient').toString(),
+                      },
+                    );
                   }
                   return null;
                 },
@@ -474,6 +543,7 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final showPageScaffold = !AdminScaffold.usesShellAppBar(context);
     final isSpecific =
@@ -490,27 +560,24 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  'Broadcast Notification',
+                  AppCopy.text('text.broadcast_notification_239c5ba3'),
                   style: theme.textTheme.titleLarge,
                 ),
               ),
             // Info card
             Card(
-              color: theme.colorScheme.primaryContainer.withValues(
-                alpha: 0.3,
-              ),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: theme.colorScheme.primary,
-                    ),
+                    Icon(Icons.info_outline, color: theme.colorScheme.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Broadcast a notification to user groups or directly to an individual doctor or patient.',
+                        AppCopy.text(
+                          'text.broadcast_a_notification_to_user_groups_or_direc_7c94d7f',
+                        ),
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -523,8 +590,8 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
             // Title
             TextFormField(
               controller: _titleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Notification Title',
+              decoration: InputDecoration(
+                labelText: AppCopy.text('text.notification_title_6ceb24b4'),
                 prefixIcon: Icon(Icons.title_rounded),
                 border: OutlineInputBorder(),
               ),
@@ -537,8 +604,8 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
             // Message
             TextFormField(
               controller: _messageCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Message',
+              decoration: InputDecoration(
+                labelText: AppCopy.text('text.message_ae0ed984'),
                 prefixIcon: Icon(Icons.message_rounded),
                 border: OutlineInputBorder(),
                 alignLabelWithHint: true,
@@ -553,7 +620,7 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
 
             // Target
             Text(
-              'Target Audience',
+              AppCopy.text('text.target_audience_221bed56'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -564,35 +631,35 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
               runSpacing: 8,
               children: [
                 _TargetChip(
-                  label: 'All Users',
+                  label: AppCopy.text('text.all_users_471b96b4'),
                   value: 'ALL',
                   icon: Icons.groups_rounded,
                   selected: _target == 'ALL',
                   onTap: () => _selectTarget('ALL'),
                 ),
                 _TargetChip(
-                  label: 'All Doctors',
+                  label: AppCopy.text('text.all_doctors_6e301ee4'),
                   value: 'DOCTORS',
                   icon: Icons.medical_services_rounded,
                   selected: _target == 'DOCTORS',
                   onTap: () => _selectTarget('DOCTORS'),
                 ),
                 _TargetChip(
-                  label: 'All Patients',
+                  label: AppCopy.text('text.all_patients_6fe88a5a'),
                   value: 'PATIENTS',
                   icon: Icons.people_rounded,
                   selected: _target == 'PATIENTS',
                   onTap: () => _selectTarget('PATIENTS'),
                 ),
                 _TargetChip(
-                  label: 'Specific Doctor',
+                  label: AppCopy.text('text.specific_doctor_5b9b7978'),
                   value: 'SPECIFIC_DOCTOR',
                   icon: Icons.person_search_rounded,
                   selected: _target == 'SPECIFIC_DOCTOR',
                   onTap: () => _selectTarget('SPECIFIC_DOCTOR'),
                 ),
                 _TargetChip(
-                  label: 'Specific Patient',
+                  label: AppCopy.text('text.specific_patient_dc8e973c'),
                   value: 'SPECIFIC_PATIENT',
                   icon: Icons.person_pin_rounded,
                   selected: _target == 'SPECIFIC_PATIENT',
@@ -608,7 +675,7 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
 
             // Priority
             Text(
-              'Priority',
+              AppCopy.text('text.priority_e68d9f29'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -617,25 +684,25 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
             LayoutBuilder(
               builder: (context, constraints) {
                 final priorityControl = SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: 'LOW',
-                      label: Text('Low'),
+                      label: Text(AppCopy.text('text.low_b1dd9521')),
                       icon: Icon(Icons.arrow_downward_rounded),
                     ),
                     ButtonSegment(
                       value: 'MEDIUM',
-                      label: Text('Medium'),
+                      label: Text(AppCopy.text('text.medium_9be5f96')),
                       icon: Icon(Icons.remove_rounded),
                     ),
                     ButtonSegment(
                       value: 'HIGH',
-                      label: Text('High'),
+                      label: Text(AppCopy.text('text.high_be0a061d')),
                       icon: Icon(Icons.arrow_upward_rounded),
                     ),
                     ButtonSegment(
                       value: 'URGENT',
-                      label: Text('Urgent'),
+                      label: Text(AppCopy.text('text.urgent_92fa0c90')),
                       icon: Icon(Icons.warning_rounded),
                     ),
                   ],
@@ -670,7 +737,11 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
                       ),
                     )
                   : const Icon(Icons.send_rounded),
-              label: Text(_isSending ? 'Sending...' : 'Send Notification'),
+              label: Text(
+                _isSending
+                    ? AppCopy.text('text.sending_9d26e8d')
+                    : AppCopy.text('text.send_notification_eb1057ee'),
+              ),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -685,7 +756,9 @@ class _NotificationBroadcastPageState extends State<NotificationBroadcastPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Broadcast Notification')),
+      appBar: AppBar(
+        title: Text(AppCopy.text('text.broadcast_notification_239c5ba3')),
+      ),
       body: content,
     );
   }
@@ -707,6 +780,7 @@ class _TargetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return FilterChip(
       label: Row(

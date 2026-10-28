@@ -5,6 +5,7 @@ class PatientModel {
   final String? gender;
   final String? opNumber;
   final String? condition;
+  final Map<String, dynamic> attention;
 
   const PatientModel({
     required this.id,
@@ -13,13 +14,20 @@ class PatientModel {
     this.gender,
     this.opNumber,
     this.condition,
+    this.attention = const {},
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
     final demographics = json['demographics'] as Map<String, dynamic>?;
-    final inrHistory = json['inr_history'] as List<dynamic>?;
     final dynamic ageVal = demographics?['age'];
-    final condition = _deriveClinicalCondition(inrHistory);
+    final attention = Map<String, dynamic>.from(
+      json['attention'] as Map? ?? {},
+    );
+    final condition = attention['outside_target'] == true
+        ? 'Outside patient target'
+        : attention['outside_target'] == false
+        ? 'Within patient target'
+        : 'Target comparison unavailable';
     return PatientModel(
       id: (json['_id'] ?? '') as String,
       name: (demographics?['name'] ?? 'Unknown') as String,
@@ -27,33 +35,20 @@ class PatientModel {
       gender: demographics?['gender'] as String?,
       opNumber: json['login_id'] as String?,
       condition: condition,
+      attention: attention,
     );
   }
 
-  static String _deriveClinicalCondition(List<dynamic>? inrHistory) {
-    if (inrHistory == null || inrHistory.isEmpty) return 'Not Available';
+  List<String> get attentionReasons =>
+      (attention['reasons'] as List? ?? []).map((e) => e.toString()).toList();
 
-    Map<String, dynamic>? latestEntry;
-    DateTime? latestDate;
-
-    for (final item in inrHistory) {
-      if (item is! Map<String, dynamic>) continue;
-      final entryDate = DateTime.tryParse(item['test_date']?.toString() ?? '');
-
-      if (latestEntry == null) {
-        latestEntry = item;
-        latestDate = entryDate;
-        continue;
-      }
-
-      if (entryDate != null &&
-          (latestDate == null || entryDate.isAfter(latestDate))) {
-        latestEntry = item;
-        latestDate = entryDate;
-      }
-    }
-
-    final isCritical = latestEntry?['is_critical'] == true;
-    return isCritical ? 'Critical' : 'Not Critical';
-  }
+  static const reasonLabels = {
+    'reports_pending': 'Reports awaiting review',
+    'review_overdue': 'Review overdue',
+    'review_today': 'Review due today',
+    'inr_monitoring_gap': 'INR monitoring gap',
+    'dose_recording_gap': 'Dose recording gaps',
+    'no_inr': 'No INR recorded',
+    'review_unknown': 'Review status unknown',
+  };
 }

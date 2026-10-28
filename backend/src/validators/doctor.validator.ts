@@ -78,6 +78,7 @@ export const UpdateReportSchema = z.object({
   }).strict(),
   body: z.object({
     is_critical: z.boolean("Critical Must be a Boolean Value").optional(),
+    mark_reviewed: z.literal(true).optional(),
     notes: z.string("Instructions To The patient Must To be a String").trim().max(4000).optional()
   }).strict()
 })

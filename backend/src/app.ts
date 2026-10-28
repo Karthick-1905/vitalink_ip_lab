@@ -74,8 +74,8 @@ app.use(cors({
     callback(new ApiError(StatusCodes.FORBIDDEN, 'CORS origin is not allowed'))
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-API-Version', 'X-Step-Up-Password', 'X-Step-Up-Totp'],
-  exposedHeaders: ['X-Request-Id', 'X-API-Version', 'X-API-Supported-Versions', 'Deprecation', 'Sunset', 'Link'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'If-None-Match', 'X-Request-Id', 'X-API-Version', 'X-Step-Up-Password', 'X-Step-Up-Totp'],
+  exposedHeaders: ['ETag', 'X-Request-Id', 'X-API-Version', 'X-API-Supported-Versions', 'Deprecation', 'Sunset', 'Link'],
   optionsSuccessStatus: 204,
 }));
 

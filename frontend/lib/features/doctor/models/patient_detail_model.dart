@@ -11,6 +11,7 @@ class PatientDetailModel {
   final Map<String, dynamic>? weeklyDosage;
   final List<dynamic>? inrHistory;
   final List<dynamic>? healthLogs;
+  final Map<String, dynamic>? doseHistory;
 
   const PatientDetailModel({
     required this.id,
@@ -25,6 +26,7 @@ class PatientDetailModel {
     this.weeklyDosage,
     this.inrHistory,
     this.healthLogs,
+    this.doseHistory,
   });
 
   factory PatientDetailModel.fromJson(Map<String, dynamic> json) {
@@ -35,8 +37,8 @@ class PatientDetailModel {
     final age = ageVal is int
         ? ageVal
         : ageVal is num
-            ? ageVal.toInt()
-            : int.tryParse(ageVal?.toString() ?? '');
+        ? ageVal.toInt()
+        : int.tryParse(ageVal?.toString() ?? '');
 
     return PatientDetailModel(
       id: json['_id']?.toString() ?? '',
@@ -56,6 +58,7 @@ class PatientDetailModel {
           : null,
       // Health reports: side effects / illness / lifestyle / other meds.
       healthLogs: _normalizeHealthLogs(json['health_logs']),
+      doseHistory: _asStringKeyMap(json['dose_history']),
     );
   }
 

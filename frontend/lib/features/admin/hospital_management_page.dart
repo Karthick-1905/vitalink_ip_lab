@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -32,6 +33,7 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       anyCapabilities: const [AdminCapabilities.platformHospitalsRead],
       roles: const {AdminRole.appAdmin, AdminRole.auditor},
@@ -56,27 +58,37 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
           builder: (context, query) {
             final hospitals = query.data?['hospitals'] as List? ?? const [];
             final content = AdminListShell(
-              title: 'Hospitals',
+              title: AppCopy.text('text.hospitals_64b409e0'),
               subtitle: canManage
-                  ? 'Manage hospital tenants, status, and platform access.'
-                  : 'Read-only hospital directory and operational metadata.',
+                  ? AppCopy.text(
+                      'text.manage_hospital_tenants_status_and_platform_acce_c5f8f187',
+                    )
+                  : AppCopy.text(
+                      'text.read_only_hospital_directory_and_operational_met_f8f95517',
+                    ),
               searchController: _search,
-              searchHint: 'Search hospitals',
+              searchHint: AppCopy.text('text.search_hospitals_7c05c1a6'),
               onSearch: _refresh,
               actions: [
                 DropdownButton<String?>(
                   value: _status,
-                  hint: const Text('All status'),
-                  items: const [
-                    DropdownMenuItem(value: null, child: Text('All status')),
-                    DropdownMenuItem(value: 'active', child: Text('Active')),
+                  hint: Text(AppCopy.text('text.all_status_a9856756')),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(AppCopy.text('text.all_status_a9856756')),
+                    ),
+                    DropdownMenuItem(
+                      value: 'active',
+                      child: Text(AppCopy.text('text.active_1f89134f')),
+                    ),
                     DropdownMenuItem(
                       value: 'suspended',
-                      child: Text('Suspended'),
+                      child: Text(AppCopy.text('text.suspended_33478642')),
                     ),
                     DropdownMenuItem(
                       value: 'inactive',
-                      child: Text('Inactive'),
+                      child: Text(AppCopy.text('text.inactive_901aca78')),
                     ),
                   ],
                   onChanged: (value) => setState(() {
@@ -88,7 +100,7 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
                   FilledButton.icon(
                     onPressed: () => _showHospitalDialog(context),
                     icon: const Icon(Icons.add_business_rounded),
-                    label: const Text('Add'),
+                    label: Text(AppCopy.text('text.add_9dc3aa14')),
                   ),
               ],
               child: AdminQueryBody<Map<String, dynamic>>(
@@ -131,7 +143,9 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
                           ? [
                               PopupMenuItem(
                                 value: 'edit',
-                                child: const Text('Edit hospital'),
+                                child: Text(
+                                  AppCopy.text('text.edit_hospital_593abbc9'),
+                                ),
                                 onTap: () => Future.microtask(() {
                                   if (mounted) {
                                     _showHospitalDialog(
@@ -144,7 +158,9 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
                               PopupMenuItem(
                                 value: 'status',
                                 child: Text(
-                                  status == 'active' ? 'Suspend' : 'Activate',
+                                  status == 'active'
+                                      ? AppCopy.text('text.suspend_e196ab03')
+                                      : AppCopy.text('text.activate_3b8f0190'),
                                 ),
                                 onTap: () => Future.microtask(
                                   () => _confirmHospitalStatus(
@@ -156,7 +172,9 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
                               ),
                               PopupMenuItem(
                                 value: 'delete',
-                                child: const Text('Deactivate'),
+                                child: Text(
+                                  AppCopy.text('text.deactivate_7fcfb5f3'),
+                                ),
                                 onTap: () => Future.microtask(
                                   () => _confirmHospitalDeactivation(name, id),
                                 ),
@@ -183,10 +201,14 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
     final action = status == 'suspended' ? 'Suspend' : 'Activate';
     final confirmed = await showAdminActionConfirmation(
       context,
-      title: '$action $hospitalName?',
+      title: "${(action).toString()} ${(hospitalName).toString()}?",
       message: status == 'suspended'
-          ? 'Staff and patients will lose hospital access. Individual account statuses are preserved. Reactivation restores access for accounts that are still active.'
-          : 'This restores hospital access. Deactivated user accounts must be reactivated separately.',
+          ? AppCopy.text(
+              'text.staff_and_patients_will_lose_hospital_access_ind_e411b485',
+            )
+          : AppCopy.text(
+              'text.this_restores_hospital_access_deactivated_user_a_f0b91bab',
+            ),
       confirmLabel: action,
     );
     if (!confirmed || !mounted) return;
@@ -204,10 +226,14 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
   ) async {
     final confirmed = await showAdminActionConfirmation(
       context,
-      title: 'Deactivate $hospitalName?',
-      message:
-          'This removes platform access for the hospital. You can reactivate it later.',
-      confirmLabel: 'Deactivate',
+      title: AppCopy.text(
+        'text.deactivate_value1_163142e6',
+        arguments: {'value1': (hospitalName).toString()},
+      ),
+      message: AppCopy.text(
+        'text.this_removes_platform_access_for_the_hospital_yo_45557fe9',
+      ),
+      confirmLabel: AppCopy.text('text.deactivate_7fcfb5f3'),
     );
     if (!confirmed || !mounted) return;
     await _runAction(
@@ -236,17 +262,25 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
     BuildContext context, {
     Map<String, dynamic>? hospital,
   }) async {
-    final name = TextEditingController(text: '${hospital?['name'] ?? ''}');
-    final location = TextEditingController(
-      text: '${hospital?['location'] ?? ''}',
+    final name = TextEditingController(
+      text: (hospital?['name'] ?? '').toString(),
     );
-    final admin = TextEditingController(text: '${hospital?['admin'] ?? ''}');
+    final location = TextEditingController(
+      text: (hospital?['location'] ?? '').toString(),
+    );
+    final admin = TextEditingController(
+      text: (hospital?['admin'] ?? '').toString(),
+    );
     var status = '${hospital?['status'] ?? 'active'}';
     final id = '${hospital?['id'] ?? hospital?['_id'] ?? ''}';
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(hospital == null ? 'Add Hospital' : 'Edit Hospital'),
+        title: Text(
+          hospital == null
+              ? AppCopy.text('text.add_hospital_460b663a')
+              : AppCopy.text('text.edit_hospital_9231c0e9'),
+        ),
         content: SizedBox(
           width: 420,
           child: Column(
@@ -254,27 +288,38 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
             children: [
               TextField(
                 controller: name,
-                decoration: const InputDecoration(labelText: 'Hospital name'),
+                decoration: InputDecoration(
+                  labelText: AppCopy.text('text.hospital_name_6920c662'),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: location,
-                decoration: const InputDecoration(labelText: 'Location'),
+                decoration: InputDecoration(
+                  labelText: AppCopy.text('text.location_5bc08dc6'),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: admin,
-                decoration: const InputDecoration(labelText: 'Admin email'),
+                decoration: InputDecoration(
+                  labelText: AppCopy.text('text.admin_email_dd8d07b4'),
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: status,
-                decoration: const InputDecoration(labelText: 'Status'),
-                items: const [
-                  DropdownMenuItem(value: 'active', child: Text('Active')),
+                decoration: InputDecoration(
+                  labelText: AppCopy.text('text.status_5ef20f'),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: 'active',
+                    child: Text(AppCopy.text('text.active_1f89134f')),
+                  ),
                   DropdownMenuItem(
                     value: 'suspended',
-                    child: Text('Suspended'),
+                    child: Text(AppCopy.text('text.suspended_33478642')),
                   ),
                 ],
                 onChanged: (value) => status = value ?? status,
@@ -285,7 +330,7 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             onPressed: () async {
@@ -307,7 +352,7 @@ class _HospitalManagementPageState extends State<HospitalManagementPage> {
                 if (dialogContext.mounted) showAdminError(dialogContext, e);
               }
             },
-            child: const Text('Save'),
+            child: Text(AppCopy.text('text.save_4d2d5d68')),
           ),
         ],
       ),

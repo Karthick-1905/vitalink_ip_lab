@@ -4,7 +4,7 @@ import { isFeatureEnabled } from '@alias/services/config.service'
 
 // Exact bootstrap endpoints only. Every route keeps its authentication and RBAC.
 const CONTROL_PLANE_PATHS = new Set([
-  '/admin/config', '/admin/access/me', '/health', '/health/live', '/health/ready',
+  '/admin/config/presentation/assets', '/app-properties', '/admin/config/presentation', '/admin/config', '/admin/access/me', '/health', '/health/live', '/health/ready',
   '/auth/login', '/auth/login/otp/verify', '/auth/login/otp/resend',
   '/auth/login/totp/verify', '/auth/login/totp/enroll/setup', '/auth/login/totp/enroll/activate',
   '/auth/refresh', '/auth/revoke', '/auth/logout', '/auth/me', '/auth/change-password',
@@ -12,6 +12,7 @@ const CONTROL_PLANE_PATHS = new Set([
 ])
 
 export const isControlPlaneRequest = (path: string) =>
+  (/^\/api(?:\/v\d+)?\/app-properties\/assets\/[a-f0-9]{64}$/.test(path) || /^\/app-properties\/assets\/[a-f0-9]{64}$/.test(path)) ||
   CONTROL_PLANE_PATHS.has(path.toLowerCase().replace(/^\/api(?:\/v\d+)?(?=\/)/, '').replace(/\/$/, ''))
 
 export const isPatientRegistrationRequest = (method: string, path: string) =>

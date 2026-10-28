@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
@@ -26,6 +27,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
         queryKey: PatientQueryKeys.missedDoses(),
@@ -44,13 +46,15 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
           options: MutationOptions<void, Map<String, dynamic>>(
             mutationFn: (variables) =>
                 AppDependencies.patientRepository.markDoseAsTaken(
-              date: variables['date'],
-              dose: variables['dose'],
-            ),
+                  date: variables['date'],
+                  dose: variables['dose'],
+                ),
             onSuccess: (data, variables) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Dose marked as taken'),
+                SnackBar(
+                  content: Text(
+                    AppCopy.text('text.dose_marked_as_taken_10499f6f'),
+                  ),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -99,138 +103,150 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                     ),
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Container(
-                        padding: PortalLayout.cardInsetsComfortable,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(
-                            PortalLayout.cardRadius,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                      padding: PortalLayout.cardInsetsComfortable,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(
+                          PortalLayout.cardRadius,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.of(context).pushNamed(
-                                    AppRoutes.patientDosageCalendar,
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.calendar_month_rounded,
-                                  size: 20,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.patientDosageCalendar);
+                              },
+                              icon: const Icon(
+                                Icons.calendar_month_rounded,
+                                size: 20,
+                              ),
+                              label: Text(
+                                AppCopy.text(
+                                  'text.view_dosage_calendar_9b4abf99',
                                 ),
-                                label: const Text(
-                                  'View Dosage Calendar',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue.shade600,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size.fromHeight(48),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: PortalLayout.cardPaddingComfortable,
-                                    vertical: PortalLayout.itemGap,
-                                  ),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      PortalLayout.controlRadius,
-                                    ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade600,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size.fromHeight(48),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal:
+                                      PortalLayout.cardPaddingComfortable,
+                                  vertical: PortalLayout.itemGap,
+                                ),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    PortalLayout.controlRadius,
                                   ),
                                 ),
                               ),
                             ),
-                            PortalLayout.sectionSpacerTight,
-                            DosageSection(
-                              title: 'Missed Doses',
-                              subtitle:
-                                  'Missed doses from the last 7 days.\nTap a date to mark it as taken.',
-                              children: [
-                                if (recentDoses.isEmpty)
-                                  Center(
-                                    child: Padding(
-                                      padding: PortalLayout.cardInsetsComfortable,
-                                      child: Text(
-                                        'No missed doses in the last 7 days',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey.shade700,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                          ),
+                          PortalLayout.sectionSpacerTight,
+                          DosageSection(
+                            title: AppCopy.text('text.missed_doses_22386d06'),
+                            subtitle: AppCopy.text(
+                              'text.missed_doses_from_the_last_7_days_tap_a_date_to__6902e33d',
+                            ),
+                            children: [
+                              if (recentDoses.isEmpty)
+                                Center(
+                                  child: Padding(
+                                    padding: PortalLayout.cardInsetsComfortable,
+                                    child: Text(
+                                      AppCopy.text(
+                                        'text.no_missed_doses_in_the_last_7_days_93fe0353',
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  )
-                                else
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final isCompact =
-                                          constraints.maxWidth < 360;
-                                      return GridView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        gridDelegate:
-                                            SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: isCompact ? 2 : 3,
-                                          crossAxisSpacing: PortalLayout.itemGap,
-                                          mainAxisSpacing: PortalLayout.itemGap,
-                                          childAspectRatio:
-                                              isCompact ? 2.8 : 2.5,
-                                        ),
-                                        itemCount: recentDoses.length,
-                                        itemBuilder: (context, index) {
-                                          final date =
-                                              recentDoses[index] as String;
-                                          return DosageDateCard(
-                                            date: date,
-                                            onTap: () =>
-                                                _showMarkAsTakenDialog(
-                                              date,
-                                              mutation,
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
                                   ),
-                              ],
+                                )
+                              else
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isCompact =
+                                        constraints.maxWidth < 360;
+                                    return GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: isCompact ? 2 : 3,
+                                            crossAxisSpacing:
+                                                PortalLayout.itemGap,
+                                            mainAxisSpacing:
+                                                PortalLayout.itemGap,
+                                            childAspectRatio: isCompact
+                                                ? 2.8
+                                                : 2.5,
+                                          ),
+                                      itemCount: recentDoses.length,
+                                      itemBuilder: (context, index) {
+                                        final date =
+                                            recentDoses[index] as String;
+                                        return DosageDateCard(
+                                          date: date,
+                                          onTap: () => _showMarkAsTakenDialog(
+                                            date,
+                                            mutation,
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                            ],
+                          ),
+                          PortalLayout.sectionSpacer,
+                          DosageSection(
+                            title: AppCopy.text(
+                              'text.remaining_missed_doses_f1e320aa',
                             ),
-                            PortalLayout.sectionSpacer,
-                            DosageSection(
-                              title: 'Remaining Missed Doses',
-                              children: [
-                                if (remainingDoses.isEmpty)
-                                  Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Text(
-                                        'No remaining missed doses',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey.shade700,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                            children: [
+                              if (remainingDoses.isEmpty)
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Text(
+                                      AppCopy.text(
+                                        'text.no_remaining_missed_doses_204a83bd',
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  )
-                                else
-                                  _buildPaginatedRemainingDoses(remainingDoses),
-                              ],
-                            ),
-                          ],
-                        ),
+                                  ),
+                                )
+                              else
+                                _buildPaginatedRemainingDoses(remainingDoses),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -262,7 +278,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'Dosage Management',
+      pageTitle: AppCopy.text('text.dosage_management_e665ec7f'),
       currentNavIndex: _currentNavIndex,
       bodyDecoration: bodyDecoration,
       onNavChanged: _handleNav,
@@ -330,10 +346,16 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Previous'),
+                child: Text(AppCopy.text('text.previous_ead1fb48')),
               ),
               Text(
-                'Page $safeCurrentPage of $safeTotalPages',
+                AppCopy.text(
+                  'text.page_value1_of_value2_bd90d60a',
+                  arguments: {
+                    'value1': (safeCurrentPage).toString(),
+                    'value2': (safeTotalPages).toString(),
+                  },
+                ),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -351,7 +373,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Next'),
+                child: Text(AppCopy.text('text.next_dce2da08')),
               ),
             ],
           ),
@@ -368,9 +390,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
         title: Row(
           children: [
@@ -387,9 +407,9 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Mark Dose as Taken',
+                AppCopy.text('text.mark_dose_as_taken_e1d250c0'),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -404,8 +424,10 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            const Text(
-              'Are you sure you want to mark this dose as taken?',
+            Text(
+              AppCopy.text(
+                'text.are_you_sure_you_want_to_mark_this_dose_as_taken_567c56a5',
+              ),
               style: TextStyle(
                 fontSize: 15,
                 color: Color(0xFF666666),
@@ -422,10 +444,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.green.shade200,
-                  width: 1.5,
-                ),
+                border: Border.all(color: Colors.green.shade200, width: 1.5),
               ),
               child: Row(
                 children: [
@@ -462,7 +481,7 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                     ),
                   ),
                   child: Text(
-                    'Cancel',
+                    AppCopy.text('text.cancel_35afca3b'),
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 16,
@@ -501,8 +520,8 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
-                          'Confirm',
+                      : Text(
+                          AppCopy.text('text.confirm_a183c9ef'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -534,8 +553,9 @@ class _PatientTakeDosagePageState extends State<PatientTakeDosagePage> {
       case 2:
         break;
       case 3:
-        Navigator.of(context)
-            .pushReplacementNamed(AppRoutes.patientHealthReports);
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(AppRoutes.patientHealthReports);
         break;
       case 4:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile);

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:frontend/features/admin/models/admin_access_model.dart';
 
 class AdminAccountModel {
@@ -85,7 +86,8 @@ class AdminAccountModel {
           : hospital!.code;
     }
     if (role == AdminRole.hospitalAdmin) {
-      return assignmentError ?? 'Hospital assignment missing';
+      return assignmentError ??
+          AppCopy.text('text.hospital_assignment_missing_895eb04c');
     }
     return 'Global';
   }

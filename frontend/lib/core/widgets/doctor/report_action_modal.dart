@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/doctor/view_report_widget.dart';
 import 'package:frontend/core/widgets/doctor/update_report_instructions_widget.dart';
@@ -78,6 +79,7 @@ class _ReportActionModalState extends State<ReportActionModal> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final isMobileView = MediaQuery.of(context).size.height < 600;
 
     return Container(
@@ -87,14 +89,9 @@ class _ReportActionModalState extends State<ReportActionModal> {
       child: Column(
         children: [
           // Tab selector for switching between View and Update
-          if (!isMobileView)
-            _buildTabSelector()
-          else
-            const SizedBox.shrink(),
+          if (!isMobileView) _buildTabSelector() else const SizedBox.shrink(),
           // Content area
-          Expanded(
-            child: _buildContent(),
-          ),
+          Expanded(child: _buildContent()),
         ],
       ),
     );
@@ -104,15 +101,13 @@ class _ReportActionModalState extends State<ReportActionModal> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
       ),
       child: Row(
         children: [
           Expanded(
             child: _buildTabButton(
-              label: 'View Details',
+              label: AppCopy.text('text.view_details_e2c15a0e'),
               action: ReportAction.view,
               isSelected: _currentAction == ReportAction.view,
             ),
@@ -120,7 +115,7 @@ class _ReportActionModalState extends State<ReportActionModal> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildTabButton(
-              label: 'Update Notes',
+              label: AppCopy.text('text.update_notes_2259b6c1'),
               action: ReportAction.update,
               isSelected: _currentAction == ReportAction.update,
             ),
@@ -147,9 +142,9 @@ class _ReportActionModalState extends State<ReportActionModal> {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.grey[700],
-                ),
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : Colors.grey[700],
+            ),
           ),
         ),
       ),

@@ -27,6 +27,7 @@ const AUDIT_BODY_ALLOWLIST: Readonly<Record<string, ReadonlySet<string>>> = {
   NotificationBroadcast: new Set(['target', 'priority']),
   BatchOperation: new Set(['operation']),
   PasswordReset: new Set(['target_user_id']),
+  PresentationConfig: new Set(['action', 'expectedVersion', 'revision']),
   SystemConfig: new Set([
     'inr_thresholds',
     'session_timeout_minutes',
@@ -60,6 +61,7 @@ function resolveResourceType(url: string): string {
   if (url.includes('/users/batch')) return 'BatchOperation'
   if (url.includes('/reset-password')) return 'PasswordReset'
   if (url.includes('/roles')) return 'Role'
+  if (url.includes('/config/presentation')) return 'PresentationConfig'
   if (url.includes('/config')) return 'SystemConfig'
   return 'System'
 }
@@ -196,7 +198,7 @@ function inferAction(method: string, path: string, body?: Record<string, unknown
   if (p.match(/\/users\/[^/]+/) && m === 'PUT') return AuditAction.USER_UPDATE
   if (p.endsWith('/users') && m === 'POST') return AuditAction.USER_CREATE
   if (p.includes('/reassign')) return AuditAction.PATIENT_REASSIGN
-  if (p.includes('/config') && m === 'PUT') return AuditAction.CONFIG_UPDATE
+  if (p.includes('/config') && (m === 'PUT' || m === 'POST')) return AuditAction.CONFIG_UPDATE
   if (p.includes('/notifications/broadcast')) return AuditAction.NOTIFICATION_BROADCAST
   if (p.includes('/users/batch')) return AuditAction.BATCH_OPERATION
   if (p.includes('/reset-password')) return AuditAction.PASSWORD_RESET

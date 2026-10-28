@@ -18,4 +18,8 @@ These records use MADR headings. They document important decisions already embod
 | [0012](0012-containerized-redis-for-standalone-backend.md) | Accepted for standalone Compose | Persistent Redis container alongside the backend, with hosted Atlas and health-gated startup |
 | [0013](0013-time-limited-development-audit-exception.md) | Accepted; exception expires 2026-11-10 | Strict production audit plus full-tree audit with a bounded exception for unpatched development parser paths |
 
+| [0015](0015-doctor-attention-and-review-state.md) | Accepted for local implementation | Explainable doctor attention, explicit report review, and dose recording history |
+
+| [0016](0016-runtime-presentation-properties.md) | Accepted for local implementation | Versioned presentation properties, offline defaults, publication and rollback |
+
 Future architecture changes should add a new decision or explicitly supersede an existing record. Historical accepted records should not be rewritten to imply a decision was never made.

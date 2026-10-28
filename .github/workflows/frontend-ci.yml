@@ -4,10 +4,14 @@ on:
   push:
     paths:
       - "frontend/**"
+      - "backend/src/config/app-properties.defaults.json"
+      - "scripts/properties/**"
       - ".github/workflows/frontend-ci.yml"
   pull_request:
     paths:
       - "frontend/**"
+      - "backend/src/config/app-properties.defaults.json"
+      - "scripts/properties/**"
       - ".github/workflows/frontend-ci.yml"
   workflow_dispatch:
 
@@ -45,6 +49,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Validate property catalogue
+        run: python3 ../scripts/properties/sync.py --check
 
       - name: Analyze
         run: flutter analyze

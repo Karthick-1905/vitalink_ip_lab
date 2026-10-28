@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/common/premium_report_card.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,6 +22,7 @@ class InrReportsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     if (isLoading) {
       return const Center(
         child: Padding(
@@ -56,6 +58,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.all(32),
       width: double.infinity,
@@ -81,7 +84,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No INR Reports',
+            AppCopy.text('text.no_inr_reports_d10466a2'),
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -90,7 +93,9 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'No INR test results have been recorded yet for this patient.',
+            AppCopy.text(
+              'text.no_inr_test_results_have_been_recorded_yet_for_t_43366283',
+            ),
             textAlign: TextAlign.center,
             style: GoogleFonts.outfit(
               fontSize: 14,
@@ -112,6 +117,7 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -122,11 +128,7 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 40,
-            color: Color(0xFFDC2626),
-          ),
+          const Icon(Icons.error_outline, size: 40, color: Color(0xFFDC2626)),
           const SizedBox(height: 12),
           Text(
             message,
@@ -142,11 +144,13 @@ class _ErrorState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Retry'),
+              label: Text(AppCopy.text('text.retry_8036af59')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFDC2626),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),

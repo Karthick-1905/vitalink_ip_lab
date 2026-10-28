@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/network/api_client.dart';
@@ -20,9 +21,14 @@ class ApiErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final apiError = error is ApiException ? error as ApiException : null;
     final resolvedTitle = title ?? apiError?.title ?? 'Something went wrong';
-    final resolvedMessage = message ?? apiError?.message ?? error?.toString() ?? 'Please try again.';
+    final resolvedMessage =
+        message ??
+        apiError?.message ??
+        error?.toString() ??
+        'Please try again.';
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final visual = _visualFor(apiError?.kind, scheme);
@@ -63,7 +69,10 @@ class ApiErrorState extends StatelessWidget {
           if (retryAfter != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Try again in ${_formatDuration(retryAfter)}.',
+              AppCopy.text(
+                'text.try_again_in_value1_f39001e3',
+                arguments: {'value1': (_formatDuration(retryAfter)).toString()},
+              ),
               textAlign: TextAlign.center,
               style: textTheme.labelMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
@@ -73,29 +82,43 @@ class ApiErrorState extends StatelessWidget {
           ],
           if (statusCode != null) ...[
             const SizedBox(height: 10),
-            _StatusPill(label: 'Status $statusCode'),
+            _StatusPill(
+              label: AppCopy.text(
+                'text.status_value1_1cf39719',
+                arguments: {'value1': (statusCode).toString()},
+              ),
+            ),
           ],
-          if (apiError?.isDeprecatedApi == true && apiError?.sunset != null) ...[
+          if (apiError?.isDeprecatedApi == true &&
+              apiError?.sunset != null) ...[
             const SizedBox(height: 8),
-            _StatusPill(label: 'Supported until ${apiError!.sunset}'),
+            _StatusPill(
+              label: AppCopy.text(
+                'text.supported_until_value1_836a7e6b',
+                arguments: {'value1': (apiError!.sunset).toString()},
+              ),
+            ),
           ],
           if (onRetry != null || apiError?.shouldReturnToLogin == true) ...[
             SizedBox(height: compact ? 12 : 16),
             FilledButton.icon(
               onPressed: () {
                 if (apiError?.shouldReturnToLogin == true) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    AppRoutes.login,
-                    (_) => false,
-                  );
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
                   return;
                 }
                 onRetry?.call();
               },
-              icon: Icon(apiError?.shouldReturnToLogin == true
-                  ? Icons.login_rounded
-                  : Icons.refresh_rounded),
-              label: Text(apiError?.actionLabel ?? 'Retry'),
+              icon: Icon(
+                apiError?.shouldReturnToLogin == true
+                    ? Icons.login_rounded
+                    : Icons.refresh_rounded,
+              ),
+              label: Text(
+                apiError?.actionLabel ?? AppCopy.text('text.retry_8036af59'),
+              ),
             ),
           ],
         ],
@@ -105,10 +128,7 @@ class ApiErrorState extends StatelessWidget {
     if (compact) return body;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: body,
-      ),
+      child: Padding(padding: const EdgeInsets.all(20), child: body),
     );
   }
 
@@ -164,9 +184,21 @@ class ApiErrorState extends StatelessWidget {
 
   String _formatDuration(Duration value) {
     if (value.inMinutes >= 1) {
-      return '${value.inMinutes} minute${value.inMinutes == 1 ? '' : 's'}';
+      return AppCopy.text(
+        'text.value1_minute_value2_cf7bb02c',
+        arguments: {
+          'value1': (value.inMinutes).toString(),
+          'value2': (value.inMinutes == 1 ? '' : 's').toString(),
+        },
+      );
     }
-    return '${value.inSeconds} second${value.inSeconds == 1 ? '' : 's'}';
+    return AppCopy.text(
+      'text.value1_second_value2_cc21bbc',
+      arguments: {
+        'value1': (value.inSeconds).toString(),
+        'value2': (value.inSeconds == 1 ? '' : 's').toString(),
+      },
+    );
   }
 }
 
@@ -177,6 +209,7 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -188,9 +221,9 @@ class _StatusPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
+          color: scheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

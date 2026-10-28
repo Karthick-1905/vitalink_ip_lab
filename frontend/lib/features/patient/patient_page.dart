@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:frontend/core/widgets/index.dart';
@@ -11,11 +12,7 @@ class PatientPage extends StatefulWidget {
   final bool embedInShell;
   final ValueChanged<int>? onTabChanged;
 
-  const PatientPage({
-    super.key,
-    this.embedInShell = false,
-    this.onTabChanged,
-  });
+  const PatientPage({super.key, this.embedInShell = false, this.onTabChanged});
 
   @override
   State<PatientPage> createState() => _PatientPageState();
@@ -26,6 +23,7 @@ class _PatientPageState extends State<PatientPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
         queryKey: PatientQueryKeys.homeData(),
@@ -80,19 +78,19 @@ class _PatientPageState extends State<PatientPage> {
           final latestInrHasData = data['latestINRHasData'] == true;
           final patientCondition = latestInrHasData
               ? ((data['latestINRIsCritical'] == true)
-                  ? 'Critical'
-                  : 'Not Critical')
+                    ? 'Critical'
+                    : 'Not Critical')
               : 'Not Available';
           final patientConditionColor = patientCondition == 'Critical'
               ? const Color(0xFFB91C1C)
               : patientCondition == 'Not Critical'
-                  ? const Color(0xFF166534)
-                  : const Color(0xFF374151);
+              ? const Color(0xFF166534)
+              : const Color(0xFF374151);
           final patientConditionBg = patientCondition == 'Critical'
               ? const Color(0xFFFEE2E2)
               : patientCondition == 'Not Critical'
-                  ? const Color(0xFFDCFCE7)
-                  : const Color(0xFFF3F4F6);
+              ? const Color(0xFFDCFCE7)
+              : const Color(0xFFF3F4F6);
 
           body = KeyedSubtree(
             key: const ValueKey('patient-home-ready'),
@@ -105,402 +103,435 @@ class _PatientPageState extends State<PatientPage> {
                 ),
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
-                    children: [
-                      // 1. Identity + key clinical metrics (primary)
-                      _buildSectionCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              (profile['name'] ?? 'Guest Patient').toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF2D3748),
-                                letterSpacing: 2.0,
-                              ),
+                  children: [
+                    // 1. Identity + key clinical metrics (primary)
+                    _buildSectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (profile['name'] ??
+                                    AppCopy.text('text.guest_patient_8f1027a'))
+                                .toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2D3748),
+                              letterSpacing: 2.0,
                             ),
-                            PortalLayout.metaSpacer,
-                            if ((profile['opNumber']
-                                    ?.toString()
-                                    .trim()
-                                    .isNotEmpty ??
-                                false))
-                              Container(
-                                margin: const EdgeInsets.only(
-                                  bottom: AppSpacing.xs,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: PortalLayout.itemGap,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEEF2FF),
-                                  borderRadius: BorderRadius.circular(
-                                    PortalLayout.pillRadius,
-                                  ),
-                                  border: Border.all(
-                                      color: const Color(0xFFC7D2FE), width: 1),
-                                ),
-                                child: Text(
-                                  'OP #${profile['opNumber']}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF4338CA),
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                            Text(
-                              '(Age: ${profile['age']}, Gender: ${profile['gender']})',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            PortalLayout.labelSpacer,
+                          ),
+                          PortalLayout.metaSpacer,
+                          if ((profile['opNumber']
+                                  ?.toString()
+                                  .trim()
+                                  .isNotEmpty ??
+                              false))
                             Container(
+                              margin: const EdgeInsets.only(
+                                bottom: AppSpacing.xs,
+                              ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: PortalLayout.itemGap,
-                                vertical: 6,
+                                vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: patientConditionBg,
+                                color: const Color(0xFFEEF2FF),
                                 borderRadius: BorderRadius.circular(
                                   PortalLayout.pillRadius,
                                 ),
+                                border: Border.all(
+                                  color: const Color(0xFFC7D2FE),
+                                  width: 1,
+                                ),
                               ),
                               child: Text(
-                                'Condition: $patientCondition',
-                                style: TextStyle(
+                                AppCopy.text(
+                                  'text.op_value1_38c57f2b',
+                                  arguments: {
+                                    'value1': (profile['opNumber']).toString(),
+                                  },
+                                ),
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: patientConditionColor,
+                                  color: Color(0xFF4338CA),
                                   letterSpacing: 0.2,
                                 ),
                               ),
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                vertical: PortalLayout.itemGap,
-                              ),
-                              child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                            ),
-                            _buildRowItem(
-                              label: 'Target INR',
-                              value: profile['targetINR'] ?? '2.0 - 3.0',
-                              valueStyle: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1A365D),
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                vertical: PortalLayout.itemGap,
-                              ),
-                              child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                            ),
-                            _buildRowItem(
-                              label: 'Next Review Date',
-                              value: profile['nextReviewDate'] ?? 'N/A',
-                              valueStyle: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF2D3748),
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                vertical: PortalLayout.itemGap,
-                              ),
-                              child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                            ),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final isCompact = constraints.maxWidth < 340;
-
-                                return isCompact
-                                    ? Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'LATEST INR',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w900,
-                                              color: Color(0xFF718096),
-                                              letterSpacing: 1.0,
-                                            ),
-                                          ),
-                                          PortalLayout.labelSpacer,
-                                          Text(
-                                            latestINR.toStringAsFixed(1),
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.w900,
-                                              color: Color(0xFF6366F1),
-                                            ),
-                                          ),
-                                          Text(
-                                            latestINRDate,
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text(
-                                            'LATEST INR',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w900,
-                                              color: Color(0xFF718096),
-                                              letterSpacing: 1.0,
-                                            ),
-                                          ),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
-                                            children: [
-                                              Text(
-                                                latestINR.toStringAsFixed(1),
-                                                style: const TextStyle(
-                                                  fontSize: 24,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: Color(0xFF6366F1),
-                                                ),
-                                              ),
-                                              Text(
-                                                latestINRDate,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      );
+                          Text(
+                            AppCopy.text(
+                              'text.age_value1_gender_value2_35f49993',
+                              arguments: {
+                                'value1': (profile['age']).toString(),
+                                'value2': (profile['gender']).toString(),
                               },
                             ),
-                          ],
-                        ),
-                      ),
-                      PortalLayout.sectionSpacer,
-
-                      // 2. Instructions (clinical priority)
-                      if (profile['instructions'] is List &&
-                          (profile['instructions'] as List).isNotEmpty)
-                        ...List.generate(
-                          (profile['instructions'] as List).length,
-                          (index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: PortalLayout.sectionGapTight,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          PortalLayout.labelSpacer,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: PortalLayout.itemGap,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: patientConditionBg,
+                              borderRadius: BorderRadius.circular(
+                                PortalLayout.pillRadius,
                               ),
-                              child: _buildSectionCard(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                            ),
+                            child: Text(
+                              AppCopy.text(
+                                'text.condition_value1_a33e288c',
+                                arguments: {
+                                  'value1': (patientCondition).toString(),
+                                },
+                              ),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: patientConditionColor,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: PortalLayout.itemGap,
+                            ),
+                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          ),
+                          _buildRowItem(
+                            label: AppCopy.text('text.target_inr_625b0bf'),
+                            value: profile['targetINR'] ?? '2.0 - 3.0',
+                            valueStyle: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF1A365D),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: PortalLayout.itemGap,
+                            ),
+                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          ),
+                          _buildRowItem(
+                            label: AppCopy.text(
+                              'text.next_review_date_6e505a90',
+                            ),
+                            value: profile['nextReviewDate'] ?? 'N/A',
+                            valueStyle: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: PortalLayout.itemGap,
+                            ),
+                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          ),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isCompact = constraints.maxWidth < 340;
+
+                              return isCompact
+                                  ? Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          'Instruction',
+                                        Text(
+                                          AppCopy.text(
+                                            'text.latest_inr_f6ce811d',
+                                          ),
                                           style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.grey,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF718096),
+                                            letterSpacing: 1.0,
+                                          ),
+                                        ),
+                                        PortalLayout.labelSpacer,
+                                        Text(
+                                          latestINR.toStringAsFixed(1),
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF6366F1),
                                           ),
                                         ),
                                         Text(
-                                          profile['therapyStartDate'] ?? '',
+                                          latestINRDate,
                                           style: const TextStyle(
-                                              fontSize: 12, color: Colors.grey),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ],
-                                    ),
-                                    PortalLayout.labelSpacer,
-                                    Text(
-                                      profile['instructions'][index]
-                                              ?.toString() ??
-                                          '',
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFF2D3748),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          AppCopy.text(
+                                            'text.latest_inr_f6ce811d',
+                                          ),
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF718096),
+                                            letterSpacing: 1.0,
+                                          ),
+                                        ),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              latestINR.toStringAsFixed(1),
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w900,
+                                                color: Color(0xFF6366F1),
+                                              ),
+                                            ),
+                                            Text(
+                                              latestINRDate,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    PortalLayout.sectionSpacer,
+
+                    // 2. Instructions (clinical priority)
+                    if (profile['instructions'] is List &&
+                        (profile['instructions'] as List).isNotEmpty)
+                      ...List.generate(
+                        (profile['instructions'] as List).length,
+                        (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: PortalLayout.sectionGapTight,
+                            ),
+                            child: _buildSectionCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        AppCopy.text(
+                                          'text.instruction_6effe3ff',
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.grey,
+                                        ),
                                       ),
+                                      Text(
+                                        profile['therapyStartDate'] ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  PortalLayout.labelSpacer,
+                                  Text(
+                                    profile['instructions'][index]
+                                            ?.toString() ??
+                                        '',
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF2D3748),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: PortalLayout.sectionGapTight,
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: PortalLayout.sectionGapTight,
+                        ),
+                        child: _buildSectionCard(
+                          child: Text(
+                            AppCopy.text(
+                              'text.no_special_instructions_recorded_c6379614',
+                            ),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey,
+                            ),
                           ),
-                          child: _buildSectionCard(
-                            child: const Text(
-                              'No special instructions recorded.',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey),
+                        ),
+                      ),
+
+                    // 3. Therapy Details Card
+                    _buildSectionCard(
+                      child: _buildSummaryTable([
+                        {
+                          'label': 'Assigned Doctor',
+                          'value': profile['doctorName'] ?? 'Unassigned',
+                        },
+                        {'label': 'Relief Doctor', 'value': 'N/A'},
+                        {
+                          'label': 'Primary Caregiver',
+                          'value': profile['caregiver'] ?? 'N/A',
+                        },
+                        {
+                          'label': 'Assigned Therapy',
+                          'value': profile['therapyDrug'] ?? 'Heparin',
+                        },
+                      ]),
+                    ),
+                    PortalLayout.sectionSpacer,
+
+                    // 4. Medical History (Dynamic Chart) Card
+                    _buildSectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppCopy.text('text.inr_history_trend_463154f3'),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2D3748),
                             ),
                           ),
-                        ),
-
-                      // 3. Therapy Details Card
-                      _buildSectionCard(
-                        child: _buildSummaryTable([
-                          {
-                            'label': 'Assigned Doctor',
-                            'value': profile['doctorName'] ?? 'Unassigned'
-                          },
-                          {'label': 'Relief Doctor', 'value': 'N/A'},
-                          {
-                            'label': 'Primary Caregiver',
-                            'value': profile['caregiver'] ?? 'N/A'
-                          },
-                          {
-                            'label': 'Assigned Therapy',
-                            'value': profile['therapyDrug'] ?? 'Heparin'
-                          },
-                        ]),
+                          PortalLayout.sectionSpacer,
+                          _buildINRChart(history.cast<Map<String, dynamic>>()),
+                        ],
                       ),
-                      PortalLayout.sectionSpacer,
+                    ),
+                    PortalLayout.sectionSpacer,
 
-                      // 4. Medical History (Dynamic Chart) Card
-                      _buildSectionCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'INR History Trend',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF2D3748),
-                              ),
+                    // 5. Prescription Grid Card
+                    _buildSectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppCopy.text('text.current_prescription_920c9de6'),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2D3748),
                             ),
-                            PortalLayout.sectionSpacer,
-                            _buildINRChart(
-                                history.cast<Map<String, dynamic>>()),
-                          ],
-                        ),
+                          ),
+                          PortalLayout.sectionSpacerTight,
+                          _buildPrescriptionTable(
+                            profile['weeklyDosage'] ?? {},
+                          ),
+                        ],
                       ),
-                      PortalLayout.sectionSpacer,
+                    ),
+                    PortalLayout.sectionSpacerTight,
 
-                      // 5. Prescription Grid Card
-                      _buildSectionCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Current Prescription',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF2D3748),
-                              ),
+                    // 6. Monitoring & Side Effects Card
+                    // Values come from health_logs (mapped in PatientRepository).
+                    _buildSectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppCopy.text('text.monitoring_logs_6584b3a6'),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2D3748),
                             ),
-                            PortalLayout.sectionSpacerTight,
-                            _buildPrescriptionTable(
-                                profile['weeklyDosage'] ?? {}),
-                          ],
-                        ),
+                          ),
+                          PortalLayout.sectionSpacerTight,
+                          _buildHealthNote(
+                            'Side Effects',
+                            _monitoringValue(
+                              profile,
+                              type: 'SIDE_EFFECT',
+                              mappedKey: 'sideEffects',
+                              fallback: 'None Reported',
+                            ),
+                          ),
+                          _buildHealthNote(
+                            'Lifestyle',
+                            _monitoringValue(
+                              profile,
+                              type: 'LIFESTYLE',
+                              mappedKey: 'lifestyleChanges',
+                              fallback: 'Stable',
+                            ),
+                          ),
+                          _buildHealthNote(
+                            'Other Meds',
+                            _monitoringValue(
+                              profile,
+                              type: 'OTHER_MEDS',
+                              mappedKey: 'otherMedication',
+                              fallback: 'None',
+                            ),
+                          ),
+                          _buildHealthNote(
+                            'Illness',
+                            _monitoringValue(
+                              profile,
+                              type: 'ILLNESS',
+                              mappedKey: 'prolongedIllness',
+                              fallback: 'None',
+                            ),
+                          ),
+                        ],
                       ),
-                      PortalLayout.sectionSpacerTight,
+                    ),
+                    PortalLayout.sectionSpacerTight,
 
-                      // 6. Monitoring & Side Effects Card
-                      // Values come from health_logs (mapped in PatientRepository).
-                      _buildSectionCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Monitoring Logs',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF2D3748),
-                              ),
-                            ),
-                            PortalLayout.sectionSpacerTight,
-                            _buildHealthNote(
-                              'Side Effects',
-                              _monitoringValue(
-                                profile,
-                                type: 'SIDE_EFFECT',
-                                mappedKey: 'sideEffects',
-                                fallback: 'None Reported',
-                              ),
-                            ),
-                            _buildHealthNote(
-                              'Lifestyle',
-                              _monitoringValue(
-                                profile,
-                                type: 'LIFESTYLE',
-                                mappedKey: 'lifestyleChanges',
-                                fallback: 'Stable',
-                              ),
-                            ),
-                            _buildHealthNote(
-                              'Other Meds',
-                              _monitoringValue(
-                                profile,
-                                type: 'OTHER_MEDS',
-                                mappedKey: 'otherMedication',
-                                fallback: 'None',
-                              ),
-                            ),
-                            _buildHealthNote(
-                              'Illness',
-                              _monitoringValue(
-                                profile,
-                                type: 'ILLNESS',
-                                mappedKey: 'prolongedIllness',
-                                fallback: 'None',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      PortalLayout.sectionSpacerTight,
-
-                      // 7. Emergency Contact Card
-                      _buildSectionCard(
-                        child: _buildSummaryTable([
-                          {
-                            'label': 'Patient Phone',
-                            'value': profile['phone'] ?? 'N/A'
-                          },
-                          {
-                            'label': 'Emergency Kin',
-                            'value': profile['kinName'] ?? 'N/A'
-                          },
-                          {
-                            'label': 'Kin Contact',
-                            'value': profile['kinPhone'] ?? 'N/A'
-                          },
-                        ]),
-                      ),
-                    ],
+                    // 7. Emergency Contact Card
+                    _buildSectionCard(
+                      child: _buildSummaryTable([
+                        {
+                          'label': 'Patient Phone',
+                          'value': profile['phone'] ?? 'N/A',
+                        },
+                        {
+                          'label': 'Emergency Kin',
+                          'value': profile['kinName'] ?? 'N/A',
+                        },
+                        {
+                          'label': 'Kin Contact',
+                          'value': profile['kinPhone'] ?? 'N/A',
+                        },
+                      ]),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -530,7 +561,7 @@ class _PatientPageState extends State<PatientPage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'Dashboard',
+      pageTitle: AppCopy.text('text.dashboard_11f6d87b'),
       currentNavIndex: _currentNavIndex,
       onNavChanged: _handleNav,
       bodyDecoration: bodyDecoration,
@@ -562,8 +593,10 @@ class _PatientPageState extends State<PatientPage> {
       return Container(
         height: 160,
         alignment: Alignment.center,
-        child: const Text('Historical data pending...',
-            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+        child: Text(
+          AppCopy.text('text.historical_data_pending_6d3b96c6'),
+          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+        ),
       );
     }
 
@@ -595,9 +628,10 @@ class _PatientPageState extends State<PatientPage> {
                       child: Text(
                         date.split('-')[0],
                         style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF718096),
-                            fontWeight: FontWeight.w900),
+                          fontSize: 11,
+                          color: Color(0xFF718096),
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     );
                   }
@@ -612,16 +646,19 @@ class _PatientPageState extends State<PatientPage> {
                 getTitlesWidget: (val, meta) => Text(
                   val.toStringAsFixed(1),
                   style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF718096),
-                      fontWeight: FontWeight.w900),
+                    fontSize: 11,
+                    color: Color(0xFF718096),
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
-            topTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
           ),
           borderData: FlBorderData(show: false),
           lineBarsData: [
@@ -634,18 +671,18 @@ class _PatientPageState extends State<PatientPage> {
                 show: true,
                 getDotPainter: (spot, percent, barData, index) =>
                     FlDotCirclePainter(
-                  radius: 6,
-                  color: Colors.white,
-                  strokeWidth: 4,
-                  strokeColor: const Color(0xFF6366F1),
-                ),
+                      radius: 6,
+                      color: Colors.white,
+                      strokeWidth: 4,
+                      strokeColor: const Color(0xFF6366F1),
+                    ),
               ),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
                   colors: [
                     const Color(0xFF6366F1).withValues(alpha: 0.3),
-                    const Color(0xFF6366F1).withValues(alpha: 0.0)
+                    const Color(0xFF6366F1).withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -658,8 +695,11 @@ class _PatientPageState extends State<PatientPage> {
     );
   }
 
-  Widget _buildRowItem(
-      {required String label, required String value, TextStyle? valueStyle}) {
+  Widget _buildRowItem({
+    required String label,
+    required String value,
+    TextStyle? valueStyle,
+  }) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 340;
@@ -680,7 +720,8 @@ class _PatientPageState extends State<PatientPage> {
                   const SizedBox(height: 6),
                   Text(
                     value,
-                    style: valueStyle ??
+                    style:
+                        valueStyle ??
                         const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
@@ -705,7 +746,8 @@ class _PatientPageState extends State<PatientPage> {
                     child: Text(
                       value,
                       textAlign: TextAlign.right,
-                      style: valueStyle ??
+                      style:
+                          valueStyle ??
                           const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
@@ -732,9 +774,10 @@ class _PatientPageState extends State<PatientPage> {
           return Container(
             decoration: BoxDecoration(
               border: Border(
-                  bottom: isLast
-                      ? BorderSide.none
-                      : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+                bottom: isLast
+                    ? BorderSide.none
+                    : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+              ),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -747,7 +790,9 @@ class _PatientPageState extends State<PatientPage> {
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
                             decoration: const BoxDecoration(
                               color: Color(0xFFF8FAFC),
                               border: Border(
@@ -770,7 +815,9 @@ class _PatientPageState extends State<PatientPage> {
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
+                              vertical: 16,
+                              horizontal: 16,
+                            ),
                             child: Text(
                               item['value']!,
                               style: const TextStyle(
@@ -788,7 +835,9 @@ class _PatientPageState extends State<PatientPage> {
                             flex: 4,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 16, horizontal: 16),
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                               decoration: const BoxDecoration(
                                 color: Color(0xFFF8FAFC),
                                 border: Border(
@@ -813,7 +862,9 @@ class _PatientPageState extends State<PatientPage> {
                             flex: 6,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 16, horizontal: 16),
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 item['value']!,
                                 style: const TextStyle(
@@ -843,7 +894,7 @@ class _PatientPageState extends State<PatientPage> {
       'thursday',
       'friday',
       'saturday',
-      'sunday'
+      'sunday',
     ];
     return Container(
       decoration: BoxDecoration(
@@ -857,7 +908,8 @@ class _PatientPageState extends State<PatientPage> {
             decoration: const BoxDecoration(
               color: Color(0xFFF1F5F9),
               border: Border(
-                  bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.5)),
+                bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+              ),
             ),
             child: Row(
               children: [
@@ -866,25 +918,32 @@ class _PatientPageState extends State<PatientPage> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                        border: Border(
-                            right: BorderSide(
-                                color: Color(0xFFE2E8F0), width: 1.5))),
-                    child: const Text('DAY',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                            color: Color(0xFF475569))),
+                      border: Border(
+                        right: BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                      ),
+                    ),
+                    child: Text(
+                      AppCopy.text('text.day_2905d15d'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
                   ),
                 ),
                 Expanded(
                   flex: 6,
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    child: const Text('DOSE (MG)',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                            color: Color(0xFF475569))),
+                    child: Text(
+                      AppCopy.text('text.dose_mg_d8858ca3'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -901,10 +960,10 @@ class _PatientPageState extends State<PatientPage> {
             return Container(
               decoration: BoxDecoration(
                 border: Border(
-                    bottom: isLast
-                        ? BorderSide.none
-                        : const BorderSide(
-                            color: Color(0xFFE2E8F0), width: 1.5)),
+                  bottom: isLast
+                      ? BorderSide.none
+                      : const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                ),
               ),
               child: Row(
                 children: [
@@ -913,25 +972,35 @@ class _PatientPageState extends State<PatientPage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: const BoxDecoration(
-                          border: Border(
-                              right: BorderSide(
-                                  color: Color(0xFFE2E8F0), width: 1.5))),
-                      child: Text(day,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              color: Color(0xFF1E293B))),
+                        border: Border(
+                          right: BorderSide(
+                            color: Color(0xFFE2E8F0),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        day,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
                     ),
                   ),
                   Expanded(
                     flex: 6,
                     child: Container(
                       padding: const EdgeInsets.all(16),
-                      child: Text(dose.toString(),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                              color: Color(0xFF4F46E5))),
+                      child: Text(
+                        dose.toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          color: Color(0xFF4F46E5),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1044,8 +1113,9 @@ class _PatientPageState extends State<PatientPage> {
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage);
         break;
       case 3:
-        Navigator.of(context)
-            .pushReplacementNamed(AppRoutes.patientHealthReports);
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(AppRoutes.patientHealthReports);
         break;
       case 4:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile);

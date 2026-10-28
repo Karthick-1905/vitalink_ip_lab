@@ -97,3 +97,23 @@ The standalone backend Compose path is source configuration. After the initial c
 ## Backend CI audit follow-up, 2026-10-11
 
 The development-only `braces` stack-exhaustion advisory has no upstream fix at this review. Recheck upstream and remove the exact-path exception before its 2026-11-10 00:00 UTC expiry; do not treat the exception as a patched dependency. Local production audit success does not prove the absence of undisclosed vulnerabilities. Docker daemon access is still denied, so the database-backed tests and runtime image compatibility for the refreshed lockfile remain unverified locally. A successful hosted Backend CI rerun must also be established separately from the local audit/build/unit checks. The unrelated APK job's missing `GOOGLE_SERVICES_JSON` secret remains outside this fix.
+
+## Administrator password control rollout, 2026-10-21
+
+The Personal Security password entry is implemented locally. A live browser check and deployment of this frontend change remain unverified. ADM01 has not been changed or checked against a shared database; the account owner will submit the current and new passwords through the UI after rollout.
+
+## Administrator security sidebar follow-up, 2026-10-21
+
+Zen reproduced that Personal Security was absent from the deployed dashboard sidebar. The sidebar destination is now registered locally for all administrator roles; role-by-role navigation tests pass. Hosted verification of this follow-up remains pending. The account owner must enter and submit passwords personally.
+
+## Doctor attention workflow, 2026-10-25
+
+The source implements an explainable review queue and monthly recording calendar. Live deployment and hospital acceptance are not established. Historical report review cannot be inferred from notes; older entries remain unknown. Historical weekly prescription versions are absent, so old schedule gaps are estimates under the current plan. Reminder jobs retain their existing delivery eligibility and may differ from the overview for profiles missing therapy start. Global INR threshold configuration and the legacy/manual critical update field remain for compatibility; new upload classification and doctor overview do not use them. No historical critical-flag migration was run. The existing roster API is unpaginated; production-scale performance and queue acceptance need separate verification. Structured health-report review and symptom severity are outside this change.
+
+## Runtime presentation properties, 2026-10-27
+
+Production deployment, real-device offline/resume behavior and external image hosting remain unverified. Configuration is currently global; hospital-specific overrides and pre-login hospital selection are future work. Native launcher/splash/store metadata and provider-managed SMS/authenticator issuer settings remain outside runtime properties. Uploaded brand images are intentionally public and retained; automatic unreferenced-image cleanup is not implemented. Local validation evidence is recorded in the validation report.
+
+## Client branding acceptance, 2026-10-28
+
+The inspected source already provides public branding snapshots, protected draft/publication controls and logo uploads. This follow-up connects the administrator navigation logo and corrects the draft preview. A deployed administrator upload/save/publish/restore flow, installed-device refresh and offline behavior, and each client's image layout and color contrast still need acceptance in the intended environment. No client artwork or production configuration was supplied or published in this task. Hospital-specific branding within a shared backend remains unimplemented; the supported scope is one brand per backend deployment. Native icons, splash screens and store metadata still require a platform release.

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 
 /// Keeps a mutation dialog in place while its request is running.
@@ -49,8 +50,10 @@ Future<void> showAdminCredentialResult(
                     value: acknowledged,
                     onChanged: (value) =>
                         setState(() => acknowledged = value ?? false),
-                    title: const Text(
-                      'I have recorded this password for secure delivery.',
+                    title: Text(
+                      AppCopy.text(
+                        'text.i_have_recorded_this_password_for_secure_deliver_5b55e077',
+                      ),
                     ),
                   ),
                 ],
@@ -62,7 +65,7 @@ Future<void> showAdminCredentialResult(
               onPressed: hasSecret && !acknowledged
                   ? null
                   : () => Navigator.pop(dialogContext),
-              child: const Text('Done'),
+              child: Text(AppCopy.text('text.done_8dd31791')),
             ),
           ],
         ),

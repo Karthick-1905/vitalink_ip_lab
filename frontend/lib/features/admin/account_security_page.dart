@@ -1,5 +1,7 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/app/routers.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/auth/session_expiry_handler.dart';
 import 'package:frontend/core/network/api_client.dart';
@@ -58,21 +60,29 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
-          current ? 'Sign out this session?' : 'Revoke this session?',
+          current
+              ? AppCopy.text('text.sign_out_this_session_97be87b5')
+              : AppCopy.text('text.revoke_this_session_234d3a2a'),
         ),
         content: Text(
           current
-              ? 'You will need to sign in again.'
-              : 'That device will need to sign in again.',
+              ? AppCopy.text('text.you_will_need_to_sign_in_again_d9db32bd')
+              : AppCopy.text(
+                  'text.that_device_will_need_to_sign_in_again_bd5fb877',
+                ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(current ? 'Sign out' : 'Revoke'),
+            child: Text(
+              current
+                  ? AppCopy.text('text.sign_out_8b4f3c70')
+                  : AppCopy.text('text.revoke_2219c453'),
+            ),
           ),
         ],
       ),
@@ -171,7 +181,11 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
         );
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authenticator MFA enabled.')),
+        SnackBar(
+          content: Text(
+            AppCopy.text('text.authenticator_mfa_enabled_483971bb'),
+          ),
+        ),
       );
     } catch (error) {
       if (mounted) _showError(error, 'Could not activate authenticator MFA.');
@@ -184,9 +198,16 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
     if (value.trim().isEmpty) return;
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label copied.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppCopy.text(
+            'text.value1_copied_426c875f',
+            arguments: {'value1': (label).toString()},
+          ),
+        ),
+      ),
+    );
   }
 
   void _showError(Object error, String fallback) {
@@ -198,6 +219,7 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       builder: (context) {
         if (!_hasAttemptedLoad && !_isLoading) {
@@ -208,18 +230,50 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
           padding: const EdgeInsets.all(16),
           children: [
             AdminPageHeader(
-              title: 'Personal Security',
-              subtitle:
-                  'This authenticator belongs to your own administrator account. It is separate from platform configuration and health access.',
+              title: AppCopy.text('text.personal_security_f7c6e401'),
+              subtitle: AppCopy.text(
+                'text.manage_your_password_authenticator_and_signed_in_8647c941',
+              ),
               actions: [
                 IconButton(
                   onPressed: _isLoading ? null : _loadStatus,
-                  tooltip: 'Refresh MFA status',
+                  tooltip: AppCopy.text('text.refresh_mfa_status_293165b0'),
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
             ),
             const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppCopy.text('text.password_2cc30838'),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppCopy.text(
+                        'text.use_your_current_password_to_choose_a_new_one_af_96c66049',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.changePassword),
+                      icon: const Icon(Icons.lock_outline_rounded),
+                      label: Text(
+                        AppCopy.text('text.change_password_87f6bf6e'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             if (_isLoading && !_hasLoaded)
               const Center(child: CircularProgressIndicator())
             else if (_loadError != null && !_hasLoaded)
@@ -263,30 +317,42 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Active sessions',
+                            AppCopy.text('text.active_sessions_3298f0f4'),
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ),
                         IconButton(
                           onPressed: _sessionsLoading ? null : _loadSessions,
-                          tooltip: 'Refresh sessions',
+                          tooltip: AppCopy.text(
+                            'text.refresh_sessions_98aaf5b1',
+                          ),
                           icon: const Icon(Icons.refresh_rounded),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Review devices signed in to your account. Revoke any session you do not recognize.',
+                    Text(
+                      AppCopy.text(
+                        'text.review_devices_signed_in_to_your_account_revoke__d45aba29',
+                      ),
                     ),
                     if (_sessionsLoading) const LinearProgressIndicator(),
                     if (_sessionsError != null)
-                      Text('Could not load sessions. Try refreshing.'),
+                      Text(
+                        AppCopy.text(
+                          'text.could_not_load_sessions_try_refreshing_49359cd0',
+                        ),
+                      ),
                     if (!_sessionsLoading &&
                         _sessionsError == null &&
                         _sessions.isEmpty)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 16),
-                        child: Text('No active sessions found.'),
+                        child: Text(
+                          AppCopy.text(
+                            'text.no_active_sessions_found_f1a2cdcd',
+                          ),
+                        ),
                       ),
                     for (final session in _sessions)
                       ListTile(
@@ -294,18 +360,30 @@ class _AccountSecurityPageState extends State<AccountSecurityPage> {
                         leading: const Icon(Icons.devices_outlined),
                         title: Text(
                           session['current'] == true
-                              ? 'This session'
+                              ? AppCopy.text('text.this_session_9a3715bd')
                               : (session['user_agent'] as String? ??
-                                    'Unknown device'),
+                                    AppCopy.text(
+                                      'text.unknown_device_14515e31',
+                                    )),
                         ),
                         subtitle: Text(
-                          'Last used: ${session['last_used_at'] ?? 'Unknown'}\nIP: ${session['ip_address'] ?? 'Unknown'}',
+                          AppCopy.text(
+                            'text.last_used_value1_ip_value2_a52c3e62',
+                            arguments: {
+                              'value1': (session['last_used_at'] ?? 'Unknown')
+                                  .toString(),
+                              'value2': (session['ip_address'] ?? 'Unknown')
+                                  .toString(),
+                            },
+                          ),
                         ),
                         isThreeLine: true,
                         trailing: TextButton(
                           onPressed: () => _revokeSession(session),
                           child: Text(
-                            session['current'] == true ? 'Sign out' : 'Revoke',
+                            session['current'] == true
+                                ? AppCopy.text('text.sign_out_8b4f3c70')
+                                : AppCopy.text('text.revoke_2219c453'),
                           ),
                         ),
                       ),
@@ -329,6 +407,7 @@ class _MfaStatusLoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final message = error is ApiException
         ? (error as ApiException).message
         : 'Could not load your MFA status.';
@@ -343,7 +422,7 @@ class _MfaStatusLoadError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(AppCopy.text('text.try_again_213e90fa')),
             ),
           ],
         ),
@@ -365,6 +444,7 @@ class _MfaStatusStaleBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final timestamp = loadedAt == null
         ? 'Previously loaded MFA status is shown.'
         : 'Showing MFA status loaded ${MaterialLocalizations.of(context).formatFullDate(loadedAt!.toLocal())} at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(loadedAt!.toLocal()))}.';
@@ -378,7 +458,10 @@ class _MfaStatusStaleBanner extends StatelessWidget {
         child: Row(
           children: [
             Expanded(child: Text('$timestamp $message')),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(AppCopy.text('text.retry_8036af59')),
+            ),
           ],
         ),
       ),
@@ -414,6 +497,7 @@ class AccountSecurityMfaSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final currentEnrollment = enrollment;
     final hasPendingSetup = currentEnrollment != null;
@@ -446,7 +530,7 @@ class AccountSecurityMfaSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Admin Authenticator MFA',
+                      AppCopy.text('text.admin_authenticator_mfa_ae8fc61d'),
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
@@ -458,7 +542,9 @@ class AccountSecurityMfaSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Use an authenticator app for admin login challenges.',
+                AppCopy.text(
+                  'text.use_an_authenticator_app_for_admin_login_challen_65f81426',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -468,7 +554,9 @@ class AccountSecurityMfaSection extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: null,
                   icon: const Icon(Icons.verified_user_rounded),
-                  label: const Text('Authenticator MFA is enabled'),
+                  label: Text(
+                    AppCopy.text('text.authenticator_mfa_is_enabled_464a2ec7'),
+                  ),
                 )
               else if (!hasPendingSetup)
                 FilledButton.icon(
@@ -483,12 +571,16 @@ class AccountSecurityMfaSection extends StatelessWidget {
                           ),
                         )
                       : const Icon(Icons.qr_code_2_rounded),
-                  label: const Text('Start authenticator setup'),
+                  label: Text(
+                    AppCopy.text('text.start_authenticator_setup_caa8bcdd'),
+                  ),
                 ),
               if (hasPendingSetup) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Scan this QR code with your authenticator app.',
+                  AppCopy.text(
+                    'text.scan_this_qr_code_with_your_authenticator_app_4610ef37',
+                  ),
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 12),
@@ -521,21 +613,23 @@ class AccountSecurityMfaSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'If your app cannot scan a code, use the setup key below instead.',
+                  AppCopy.text(
+                    'text.if_your_app_cannot_scan_a_code_use_the_setup_key_f5b0dd5f',
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
                 _SetupValueTile(
-                  label: 'Setup key',
+                  label: AppCopy.text('text.setup_key_2c18229'),
                   value: currentEnrollment.secret,
                   onCopy: () =>
                       onCopySetupValue('Setup key', currentEnrollment.secret),
                 ),
                 const SizedBox(height: 10),
                 _SetupValueTile(
-                  label: 'otpauth URL',
+                  label: AppCopy.text('text.otpauth_url_dccc8a71'),
                   value: currentEnrollment.otpauthUrl,
                   onCopy: () => onCopySetupValue(
                     'otpauth URL',
@@ -545,8 +639,8 @@ class AccountSecurityMfaSection extends StatelessWidget {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: codeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Authenticator code',
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.authenticator_code_fcb600fd'),
                     prefixIcon: Icon(Icons.pin_outlined),
                   ),
                   keyboardType: TextInputType.number,
@@ -556,8 +650,12 @@ class AccountSecurityMfaSection extends StatelessWidget {
                   ],
                   validator: (value) {
                     final code = value?.trim() ?? '';
-                    if (code.isEmpty) return 'Code is required';
-                    if (code.length != 6) return 'Enter 6 digits';
+                    if (code.isEmpty) {
+                      return AppCopy.text('text.code_is_required_5f53b95');
+                    }
+                    if (code.length != 6) {
+                      return AppCopy.text('text.enter_6_digits_d86bb3ab');
+                    }
                     return null;
                   },
                 ),
@@ -577,7 +675,7 @@ class AccountSecurityMfaSection extends StatelessWidget {
                                 ),
                               )
                             : const Icon(Icons.verified_user_rounded),
-                        label: const Text('Activate'),
+                        label: Text(AppCopy.text('text.activate_3b8f0190')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -585,7 +683,7 @@ class AccountSecurityMfaSection extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: isActivatingTotp ? null : onCancelSetup,
                         icon: const Icon(Icons.close_rounded),
-                        label: const Text('Cancel'),
+                        label: Text(AppCopy.text('text.cancel_35afca3b')),
                       ),
                     ),
                   ],
@@ -612,6 +710,7 @@ class _SetupValueTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
@@ -647,7 +746,7 @@ class _SetupValueTile extends StatelessWidget {
           IconButton(
             onPressed: onCopy,
             icon: const Icon(Icons.copy_rounded),
-            tooltip: 'Copy',
+            tooltip: AppCopy.text('text.copy_658f3664'),
           ),
         ],
       ),

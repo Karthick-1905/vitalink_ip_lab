@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/network/api_client.dart';
@@ -19,7 +20,9 @@ final RegExp _strongPasswordRegex = RegExp(
 String? _validateStrongPassword(String? value) {
   if (value == null || value.isEmpty) return 'Required';
   if (!_strongPasswordRegex.hasMatch(value)) {
-    return 'Use 8+ chars with upper/lower/number/special';
+    return AppCopy.text(
+      'text.use_8_chars_with_upper_lower_number_special_66398b1a',
+    );
   }
   return null;
 }
@@ -124,7 +127,7 @@ Future<bool> showAddDoctorDialog(
         return AdminMutationDialog(
           busy: loading,
           child: AlertDialog(
-            title: const Text('Register New Doctor'),
+            title: Text(AppCopy.text('text.register_new_doctor_a2302a2d')),
             content: SingleChildScrollView(
               child: Form(
                 key: formKey,
@@ -134,8 +137,8 @@ Future<bool> showAddDoctorDialog(
                   children: [
                     TextFormField(
                       controller: loginId,
-                      decoration: const InputDecoration(
-                        labelText: 'Login ID',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.login_id_319267cb'),
                         prefixIcon: Icon(Icons.person_outline_rounded),
                       ),
                       enabled: !loading,
@@ -145,8 +148,8 @@ Future<bool> showAddDoctorDialog(
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: name,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.full_name_fe2b40f'),
                         prefixIcon: Icon(Icons.badge_rounded),
                       ),
                       enabled: !loading,
@@ -156,9 +159,9 @@ Future<bool> showAddDoctorDialog(
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: department,
-                      decoration: const InputDecoration(
-                        labelText: 'Department',
-                        hintText: 'e.g., Cardiology',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.department_90770c67'),
+                        hintText: AppCopy.text('text.e_g_cardiology_a1df07c0'),
                         prefixIcon: Icon(Icons.local_hospital_rounded),
                       ),
                       enabled: !loading,
@@ -166,38 +169,45 @@ Future<bool> showAddDoctorDialog(
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: contact,
-                      decoration: const InputDecoration(
-                        labelText: 'Contact Number',
-                        hintText: '10-digit Indian number',
-                        helperText: '+91 is added automatically',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.contact_number_b7360224'),
+                        hintText: AppCopy.text(
+                          'text.10_digit_indian_number_e2356744',
+                        ),
+                        helperText: AppCopy.text(
+                          'text.91_is_added_automatically_10a7eeeb',
+                        ),
                         prefixIcon: Icon(Icons.phone_rounded),
                       ),
                       keyboardType: TextInputType.phone,
                       enabled: !loading,
                       validator: (v) => PhoneUtils.validate(
                         v,
-                        label: 'Contact',
+                        label: AppCopy.text('text.contact_73ac94c3'),
                         required: true,
                       ),
                     ),
                     const SizedBox(height: 12),
                     if (binding.isTenant)
                       InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Hospital',
+                        decoration: InputDecoration(
+                          labelText: AppCopy.text('text.hospital_30217ad3'),
                           prefixIcon: Icon(Icons.local_hospital_outlined),
-                          helperText:
-                              'Doctors are registered under your assigned hospital.',
+                          helperText: AppCopy.text(
+                            'text.doctors_are_registered_under_your_assigned_hospi_2d6a537c',
+                          ),
                         ),
                         child: Text(binding.hospitalLabel),
                       )
                     else
                       DropdownButtonFormField<String?>(
                         initialValue: selectedHospitalId,
-                        decoration: const InputDecoration(
-                          labelText: 'Hospital',
+                        decoration: InputDecoration(
+                          labelText: AppCopy.text('text.hospital_30217ad3'),
                           prefixIcon: Icon(Icons.local_hospital_outlined),
-                          hintText: 'Select hospital',
+                          hintText: AppCopy.text(
+                            'text.select_hospital_3804d8c5',
+                          ),
                         ),
                         isExpanded: true,
                         items: [
@@ -224,8 +234,12 @@ Future<bool> showAddDoctorDialog(
                             ? 'Hospital is required'
                             : null,
                         hint: hospitalsLoading
-                            ? const Text('Loading hospitals...')
-                            : const Text('Select hospital'),
+                            ? Text(
+                                AppCopy.text('text.loading_hospitals_efa19956'),
+                              )
+                            : Text(
+                                AppCopy.text('text.select_hospital_3804d8c5'),
+                              ),
                       ),
                     if (hospitalsError != null)
                       Padding(
@@ -240,7 +254,9 @@ Future<bool> showAddDoctorDialog(
                       ),
                     const SizedBox(height: 8),
                     Text(
-                      'A temporary password is generated after registration. The doctor must change it on first login.',
+                      AppCopy.text(
+                        'text.a_temporary_password_is_generated_after_registra_e9ee3f90',
+                      ),
                       style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                         color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
@@ -263,7 +279,7 @@ Future<bool> showAddDoctorDialog(
             actions: [
               TextButton(
                 onPressed: loading ? null : () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+                child: Text(AppCopy.text('text.cancel_35afca3b')),
               ),
               FilledButton(
                 onPressed: loading
@@ -331,7 +347,7 @@ Future<bool> showAddDoctorDialog(
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Register'),
+                    : Text(AppCopy.text('text.register_2739c9e0')),
               ),
             ],
           ),
@@ -346,10 +362,12 @@ Future<bool> showAddDoctorDialog(
     final tempPassword = result['temporary_password']?.toString();
     await showAdminCredentialResult(
       context,
-      title: 'Doctor registered',
+      title: AppCopy.text('text.doctor_registered_6c7554de'),
       successMessage: tempPassword != null && tempPassword.isNotEmpty
-          ? 'Doctor registered. Share this one-time password securely. It will not be shown again.'
-          : 'Doctor registered successfully.',
+          ? AppCopy.text(
+              'text.doctor_registered_share_this_one_time_password_s_5215bec6',
+            )
+          : AppCopy.text('text.doctor_registered_successfully_9e830feb'),
       temporaryPassword: tempPassword,
     );
     onSuccess?.call();
@@ -413,7 +431,7 @@ Future<bool> showEditDoctorDialog(
         }
 
         return AlertDialog(
-          title: const Text('Edit Doctor'),
+          title: Text(AppCopy.text('text.edit_doctor_31103520')),
           content: SingleChildScrollView(
             child: Form(
               key: formKey,
@@ -423,7 +441,9 @@ Future<bool> showEditDoctorDialog(
                 children: [
                   TextFormField(
                     controller: name,
-                    decoration: const InputDecoration(labelText: 'Full Name'),
+                    decoration: InputDecoration(
+                      labelText: AppCopy.text('text.full_name_fe2b40f'),
+                    ),
                     enabled: !loading,
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -431,39 +451,49 @@ Future<bool> showEditDoctorDialog(
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: department,
-                    decoration: const InputDecoration(labelText: 'Department'),
+                    decoration: InputDecoration(
+                      labelText: AppCopy.text('text.department_90770c67'),
+                    ),
                     enabled: !loading,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: contact,
-                    decoration: const InputDecoration(
-                      labelText: 'Contact Number',
-                      hintText: '10-digit Indian number',
-                      helperText: '+91 is added automatically',
+                    decoration: InputDecoration(
+                      labelText: AppCopy.text('text.contact_number_b7360224'),
+                      hintText: AppCopy.text(
+                        'text.10_digit_indian_number_e2356744',
+                      ),
+                      helperText: AppCopy.text(
+                        'text.91_is_added_automatically_10a7eeeb',
+                      ),
                     ),
                     keyboardType: TextInputType.phone,
                     enabled: !loading,
-                    validator: (v) => PhoneUtils.validate(v, label: 'Contact'),
+                    validator: (v) => PhoneUtils.validate(
+                      v,
+                      label: AppCopy.text('text.contact_73ac94c3'),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   if (binding.isTenant)
                     InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Hospital',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.hospital_30217ad3'),
                         prefixIcon: Icon(Icons.local_hospital_outlined),
-                        helperText:
-                            'Hospital assignment is fixed for your tenant.',
+                        helperText: AppCopy.text(
+                          'text.hospital_assignment_is_fixed_for_your_tenant_b5255042',
+                        ),
                       ),
                       child: Text(binding.hospitalLabel),
                     )
                   else
                     DropdownButtonFormField<String?>(
                       initialValue: selectedHospitalId,
-                      decoration: const InputDecoration(
-                        labelText: 'Hospital',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.hospital_30217ad3'),
                         prefixIcon: Icon(Icons.local_hospital_outlined),
-                        hintText: 'Select hospital',
+                        hintText: AppCopy.text('text.select_hospital_3804d8c5'),
                       ),
                       isExpanded: true,
                       items: [
@@ -486,8 +516,10 @@ Future<bool> showEditDoctorDialog(
                           : (value) =>
                                 setState(() => selectedHospitalId = value),
                       hint: hospitalsLoading
-                          ? const Text('Loading hospitals...')
-                          : const Text('Select hospital'),
+                          ? Text(
+                              AppCopy.text('text.loading_hospitals_efa19956'),
+                            )
+                          : Text(AppCopy.text('text.select_hospital_3804d8c5')),
                     ),
                   if (hospitalsError != null)
                     Padding(
@@ -507,7 +539,7 @@ Future<bool> showEditDoctorDialog(
           actions: [
             TextButton(
               onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             FilledButton(
               onPressed: loading
@@ -549,7 +581,7 @@ Future<bool> showEditDoctorDialog(
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Update'),
+                  : Text(AppCopy.text('text.update_6e230e94')),
             ),
           ],
         );
@@ -561,8 +593,10 @@ Future<bool> showEditDoctorDialog(
 
   if (result == true && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Doctor updated successfully'),
+      SnackBar(
+        content: Text(
+          AppCopy.text('text.doctor_updated_successfully_b3a03bea'),
+        ),
         backgroundColor: Colors.green,
       ),
     );
@@ -650,7 +684,7 @@ Future<bool> showAddPatientDialog(
         return AdminMutationDialog(
           busy: loading,
           child: AlertDialog(
-            title: const Text('Onboard New Patient'),
+            title: Text(AppCopy.text('text.onboard_new_patient_578f2f53')),
             content: SingleChildScrollView(
               child: Form(
                 key: formKey,
@@ -659,8 +693,8 @@ Future<bool> showAddPatientDialog(
                   children: [
                     TextFormField(
                       controller: loginId,
-                      decoration: const InputDecoration(
-                        labelText: 'Login ID',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.login_id_319267cb'),
                         prefixIcon: Icon(Icons.person_outline_rounded),
                       ),
                       enabled: !loading,
@@ -670,8 +704,8 @@ Future<bool> showAddPatientDialog(
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: name,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.full_name_fe2b40f'),
                         prefixIcon: Icon(Icons.badge_rounded),
                       ),
                       enabled: !loading,
@@ -680,7 +714,7 @@ Future<bool> showAddPatientDialog(
                     ),
                     const SizedBox(height: 12),
                     if (doctorsLoading)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
                         child: Row(
                           children: [
@@ -690,7 +724,7 @@ Future<bool> showAddPatientDialog(
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                             SizedBox(width: 12),
-                            Text('Loading doctors...'),
+                            Text(AppCopy.text('text.loading_doctors_ca2e80f')),
                           ],
                         ),
                       )
@@ -709,7 +743,9 @@ Future<bool> showAddPatientDialog(
                       TextField(
                         controller: doctorSearch,
                         decoration: InputDecoration(
-                          labelText: 'Search doctors',
+                          labelText: AppCopy.text(
+                            'text.search_doctors_992bbfa1',
+                          ),
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: doctorSearch.text.isEmpty
                               ? null
@@ -726,8 +762,10 @@ Future<bool> showAddPatientDialog(
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Assigned Doctor',
+                        decoration: InputDecoration(
+                          labelText: AppCopy.text(
+                            'text.assigned_doctor_2c77d0e4',
+                          ),
                           prefixIcon: Icon(Icons.medical_services_rounded),
                         ),
                         items: doctorList.map((d) {
@@ -749,7 +787,9 @@ Future<bool> showAddPatientDialog(
                               ? null
                               : () => loadDoctors(setState, ctx),
                           icon: const Icon(Icons.expand_more),
-                          label: const Text('Load more doctors'),
+                          label: Text(
+                            AppCopy.text('text.load_more_doctors_13d0685a'),
+                          ),
                         ),
                     ],
                     const SizedBox(height: 12),
@@ -758,28 +798,34 @@ Future<bool> showAddPatientDialog(
                         Expanded(
                           child: TextFormField(
                             controller: age,
-                            decoration: const InputDecoration(labelText: 'Age'),
+                            decoration: InputDecoration(
+                              labelText: AppCopy.text('text.age_8ecbe13c'),
+                            ),
                             keyboardType: TextInputType.number,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Gender',
+                            decoration: InputDecoration(
+                              labelText: AppCopy.text('text.gender_a72c0ba0'),
                             ),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 'Male',
-                                child: Text('Male'),
+                                child: Text(AppCopy.text('text.male_487d36f0')),
                               ),
                               DropdownMenuItem(
                                 value: 'Female',
-                                child: Text('Female'),
+                                child: Text(
+                                  AppCopy.text('text.female_d8a26cb9'),
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 'Other',
-                                child: Text('Other'),
+                                child: Text(
+                                  AppCopy.text('text.other_6e38ff95'),
+                                ),
                               ),
                             ],
                             onChanged: (v) =>
@@ -791,23 +837,29 @@ Future<bool> showAddPatientDialog(
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: phone,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        hintText: '10-digit Indian number',
-                        helperText: '+91 is added automatically',
+                      decoration: InputDecoration(
+                        labelText: AppCopy.text('text.phone_number_f25088d8'),
+                        hintText: AppCopy.text(
+                          'text.10_digit_indian_number_e2356744',
+                        ),
+                        helperText: AppCopy.text(
+                          'text.91_is_added_automatically_10a7eeeb',
+                        ),
                         prefixIcon: Icon(Icons.phone_rounded),
                       ),
                       keyboardType: TextInputType.phone,
                       enabled: !loading,
                       validator: (v) => PhoneUtils.validate(
                         v,
-                        label: 'Phone',
+                        label: AppCopy.text('text.phone_4930944f'),
                         required: true,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'A temporary password is generated after onboarding.',
+                      AppCopy.text(
+                        'text.a_temporary_password_is_generated_after_onboardi_60f4856a',
+                      ),
                       style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                         color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
@@ -819,7 +871,7 @@ Future<bool> showAddPatientDialog(
             actions: [
               TextButton(
                 onPressed: loading ? null : () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+                child: Text(AppCopy.text('text.cancel_35afca3b')),
               ),
               FilledButton(
                 onPressed: loading
@@ -837,8 +889,12 @@ Future<bool> showAddPatientDialog(
                           if (phoneNumber == null) {
                             setState(() => loading = false);
                             ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(
-                                content: Text('Enter a valid phone number.'),
+                              SnackBar(
+                                content: Text(
+                                  AppCopy.text(
+                                    'text.enter_a_valid_phone_number_30528039',
+                                  ),
+                                ),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -876,7 +932,7 @@ Future<bool> showAddPatientDialog(
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Onboard'),
+                    : Text(AppCopy.text('text.onboard_3c7b7b90')),
               ),
             ],
           ),
@@ -891,10 +947,12 @@ Future<bool> showAddPatientDialog(
     final tempPassword = result['temporary_password']?.toString();
     await showAdminCredentialResult(
       context,
-      title: 'Patient onboarded',
+      title: AppCopy.text('text.patient_onboarded_85253f80'),
       successMessage: tempPassword != null && tempPassword.isNotEmpty
-          ? 'Patient onboarded. Share this one-time password securely. It will not be shown again.'
-          : 'Patient onboarded successfully.',
+          ? AppCopy.text(
+              'text.patient_onboarded_share_this_one_time_password_s_69fd5c58',
+            )
+          : AppCopy.text('text.patient_onboarded_successfully_7fbf4be1'),
       temporaryPassword: tempPassword,
     );
     onSuccess?.call();
@@ -916,7 +974,7 @@ Future<bool> showEditPatientDialog(
     text: currentData['name'] as String? ?? '',
   );
   final age = TextEditingController(
-    text: currentData['age'] != null ? '${currentData['age']}' : '',
+    text: currentData['age'] != null ? (currentData['age']).toString() : '',
   );
   final phone = TextEditingController(
     text: PhoneUtils.toLocalDigits(currentData['phone'] as String? ?? ''),
@@ -929,7 +987,7 @@ Future<bool> showEditPatientDialog(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
         return AlertDialog(
-          title: const Text('Edit Patient Details'),
+          title: Text(AppCopy.text('text.edit_patient_details_b99cb4da')),
           content: SingleChildScrollView(
             child: Form(
               key: formKey,
@@ -938,8 +996,8 @@ Future<bool> showEditPatientDialog(
                 children: [
                   TextFormField(
                     controller: name,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
+                    decoration: InputDecoration(
+                      labelText: AppCopy.text('text.full_name_fe2b40f'),
                       prefixIcon: Icon(Icons.badge_rounded),
                     ),
                     enabled: !loading,
@@ -952,7 +1010,9 @@ Future<bool> showEditPatientDialog(
                       Expanded(
                         child: TextFormField(
                           controller: age,
-                          decoration: const InputDecoration(labelText: 'Age'),
+                          decoration: InputDecoration(
+                            labelText: AppCopy.text('text.age_8ecbe13c'),
+                          ),
                           keyboardType: TextInputType.number,
                           enabled: !loading,
                         ),
@@ -968,21 +1028,21 @@ Future<bool> showEditPatientDialog(
                               ].contains(selectedGender)
                               ? selectedGender
                               : null,
-                          decoration: const InputDecoration(
-                            labelText: 'Gender',
+                          decoration: InputDecoration(
+                            labelText: AppCopy.text('text.gender_a72c0ba0'),
                           ),
-                          items: const [
+                          items: [
                             DropdownMenuItem(
                               value: 'Male',
-                              child: Text('Male'),
+                              child: Text(AppCopy.text('text.male_487d36f0')),
                             ),
                             DropdownMenuItem(
                               value: 'Female',
-                              child: Text('Female'),
+                              child: Text(AppCopy.text('text.female_d8a26cb9')),
                             ),
                             DropdownMenuItem(
                               value: 'Other',
-                              child: Text('Other'),
+                              child: Text(AppCopy.text('text.other_6e38ff95')),
                             ),
                           ],
                           onChanged: loading
@@ -995,15 +1055,22 @@ Future<bool> showEditPatientDialog(
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                      hintText: '10-digit Indian number',
-                      helperText: '+91 is added automatically',
+                    decoration: InputDecoration(
+                      labelText: AppCopy.text('text.phone_number_f25088d8'),
+                      hintText: AppCopy.text(
+                        'text.10_digit_indian_number_e2356744',
+                      ),
+                      helperText: AppCopy.text(
+                        'text.91_is_added_automatically_10a7eeeb',
+                      ),
                       prefixIcon: Icon(Icons.phone_rounded),
                     ),
                     keyboardType: TextInputType.phone,
                     enabled: !loading,
-                    validator: (v) => PhoneUtils.validate(v, label: 'Phone'),
+                    validator: (v) => PhoneUtils.validate(
+                      v,
+                      label: AppCopy.text('text.phone_4930944f'),
+                    ),
                   ),
                 ],
               ),
@@ -1012,7 +1079,7 @@ Future<bool> showEditPatientDialog(
           actions: [
             TextButton(
               onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             FilledButton(
               onPressed: loading
@@ -1037,7 +1104,12 @@ Future<bool> showEditPatientDialog(
                         if (ctx.mounted) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
                             SnackBar(
-                              content: Text('Error: $e'),
+                              content: Text(
+                                AppCopy.text(
+                                  'text.error_value1_caf169bf',
+                                  arguments: {'value1': (e).toString()},
+                                ),
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -1051,7 +1123,7 @@ Future<bool> showEditPatientDialog(
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Update'),
+                  : Text(AppCopy.text('text.update_6e230e94')),
             ),
           ],
         );
@@ -1063,8 +1135,10 @@ Future<bool> showEditPatientDialog(
 
   if (result == true && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Patient updated successfully'),
+      SnackBar(
+        content: Text(
+          AppCopy.text('text.patient_updated_successfully_1212c7b6'),
+        ),
         backgroundColor: Colors.green,
       ),
     );
@@ -1091,14 +1165,22 @@ Future<bool> showDeactivateConfirmDialog(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
         return AlertDialog(
-          title: Text('Deactivate $userType'),
+          title: Text(
+            AppCopy.text(
+              'text.deactivate_value1_e7c0997d',
+              arguments: {'value1': (userType).toString()},
+            ),
+          ),
           content: Text(
-            'Are you sure you want to deactivate $userName? They will no longer be able to access the system.',
+            AppCopy.text(
+              'text.are_you_sure_you_want_to_deactivate_value1_they__44d38afc',
+              arguments: {'value1': (userName).toString()},
+            ),
           ),
           actions: [
             TextButton(
               onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
@@ -1115,7 +1197,12 @@ Future<bool> showDeactivateConfirmDialog(
                         if (ctx.mounted) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
                             SnackBar(
-                              content: Text('Error: $e'),
+                              content: Text(
+                                AppCopy.text(
+                                  'text.error_value1_caf169bf',
+                                  arguments: {'value1': (e).toString()},
+                                ),
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -1132,7 +1219,7 @@ Future<bool> showDeactivateConfirmDialog(
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Deactivate'),
+                  : Text(AppCopy.text('text.deactivate_7fcfb5f3')),
             ),
           ],
         );
@@ -1143,7 +1230,12 @@ Future<bool> showDeactivateConfirmDialog(
   if (result == true && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$userType deactivated'),
+        content: Text(
+          AppCopy.text(
+            'text.value1_deactivated_be0db93f',
+            arguments: {'value1': (userType).toString()},
+          ),
+        ),
         backgroundColor: Colors.green,
       ),
     );
@@ -1169,11 +1261,19 @@ Future<bool> showStatusToggleDialog(
       builder: (ctx, setState) {
         return AlertDialog(
           title: Text('$action $userType'),
-          content: Text('Are you sure you want to $action $userName?'),
+          content: Text(
+            AppCopy.text(
+              'text.are_you_sure_you_want_to_value1_value2_6039f075',
+              arguments: {
+                'value1': (action).toString(),
+                'value2': (userName).toString(),
+              },
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             FilledButton(
               style: isActive
@@ -1192,7 +1292,12 @@ Future<bool> showStatusToggleDialog(
                         if (ctx.mounted) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
                             SnackBar(
-                              content: Text('Error: $e'),
+                              content: Text(
+                                AppCopy.text(
+                                  'text.error_value1_caf169bf',
+                                  arguments: {'value1': (e).toString()},
+                                ),
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -1219,8 +1324,8 @@ Future<bool> showStatusToggleDialog(
 
   if (result == true && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('User status updated'),
+      SnackBar(
+        content: Text(AppCopy.text('text.user_status_updated_88558537')),
         backgroundColor: Colors.green,
       ),
     );
@@ -1248,13 +1353,18 @@ Future<bool> showResetPasswordDialog(
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) {
         return AlertDialog(
-          title: Text('Reset Password for $userName'),
+          title: Text(
+            AppCopy.text(
+              'text.reset_password_for_value1_b0e49e1a',
+              arguments: {'value1': (userName).toString()},
+            ),
+          ),
           content: Form(
             key: formKey,
             child: TextFormField(
               controller: passwordCtrl,
-              decoration: const InputDecoration(
-                labelText: 'New Password',
+              decoration: InputDecoration(
+                labelText: AppCopy.text('text.new_password_a331afd2'),
                 prefixIcon: Icon(Icons.lock_rounded),
               ),
               obscureText: true,
@@ -1265,7 +1375,7 @@ Future<bool> showResetPasswordDialog(
           actions: [
             TextButton(
               onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             FilledButton(
               onPressed: loading
@@ -1288,7 +1398,12 @@ Future<bool> showResetPasswordDialog(
                         if (ctx.mounted) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
                             SnackBar(
-                              content: Text('Error: $e'),
+                              content: Text(
+                                AppCopy.text(
+                                  'text.error_value1_caf169bf',
+                                  arguments: {'value1': (e).toString()},
+                                ),
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -1302,7 +1417,7 @@ Future<bool> showResetPasswordDialog(
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Reset'),
+                  : Text(AppCopy.text('text.reset_ac8a560')),
             ),
           ],
         );
@@ -1312,8 +1427,10 @@ Future<bool> showResetPasswordDialog(
 
   if (result == true && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password reset successfully'),
+      SnackBar(
+        content: Text(
+          AppCopy.text('text.password_reset_successfully_a8f54d14'),
+        ),
         backgroundColor: Colors.green,
       ),
     );
@@ -1392,18 +1509,22 @@ Future<bool> showReassignPatientDialog(
         }
 
         return AlertDialog(
-          title: const Text('Reassign Doctor'),
+          title: Text(AppCopy.text('text.reassign_doctor_55c53170')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 resolvingConflict
-                    ? 'Select the doctor who should own this patient. Saving will clear the assignment conflict.'
-                    : 'Select a new doctor for this patient',
+                    ? AppCopy.text(
+                        'text.select_the_doctor_who_should_own_this_patient_sa_2a95e35a',
+                      )
+                    : AppCopy.text(
+                        'text.select_a_new_doctor_for_this_patient_61bc4f49',
+                      ),
               ),
               const SizedBox(height: 16),
               if (doctorsLoading)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     children: [
@@ -1413,7 +1534,7 @@ Future<bool> showReassignPatientDialog(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                       SizedBox(width: 12),
-                      Text('Loading doctors...'),
+                      Text(AppCopy.text('text.loading_doctors_ca2e80f')),
                     ],
                   ),
                 )
@@ -1421,7 +1542,7 @@ Future<bool> showReassignPatientDialog(
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
-                    'Failed to load doctors',
+                    AppCopy.text('text.failed_to_load_doctors_e99e6413'),
                     style: TextStyle(color: Colors.red[700]),
                   ),
                 )
@@ -1429,7 +1550,7 @@ Future<bool> showReassignPatientDialog(
                 TextField(
                   controller: doctorSearch,
                   decoration: InputDecoration(
-                    labelText: 'Search doctors',
+                    labelText: AppCopy.text('text.search_doctors_992bbfa1'),
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: doctorSearch.text.isEmpty
                         ? null
@@ -1451,8 +1572,8 @@ Future<bool> showReassignPatientDialog(
                       )
                       ? selectedDoctorId
                       : null,
-                  decoration: const InputDecoration(
-                    labelText: 'New Doctor',
+                  decoration: InputDecoration(
+                    labelText: AppCopy.text('text.new_doctor_e5d7020'),
                     prefixIcon: Icon(Icons.medical_services_rounded),
                   ),
                   items: doctorList.map((d) {
@@ -1473,7 +1594,9 @@ Future<bool> showReassignPatientDialog(
                         ? null
                         : () => loadDoctors(setState, ctx),
                     icon: const Icon(Icons.expand_more),
-                    label: const Text('Load more doctors'),
+                    label: Text(
+                      AppCopy.text('text.load_more_doctors_13d0685a'),
+                    ),
                   ),
               ],
             ],
@@ -1481,7 +1604,7 @@ Future<bool> showReassignPatientDialog(
           actions: [
             TextButton(
               onPressed: loading ? null : () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppCopy.text('text.cancel_35afca3b')),
             ),
             FilledButton(
               onPressed:
@@ -1502,7 +1625,12 @@ Future<bool> showReassignPatientDialog(
                         if (ctx.mounted) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
                             SnackBar(
-                              content: Text('Error: $e'),
+                              content: Text(
+                                AppCopy.text(
+                                  'text.error_value1_caf169bf',
+                                  arguments: {'value1': (e).toString()},
+                                ),
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -1516,7 +1644,7 @@ Future<bool> showReassignPatientDialog(
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Reassign'),
+                  : Text(AppCopy.text('text.reassign_9376a1e1')),
             ),
           ],
         );
@@ -1526,8 +1654,10 @@ Future<bool> showReassignPatientDialog(
 
   if (result == true && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Patient reassigned successfully'),
+      SnackBar(
+        content: Text(
+          AppCopy.text('text.patient_reassigned_successfully_a95fba9c'),
+        ),
         backgroundColor: Colors.green,
       ),
     );

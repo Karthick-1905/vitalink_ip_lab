@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
@@ -69,11 +70,11 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: const Color(0xFF0084FF),
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: Colors.black87,
-                ),
+              primary: const Color(0xFF0084FF),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black87,
+            ),
           ),
           child: child!,
         );
@@ -90,20 +91,24 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseMutation<void, Map<String, dynamic>>(
       options: MutationOptions<void, Map<String, dynamic>>(
         mutationFn: (variables) =>
             AppDependencies.patientRepository.submitINRReport(
-          inrValue: variables['inr_value'],
-          testDate: variables['test_date'],
-          fileBytes: variables['file_bytes'],
-          fileName: variables['file_name'],
-        ),
+              inrValue: variables['inr_value'],
+              testDate: variables['test_date'],
+              fileBytes: variables['file_bytes'],
+              fileName: variables['file_name'],
+            ),
         onSuccess: (data, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Report submitted successfully!'),
-                backgroundColor: Colors.green),
+            SnackBar(
+              content: Text(
+                AppCopy.text('text.report_submitted_successfully_d47538ca'),
+              ),
+              backgroundColor: Colors.green,
+            ),
           );
           // Invalidate queries to refetch updated data
           final queryClient = QueryClientProvider.of(context);
@@ -114,15 +119,17 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
           if (widget.embedInShell) {
             widget.onTabChanged?.call(3);
           } else {
-            Navigator.of(context)
-                .pushReplacementNamed(AppRoutes.patientHealthReports);
+            Navigator.of(
+              context,
+            ).pushReplacementNamed(AppRoutes.patientHealthReports);
           }
         },
         onError: (error, variables) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(error.toString()),
-                backgroundColor: Colors.red),
+              content: Text(error.toString()),
+              backgroundColor: Colors.red,
+            ),
           );
         },
       ),
@@ -149,55 +156,69 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                     padding: const EdgeInsets.all(PortalLayout.sectionGap),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.5),
-                      borderRadius:
-                          BorderRadius.circular(PortalLayout.cardRadius + 4),
+                      borderRadius: BorderRadius.circular(
+                        PortalLayout.cardRadius + 4,
+                      ),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3)),
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('INR Value :',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black87)),
+                        Text(
+                          AppCopy.text('text.inr_value_597be61f'),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
                         PortalLayout.fieldSpacer,
                         TextFormField(
                           controller: _inrValueController,
                           keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                            decimal: true,
+                          ),
                           decoration: _inputDecoration('Enter INR value'),
                           validator: validateUpdateInrValue,
                         ),
                         PortalLayout.sectionSpacer,
-                        const Text('Date of Test :',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black87)),
+                        Text(
+                          AppCopy.text('text.date_of_test_3748fdec'),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
                         PortalLayout.fieldSpacer,
                         TextFormField(
                           controller: _testDateController,
                           readOnly: true,
                           onTap: () => _showDatePicker(context),
-                          decoration:
-                              _inputDecoration('dd-mm-yyyy --:--').copyWith(
-                            suffixIcon: const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: PortalLayout.itemGap,
+                          decoration: _inputDecoration('dd-mm-yyyy --:--')
+                              .copyWith(
+                                suffixIcon: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: PortalLayout.itemGap,
+                                  ),
+                                  child: Icon(
+                                    Icons.calendar_month,
+                                    color: Colors.black54,
+                                  ),
+                                ),
                               ),
-                              child: Icon(Icons.calendar_month,
-                                  color: Colors.black54),
-                            ),
-                          ),
                         ),
                         PortalLayout.sectionSpacer,
-                        const Text('Upload Document:',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black87)),
+                        Text(
+                          AppCopy.text('text.upload_document_ed31751d'),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
                         PortalLayout.fieldSpacer,
                         GestureDetector(
                           onTap: _pickFile,
@@ -207,8 +228,9 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                               vertical: PortalLayout.cardPadding,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0E5F5)
-                                  .withValues(alpha: 0.5),
+                              color: const Color(
+                                0xFFF0E5F5,
+                              ).withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(
                                 PortalLayout.controlRadius,
                               ),
@@ -216,12 +238,18 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.attach_file,
-                                    color: Colors.black54, size: 20),
+                                const Icon(
+                                  Icons.attach_file,
+                                  color: Colors.black54,
+                                  size: 20,
+                                ),
                                 PortalLayout.columnSpacer,
                                 Expanded(
                                   child: Text(
-                                    _selectedFile?.name ?? 'Select a file',
+                                    _selectedFile?.name ??
+                                        AppCopy.text(
+                                          'text.select_a_file_60669be0',
+                                        ),
                                     style: TextStyle(
                                       color: _selectedFile != null
                                           ? Colors.black87
@@ -244,8 +272,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                                 : () {
                                     if (_formKey.currentState!.validate()) {
                                       mutation.mutate({
-                                        'inr_value':
-                                            _inrValueController.text.trim(),
+                                        'inr_value': _inrValueController.text
+                                            .trim(),
                                         'test_date': _testDateController.text,
                                         'file_bytes': _selectedFile?.bytes,
                                         'file_name': _selectedFile?.name,
@@ -256,16 +284,23 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                               backgroundColor: const Color(0xFF0084FF),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               elevation: 0,
                             ),
                             child: mutation.isLoading
                                 ? const CircularProgressIndicator(
-                                    color: Colors.white)
-                                : const Text('Submit INR Report',
+                                    color: Colors.white,
+                                  )
+                                : Text(
+                                    AppCopy.text(
+                                      'text.submit_inr_report_fa005c04',
+                                    ),
                                     style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700)),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -291,7 +326,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'Update INR',
+      pageTitle: AppCopy.text('text.update_inr_6061f393'),
       currentNavIndex: _currentNavIndex,
       onNavChanged: _handleNav,
       bodyDecoration: bodyDecoration,
@@ -315,8 +350,9 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage);
         break;
       case 3:
-        Navigator.of(context)
-            .pushReplacementNamed(AppRoutes.patientHealthReports);
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(AppRoutes.patientHealthReports);
         break;
       case 4:
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientProfile);
@@ -328,9 +364,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
     return UseQuery<List<Map<String, dynamic>>>(
       options: QueryOptions(
         queryKey: PatientQueryKeys.inrHistory(),
-        queryFn: () => AppDependencies.patientRepository.getINRHistory(
-              includeUrls: true,
-            ),
+        queryFn: () =>
+            AppDependencies.patientRepository.getINRHistory(includeUrls: true),
       ),
       builder: (context, query) {
         if (query.isLoading) {
@@ -357,7 +392,7 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
               error: query.error,
               onRetry: () => query.refetch(),
               compact: true,
-              title: 'Could not load reports',
+              title: AppCopy.text('text.could_not_load_reports_57d14072'),
             ),
           );
         }
@@ -374,19 +409,25 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
             ),
             child: Column(
               children: [
-                Icon(Icons.description_outlined,
-                    size: 48, color: Colors.grey[400]),
+                Icon(
+                  Icons.description_outlined,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(height: 16),
-                const Text(
-                  'No reports yet',
+                Text(
+                  AppCopy.text('text.no_reports_yet_6d674c9b'),
                   style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Your submitted reports will appear here',
+                Text(
+                  AppCopy.text(
+                    'text.your_submitted_reports_will_appear_here_d91d7b99',
+                  ),
                   style: TextStyle(fontSize: 14, color: Colors.black45),
                   textAlign: TextAlign.center,
                 ),
@@ -404,8 +445,8 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                 children: [
                   Icon(Icons.history, size: 22, color: const Color(0xFF6B7280)),
                   const SizedBox(width: 10),
-                  const Text(
-                    'Previous Reports',
+                  Text(
+                    AppCopy.text('text.previous_reports_63f1b9a3'),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -457,14 +498,21 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
             child: Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'INR: ${inr.toStringAsFixed(1)}',
+                    AppCopy.text(
+                      'text.inr_value1_83b20cf6',
+                      arguments: {
+                        'value1': (inr.toStringAsFixed(1)).toString(),
+                      },
+                    ),
                     style: const TextStyle(
                       color: Color(0xFF1F2937),
                       fontWeight: FontWeight.w700,
@@ -476,20 +524,25 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                 if (isCritical) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.priority_high,
-                            color: Color(0xFF9CA3AF), size: 15),
+                        Icon(
+                          Icons.priority_high,
+                          color: Color(0xFF9CA3AF),
+                          size: 15,
+                        ),
                         SizedBox(width: 4),
                         Text(
-                          'Needs Attention',
+                          AppCopy.text('text.needs_attention_65496a3c'),
                           style: TextStyle(
                             color: Color(0xFF6B7280),
                             fontWeight: FontWeight.w600,
@@ -526,11 +579,14 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.medical_services_outlined,
-                          size: 16, color: const Color(0xFF6B7280)),
+                      Icon(
+                        Icons.medical_services_outlined,
+                        size: 16,
+                        color: const Color(0xFF6B7280),
+                      ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Doctor\'s Feedback',
+                      Text(
+                        AppCopy.text('text.doctor_s_feedback_6809e6f3'),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -574,12 +630,9 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
                   );
                 },
                 icon: const Icon(Icons.description_outlined, size: 18),
-                label: const Text(
-                  'View Report',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
+                label: Text(
+                  AppCopy.text('text.view_report_81b331b2'),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF374151),
@@ -607,12 +660,17 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
       enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
       focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF0084FF), width: 1.5)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF0084FF), width: 1.5),
+      ),
     );
   }
 }
@@ -620,15 +678,15 @@ class _PatientUpdateINRPageState extends State<PatientUpdateINRPage> {
 /// Client check matching [reportSchema]: a positive decimal INR in (0, 20].
 String? validateUpdateInrValue(String? value) {
   if (value == null || value.trim().isEmpty) {
-    return 'Please enter INR value';
+    return AppCopy.text('text.please_enter_inr_value_c98e7dd3');
   }
   final trimmed = value.trim();
   if (!RegExp(r'^\d+(?:\.\d+)?$').hasMatch(trimmed)) {
-    return 'Please enter a valid number';
+    return AppCopy.text('text.please_enter_a_valid_number_a25ec665');
   }
   final parsed = double.parse(trimmed);
   if (!parsed.isFinite || parsed <= 0 || parsed > 20) {
-    return 'INR value must be between 0 and 20';
+    return AppCopy.text('text.inr_value_must_be_between_0_and_20_d3b161d0');
   }
   return null;
 }

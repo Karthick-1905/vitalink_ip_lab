@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tanstack_query/flutter_tanstack_query.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
@@ -11,6 +12,7 @@ class DoctorProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final DoctorRepository repository = AppDependencies.doctorRepository;
 
     return UseQuery<DoctorProfileModel>(
@@ -40,7 +42,7 @@ class DoctorProfilePage extends StatelessWidget {
                   error: query.error,
                   onRetry: () => query.refetch(),
                   compact: true,
-                  title: 'Could not load profile',
+                  title: AppCopy.text('text.could_not_load_profile_358adeb4'),
                 ),
               if (query.isSuccess && query.data != null)
                 DoctorProfileContent(

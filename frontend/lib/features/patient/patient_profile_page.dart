@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/widgets/index.dart';
 import 'package:frontend/app/routers.dart';
@@ -24,6 +25,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return UseQuery<Map<String, dynamic>>(
       options: QueryOptions<Map<String, dynamic>>(
         queryKey: PatientQueryKeys.profileFull(),
@@ -61,7 +63,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
           final profile = data['profile'] as Map<String, dynamic>;
           final doctorUpdates =
               (data['doctorUpdates'] as List?)?.cast<Map<String, dynamic>>() ??
-                  [];
+              [];
           final unreadCount =
               (profile['doctorUpdatesUnreadCount'] as num?)?.toInt() ?? 0;
 
@@ -117,7 +119,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     }
 
     return PatientScaffold(
-      pageTitle: 'My Profile',
+      pageTitle: AppCopy.text('text.my_profile_bbf9687a'),
       currentNavIndex: _currentNavIndex,
       onNavChanged: _handleNav,
       bodyDecoration: bodyDecoration,
@@ -142,8 +144,9 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
         Navigator.of(context).pushReplacementNamed(AppRoutes.patientTakeDosage);
         break;
       case 3:
-        Navigator.of(context)
-            .pushReplacementNamed(AppRoutes.patientHealthReports);
+        Navigator.of(
+          context,
+        ).pushReplacementNamed(AppRoutes.patientHealthReports);
         break;
       case 4:
         break;
@@ -152,10 +155,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
 }
 
 class _DoctorUpdatesCard extends StatelessWidget {
-  const _DoctorUpdatesCard({
-    required this.updates,
-    required this.unreadCount,
-  });
+  const _DoctorUpdatesCard({required this.updates, required this.unreadCount});
 
   final List<Map<String, dynamic>> updates;
   final int unreadCount;
@@ -164,6 +164,7 @@ class _DoctorUpdatesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final visibleCount = updates.length.clamp(1, _maxVisibleUpdates);
     final listHeight =
         (visibleCount * _updateTileHeight) + ((visibleCount - 1) * 10);
@@ -188,8 +189,8 @@ class _DoctorUpdatesCard extends StatelessWidget {
                 size: 20,
                 color: Color(0xFF2563EB),
               ),
-              const Text(
-                'Doctor Updates',
+              Text(
+                AppCopy.text('text.doctor_updates_d43a65a4'),
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               if (unreadCount > 0)
@@ -200,10 +201,15 @@ class _DoctorUpdatesCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444),
-                    borderRadius: BorderRadius.circular(PortalLayout.pillRadius),
+                    borderRadius: BorderRadius.circular(
+                      PortalLayout.pillRadius,
+                    ),
                   ),
                   child: Text(
-                    '$unreadCount new',
+                    AppCopy.text(
+                      'text.value1_new_333e3213',
+                      arguments: {'value1': (unreadCount).toString()},
+                    ),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -215,8 +221,8 @@ class _DoctorUpdatesCard extends StatelessWidget {
           ),
           PortalLayout.itemSpacer,
           if (updates.isEmpty)
-            const Text(
-              'No recent doctor changes.',
+            Text(
+              AppCopy.text('text.no_recent_doctor_changes_d6024971'),
               style: TextStyle(color: Color(0xFF6B7280)),
             )
           else
@@ -229,9 +235,8 @@ class _DoctorUpdatesCard extends StatelessWidget {
                   itemCount: updates.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: AppSpacing.sm - 2),
-                  itemBuilder: (context, index) => _DoctorUpdateTile(
-                    event: updates[index],
-                  ),
+                  itemBuilder: (context, index) =>
+                      _DoctorUpdateTile(event: updates[index]),
                 ),
               ),
             ),
@@ -248,6 +253,7 @@ class _DoctorUpdateTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 112),
@@ -263,7 +269,8 @@ class _DoctorUpdateTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            event['title']?.toString() ?? 'Doctor update',
+            event['title']?.toString() ??
+                AppCopy.text('text.doctor_update_b984551f'),
             style: const TextStyle(fontWeight: FontWeight.w600),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

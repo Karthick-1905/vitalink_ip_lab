@@ -77,3 +77,14 @@ Behavioral claims require one or more of route/controller/service/model/client/c
 - OpenAPI copies under `docs/` and `backend/docs/` must match exactly.
 
 See [Validation](validation.md) for commands and observed results.
+
+
+## Runtime presentation properties
+
+- Catalogue and generator: `frontend/assets/config/app_properties.json`, `scripts/properties/sync.py` and generated `frontend/lib/core/config/property_defaults.dart` / `backend/src/config/app-properties.defaults.json`.
+- Persistence and publication: `backend/src/models/appproperties.model.ts`, `backend/src/services/app-properties.service.ts`, and `backend/src/controllers/app-properties.controller.ts`.
+- Branding images: `backend/src/models/brandasset.model.ts`, `backend/src/services/brand-asset.service.ts` and Flutter `PropertyImage`.
+- Client cache, validation and refresh: `frontend/lib/core/config/app_properties.dart`, `frontend/lib/main.dart`, and `frontend/lib/app/app.dart`.
+- Administration: `frontend/lib/features/admin/presentation_properties_editor.dart` inside Platform Configuration.
+- Server templates: `backend/src/services/presentation-copy.service.ts`, reminder jobs and notification delivery.
+- Migrated references: generated `docs/reference/property-inventory.json`. Property keys are stable; source locations can be regenerated after code formatting.

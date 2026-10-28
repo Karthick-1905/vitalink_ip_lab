@@ -16,6 +16,9 @@ export const InrLogSchema = new Schema({
   uploaded_at: { type: Date, default: Date.now },
   inr_value: { type: Number, required: true, min: Number.MIN_VALUE, max: 20, validate: Number.isFinite },
   is_critical: { type: Boolean, default: false },
+  review_status: { type: String, enum: ['pending', 'reviewed'] },
+  reviewed_at: { type: Date },
+  reviewed_by: { type: Schema.Types.ObjectId, ref: 'User' },
   file_url: { type: String },
   file_asset_id: { type: Schema.Types.ObjectId, ref: 'FileAsset' },
   notes: { type: String, maxlength: 4000 }
@@ -39,6 +42,8 @@ import PatientProfile from './patientprofile.model'
 import AdminProfile from './adminprofile.model'
 import AuditLog from './auditlog.model'
 import SystemConfig from './systemconfig.model'
+import AppProperties from './appproperties.model'
+import BrandAsset from './brandasset.model'
 import Notification from './notification.model'
 import Hospital from './hospital.model'
 import Invoice from './invoice.model'
@@ -59,6 +64,8 @@ export {
   AdminProfile,
   AuditLog,
   SystemConfig,
+  AppProperties,
+  BrandAsset,
   Notification,
   Hospital,
   Invoice,

@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/di/app_dependencies.dart';
 import 'package:frontend/core/network/api_client.dart';
@@ -64,7 +65,9 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
             content: Text(
               error is ApiException
                   ? error.message
-                  : 'Could not refresh administrator accounts.',
+                  : AppCopy.text(
+                      'text.could_not_refresh_administrator_accounts_2ef6b323',
+                    ),
             ),
           ),
         );
@@ -76,12 +79,14 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return AdminAccessGate(
       anyCapabilities: const [AdminCapabilities.platformAdminAccountsRead],
       roles: const {AdminRole.appAdmin},
       scope: AdminScope.global,
-      deniedMessage:
-          'Only an Application Admin can manage Hospital Admin and System Auditor accounts.',
+      deniedMessage: AppCopy.text(
+        'text.only_an_application_admin_can_manage_hospital_ad_ffef5555',
+      ),
       builder: (context) {
         if (!_hasLoaded && !_isLoading) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _load());
@@ -93,18 +98,19 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
         final query = _searchController.text.trim().toLowerCase();
         final visibleAccounts = _accounts
             .where((account) {
-              return '${account.name} ${account.loginId} ${account.email ?? ''} ${account.role.wireValue}'
+              return "${(account.name).toString()} ${(account.loginId).toString()} ${(account.email ?? '').toString()} ${(account.role.wireValue).toString()}"
                   .toLowerCase()
                   .contains(query);
             })
             .toList(growable: false);
 
         final body = AdminListShell(
-          title: 'Administrator Accounts',
-          subtitle:
-              'Manage Hospital Admin and System Auditor accounts. Application Admin accounts are never managed here.',
+          title: AppCopy.text('text.administrator_accounts_fd0d4536'),
+          subtitle: AppCopy.text(
+            'text.manage_hospital_admin_and_system_auditor_account_334dcb8f',
+          ),
           searchController: _searchController,
-          searchHint: 'Search administrators',
+          searchHint: AppCopy.text('text.search_administrators_4fa03bc1'),
           onSearch: () => setState(() {}),
           actions: [
             if (canManage)
@@ -112,7 +118,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                 key: const Key('invite-admin-account'),
                 onPressed: () => _showAccountDialog(),
                 icon: const Icon(Icons.person_add_alt_rounded),
-                label: const Text('Invite'),
+                label: Text(AppCopy.text('text.invite_59997b30')),
               ),
           ],
           child: _buildBody(visibleAccounts, canManage),
@@ -137,16 +143,22 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
+          children: [
             SizedBox(height: 120),
             Icon(Icons.manage_accounts_outlined, size: 48),
             SizedBox(height: 12),
-            Center(child: Text('No administrator accounts found')),
+            Center(
+              child: Text(
+                AppCopy.text('text.no_administrator_accounts_found_1758f815'),
+              ),
+            ),
             SizedBox(height: 8),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                'This list only shows Hospital Admin and System Auditor accounts. Application Admin accounts are not listed here. Use Invite to create one.',
+                AppCopy.text(
+                  'text.this_list_only_shows_hospital_admin_and_system_a_9f17af0e',
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -200,18 +212,26 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                       onTap: () => Future.microtask(
                         () => _showAccountDialog(account: account),
                       ),
-                      child: const Text('Edit role or scope'),
+                      child: Text(
+                        AppCopy.text('text.edit_role_or_scope_a5820a28'),
+                      ),
                     ),
                     PopupMenuItem<String>(
                       value: 'status',
                       onTap: () =>
                           Future.microtask(() => _toggleStatus(account)),
-                      child: Text(account.isActive ? 'Suspend' : 'Restore'),
+                      child: Text(
+                        account.isActive
+                            ? AppCopy.text('text.suspend_e196ab03')
+                            : AppCopy.text('text.restore_ff87f71'),
+                      ),
                     ),
                     PopupMenuItem<String>(
                       value: 'reset-mfa',
                       onTap: () => Future.microtask(() => _resetMfa(account)),
-                      child: const Text('Reset authenticator'),
+                      child: Text(
+                        AppCopy.text('text.reset_authenticator_f73f59c7'),
+                      ),
                     ),
                   ]
                 : const [],
@@ -286,8 +306,8 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                 child: AlertDialog(
                   title: Text(
                     account == null
-                        ? 'Invite administrator'
-                        : 'Edit administrator',
+                        ? AppCopy.text('text.invite_administrator_636ddded')
+                        : AppCopy.text('text.edit_administrator_ddeda1a0'),
                   ),
                   content: SizedBox(
                     width: 460,
@@ -302,8 +322,10 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                               key: const Key('admin-account-name'),
                               controller: nameController,
                               enabled: !saving,
-                              decoration: const InputDecoration(
-                                labelText: 'Full name',
+                              decoration: InputDecoration(
+                                labelText: AppCopy.text(
+                                  'text.full_name_9010932f',
+                                ),
                               ),
                               validator: (value) =>
                                   value == null || value.trim().isEmpty
@@ -316,10 +338,11 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                               controller: emailController,
                               enabled: account == null && !saving,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                helperText:
-                                    'This email is also the administrator sign-in ID.',
+                              decoration: InputDecoration(
+                                labelText: AppCopy.text('text.email_43352167'),
+                                helperText: AppCopy.text(
+                                  'text.this_email_is_also_the_administrator_sign_in_id_1b607dda',
+                                ),
                               ),
                               validator: (value) =>
                                   value == null ||
@@ -333,17 +356,25 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                             DropdownButtonFormField<AdminRole>(
                               key: const Key('admin-account-role'),
                               initialValue: role,
-                              decoration: const InputDecoration(
-                                labelText: 'Role',
+                              decoration: InputDecoration(
+                                labelText: AppCopy.text('text.role_902b7e39'),
                               ),
-                              items: const [
+                              items: [
                                 DropdownMenuItem(
                                   value: AdminRole.hospitalAdmin,
-                                  child: Text('Hospital Admin'),
+                                  child: Text(
+                                    AppCopy.text(
+                                      'text.hospital_admin_72ccad88',
+                                    ),
+                                  ),
                                 ),
                                 DropdownMenuItem(
                                   value: AdminRole.auditor,
-                                  child: Text('System Auditor'),
+                                  child: Text(
+                                    AppCopy.text(
+                                      'text.system_auditor_e77b9212',
+                                    ),
+                                  ),
                                 ),
                               ],
                               onChanged: saving
@@ -362,14 +393,22 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                                 initialValue: effectiveHospitalId,
                                 isExpanded: true,
                                 decoration: InputDecoration(
-                                  labelText: 'Active hospital',
+                                  labelText: AppCopy.text(
+                                    'text.active_hospital_140b06cb',
+                                  ),
                                   helperText:
                                       hasCurrentHospital ||
                                           account?.hospital == null
-                                      ? 'Hospital Admin access is limited to this hospital.'
-                                      : 'The currently assigned hospital is inactive. Select an active hospital to continue.',
+                                      ? AppCopy.text(
+                                          'text.hospital_admin_access_is_limited_to_this_hospita_31d77d07',
+                                        )
+                                      : AppCopy.text(
+                                          'text.the_currently_assigned_hospital_is_inactive_sele_cf580652',
+                                        ),
                                   errorText: snapshot.hasError
-                                      ? 'Could not load active hospitals.'
+                                      ? AppCopy.text(
+                                          'text.could_not_load_active_hospitals_2a877a3c',
+                                        )
                                       : null,
                                 ),
                                 items: hospitals
@@ -385,7 +424,13 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                                         child: Text(
                                           status == 'active'
                                               ? label
-                                              : '$label (inactive)',
+                                              : AppCopy.text(
+                                                  'text.value1_inactive_befcbba7',
+                                                  arguments: {
+                                                    'value1': (label)
+                                                        .toString(),
+                                                  },
+                                                ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       );
@@ -406,7 +451,33 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                             if (scopeChanged) ...[
                               const SizedBox(height: 16),
                               Text(
-                                'Access impact: ${adminRoleLabel(account.role)} (${account.hospitalDisplayLabel}) → ${adminRoleLabel(role)} (${role == AdminRole.auditor ? 'Global' : (hospitals.where((h) => '${h['id'] ?? h['_id']}' == hospitalId).map((h) => '${h['name'] ?? h['code'] ?? hospitalId}').firstOrNull ?? 'Select a hospital')}). All active sessions for this administrator will be revoked; they must sign in again under the new role and scope.',
+                                AppCopy.text(
+                                  'text.access_impact_value1_value2_value3_value4_all_ac_d0e7a3b0',
+                                  arguments: {
+                                    'value1': (adminRoleLabel(
+                                      account.role,
+                                    )).toString(),
+                                    'value2': (account.hospitalDisplayLabel)
+                                        .toString(),
+                                    'value3': (adminRoleLabel(role)).toString(),
+                                    'value4':
+                                        (role == AdminRole.auditor
+                                                ? 'Global'
+                                                : (hospitals
+                                                          .where(
+                                                            (h) =>
+                                                                '${h['id'] ?? h['_id']}' ==
+                                                                hospitalId,
+                                                          )
+                                                          .map(
+                                                            (h) =>
+                                                                '${h['name'] ?? h['code'] ?? hospitalId}',
+                                                          )
+                                                          .firstOrNull ??
+                                                      'Select a hospital'))
+                                            .toString(),
+                                  },
+                                ),
                               ),
                             ],
                           ],
@@ -419,7 +490,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                       onPressed: saving
                           ? null
                           : () => Navigator.pop(dialogContext),
-                      child: const Text('Cancel'),
+                      child: Text(AppCopy.text('text.cancel_35afca3b')),
                     ),
                     FilledButton(
                       key: const Key('save-admin-account'),
@@ -470,8 +541,12 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                                   ScaffoldMessenger.of(
                                     this.context,
                                   ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Administrator updated.'),
+                                    SnackBar(
+                                      content: Text(
+                                        AppCopy.text(
+                                          'text.administrator_updated_363a2a15',
+                                        ),
+                                      ),
                                     ),
                                   );
                                 }
@@ -488,7 +563,11 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Text(account == null ? 'Invite' : 'Save'),
+                          : Text(
+                              account == null
+                                  ? AppCopy.text('text.invite_59997b30')
+                                  : AppCopy.text('text.save_4d2d5d68'),
+                            ),
                     ),
                   ],
                 ),
@@ -510,13 +589,17 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
         title: Text('$action ${account.name}?'),
         content: Text(
           account.isActive
-              ? 'Suspending this account signs the administrator out and prevents new sign-ins.'
-              : 'Restoring this account allows the administrator to sign in under the current role policy.',
+              ? AppCopy.text(
+                  'text.suspending_this_account_signs_the_administrator__e924a9d8',
+                )
+              : AppCopy.text(
+                  'text.restoring_this_account_allows_the_administrator__192c2a4c',
+                ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
@@ -545,18 +628,21 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset authenticator?'),
+        title: Text(AppCopy.text('text.reset_authenticator_30baa168')),
         content: Text(
-          'This replaces ${account.name}’s authenticator setup and signs them out of all active sessions. Share any replacement setup only through an approved secure channel.',
+          AppCopy.text(
+            'text.this_replaces_value1_s_authenticator_setup_and_s_789f6359',
+            arguments: {'value1': (account.name).toString()},
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(AppCopy.text('text.cancel_35afca3b')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Reset authenticator'),
+            child: Text(AppCopy.text('text.reset_authenticator_f73f59c7')),
           ),
         ],
       ),
@@ -586,10 +672,14 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
   Future<void> _showInvitationResult(String? temporaryPassword) {
     return showAdminCredentialResult(
       context,
-      title: 'Administrator invited',
+      title: AppCopy.text('text.administrator_invited_17211381'),
       successMessage: temporaryPassword == null
-          ? 'The administrator must complete the required sign-in setup and change their password when prompted.'
-          : 'Share this temporary password securely. It is shown only now and must be changed at first sign-in.',
+          ? AppCopy.text(
+              'text.the_administrator_must_complete_the_required_sig_72bc9a10',
+            )
+          : AppCopy.text(
+              'text.share_this_temporary_password_securely_it_is_sho_da587255',
+            ),
       temporaryPassword: temporaryPassword,
     );
   }
@@ -604,7 +694,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('New authenticator setup'),
+        title: Text(AppCopy.text('text.new_authenticator_setup_7b40ba13')),
         content: SizedBox(
           width: 380,
           child: Column(
@@ -612,7 +702,10 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$accountName must enroll this replacement before signing in.',
+                AppCopy.text(
+                  'text.value1_must_enroll_this_replacement_before_signi_6d8eb265',
+                  arguments: {'value1': (accountName).toString()},
+                ),
               ),
               if (otpauthUrl.isNotEmpty) ...[
                 const SizedBox(height: 16),
@@ -627,11 +720,18 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
               ],
               if (secret.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                SelectableText('Manual setup key: $secret'),
+                SelectableText(
+                  AppCopy.text(
+                    'text.manual_setup_key_value1_ae45860b',
+                    arguments: {'value1': (secret).toString()},
+                  ),
+                ),
               ],
               const SizedBox(height: 12),
-              const Text(
-                'This setup is shown only now. Do not send it through email or chat.',
+              Text(
+                AppCopy.text(
+                  'text.this_setup_is_shown_only_now_do_not_send_it_thro_f91e9a06',
+                ),
               ),
             ],
           ),
@@ -639,7 +739,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Done'),
+            child: Text(AppCopy.text('text.done_8dd31791')),
           ),
         ],
       ),
@@ -664,6 +764,7 @@ class _InlineLoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -672,8 +773,10 @@ class _InlineLoadError extends StatelessWidget {
           children: [
             const Icon(Icons.cloud_off_outlined, size: 40),
             const SizedBox(height: 12),
-            const Text(
-              'Could not load administrator accounts.',
+            Text(
+              AppCopy.text(
+                'text.could_not_load_administrator_accounts_eeff5ab6',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -683,7 +786,7 @@ class _InlineLoadError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(AppCopy.text('text.try_again_213e90fa')),
             ),
           ],
         ),

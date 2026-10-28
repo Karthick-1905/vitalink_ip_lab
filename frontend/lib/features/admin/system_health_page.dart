@@ -1,3 +1,4 @@
+import 'package:frontend/core/config/app_properties.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -69,6 +70,7 @@ class _PlatformHealthPageState extends State<PlatformHealthPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     // Cancel polling when this destination is offstage in the admin shell.
     final isActive = TickerMode.valuesOf(context).enabled;
     if (!isActive) {
@@ -91,8 +93,9 @@ class _PlatformHealthPageState extends State<PlatformHealthPage> {
       anyCapabilities: const [AdminCapabilities.platformSystemHealthRead],
       roles: const {AdminRole.appAdmin, AdminRole.auditor},
       scope: AdminScope.global,
-      deniedMessage:
-          'Platform health is available only to an Application Admin or a configured read-only System Auditor.',
+      deniedMessage: AppCopy.text(
+        'text.platform_health_is_available_only_to_an_applicat_bee21e2e',
+      ),
       builder: (context) {
         if (!_hasLoaded && !_isLoading && _error == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _load());
@@ -101,13 +104,16 @@ class _PlatformHealthPageState extends State<PlatformHealthPage> {
           padding: const EdgeInsets.all(16),
           children: [
             AdminPageHeader(
-              title: 'Platform Health',
-              subtitle:
-                  'Global service and dependency status. Sensitive connection details are not displayed.',
+              title: AppCopy.text('text.platform_health_e5beca84'),
+              subtitle: AppCopy.text(
+                'text.global_service_and_dependency_status_sensitive_c_a7730e71',
+              ),
               actions: [
                 IconButton(
                   onPressed: _isLoading ? null : _load,
-                  tooltip: 'Refresh platform health',
+                  tooltip: AppCopy.text(
+                    'text.refresh_platform_health_f017c4a7',
+                  ),
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
@@ -195,6 +201,7 @@ class _HospitalOperationsHealthPageState
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final isActive = TickerMode.valuesOf(context).enabled;
     if (!isActive) {
       _timer?.cancel();
@@ -216,8 +223,9 @@ class _HospitalOperationsHealthPageState
       anyCapabilities: const [AdminCapabilities.tenantOperationsHealthRead],
       roles: const {AdminRole.hospitalAdmin},
       scope: AdminScope.tenant,
-      deniedMessage:
-          'Hospital operations health is available only to a Hospital Admin with reminder and delivery health access.',
+      deniedMessage: AppCopy.text(
+        'text.hospital_operations_health_is_available_only_to__5efe1aa2',
+      ),
       builder: (context) {
         if (!_hasLoaded && !_isLoading && _error == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _load());
@@ -230,13 +238,16 @@ class _HospitalOperationsHealthPageState
           padding: const EdgeInsets.all(16),
           children: [
             AdminPageHeader(
-              title: 'Hospital Operations Health',
-              subtitle:
-                  'Reminder and delivery status for your assigned hospital only.',
+              title: AppCopy.text('text.hospital_operations_health_91501a3'),
+              subtitle: AppCopy.text(
+                'text.reminder_and_delivery_status_for_your_assigned_h_3076af9c',
+              ),
               actions: [
                 IconButton(
                   onPressed: _isLoading ? null : _load,
-                  tooltip: 'Refresh hospital operations health',
+                  tooltip: AppCopy.text(
+                    'text.refresh_hospital_operations_health_30c18ad6',
+                  ),
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
@@ -305,6 +316,7 @@ class _StaleHealthBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final timestamp = loadedAt == null
         ? 'Previously loaded health data is shown.'
         : 'Showing data loaded ${MaterialLocalizations.of(context).formatFullDate(loadedAt!.toLocal())} at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(loadedAt!.toLocal()))}.';
@@ -318,7 +330,10 @@ class _StaleHealthBanner extends StatelessWidget {
         child: Row(
           children: [
             Expanded(child: Text('$timestamp $message')),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(AppCopy.text('text.retry_8036af59')),
+            ),
           ],
         ),
       ),
@@ -334,6 +349,7 @@ class _HealthLoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final message = error is ApiException
         ? (error as ApiException).message
         : 'Hospital operations health could not be loaded.';
@@ -347,7 +363,7 @@ class _HealthLoadError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(AppCopy.text('text.try_again_213e90fa')),
             ),
           ],
         ),
@@ -371,13 +387,23 @@ class SystemHealthSection extends StatelessWidget {
     final minutes = ((seconds % 3600) / 60).floor();
     if (hours > 24) {
       final days = (hours / 24).floor();
-      return '${days}d ${hours % 24}h';
+      return AppCopy.text(
+        'text.value1_d_value2_h_34ce93de',
+        arguments: {
+          'value1': (days).toString(),
+          'value2': (hours % 24).toString(),
+        },
+      );
     }
-    return '${hours}h ${minutes}m';
+    return AppCopy.text(
+      'text.value1_h_value2_m_4796d319',
+      arguments: {'value1': (hours).toString(), 'value2': (minutes).toString()},
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     final theme = Theme.of(context);
     final h = health;
     final isHealthy = h?.status == 'healthy';
@@ -395,14 +421,21 @@ class SystemHealthSection extends StatelessWidget {
                   children: [
                     Icon(Icons.monitor_heart, color: theme.colorScheme.primary),
                     const SizedBox(width: 8),
-                    Text('System Health', style: theme.textTheme.titleLarge),
+                    Text(
+                      AppCopy.text('text.system_health_b2e050a2'),
+                      style: theme.textTheme.titleLarge,
+                    ),
                   ],
                 ),
                 Chip(
                   label: Text(
                     h != null
-                        ? (isHealthy ? 'Healthy' : 'Issues')
-                        : (healthUnavailable ? 'Unavailable' : 'Loading...'),
+                        ? (isHealthy
+                              ? AppCopy.text('text.healthy_b720efe2')
+                              : AppCopy.text('text.issues_c0837669'))
+                        : (healthUnavailable
+                              ? AppCopy.text('text.unavailable_da4baaa9')
+                              : AppCopy.text('text.loading_17b11033')),
                   ),
                   backgroundColor: h == null
                       ? Colors.grey.withValues(alpha: 0.1)
@@ -433,8 +466,10 @@ class SystemHealthSection extends StatelessWidget {
                 ],
               )
             else if (healthUnavailable)
-              const Text(
-                'System health is unavailable or restricted for this account.',
+              Text(
+                AppCopy.text(
+                  'text.system_health_is_unavailable_or_restricted_for_t_29067b32',
+                ),
               ),
           ],
         ),
@@ -451,6 +486,7 @@ class _HealthMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppProperties.watch(context);
     return Container(
       width: 150,
       padding: const EdgeInsets.all(16),
