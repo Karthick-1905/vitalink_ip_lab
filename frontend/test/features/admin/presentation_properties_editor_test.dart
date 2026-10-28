@@ -2,7 +2,9 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/core/network/api_client.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 import 'package:frontend/features/admin/presentation_properties_editor.dart';
@@ -20,6 +22,7 @@ class _Repository extends AdminRepository {
       'branding.appName': 'VitaLink',
       'theme.primary': '#648FFF',
       'asset.hospitalLogo': 'assets/images/psg_logo_2.png',
+      'asset.instituteLogo': 'assets/images/psg_ims.png',
       for (int i = 0; i < 23; i++) 'text.example_$i': 'Example screen $i',
     },
   };
@@ -41,6 +44,64 @@ class _Repository extends AdminRepository {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    const fontDirectory = String.fromEnvironment('PROPERTY_EDITOR_FONT_DIR');
+    if (fontDirectory.isEmpty) return;
+    for (final entry in {
+      'Roboto': 'roboto-regular.ttf',
+      'MaterialIcons': 'materialicons-regular.otf',
+    }.entries) {
+      final loader = FontLoader(entry.key)
+        ..addFont(
+          File(
+            '$fontDirectory/${entry.value}',
+          ).readAsBytes().then((bytes) => ByteData.sublistView(bytes)),
+        );
+      await loader.load();
+    }
+  });
+
+  testWidgets('previews both draft logos, including uploaded local API images', (
+    tester,
+  ) async {
+    final repository = _Repository();
+    final imageId = List.filled(64, 'a').join();
+    repository.state['draft'] = {
+      'asset.hospitalLogo': 'brand-asset:$imageId',
+      'asset.instituteLogo': 'https://client.example/institute.png',
+    };
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PresentationPropertiesEditor(
+              repository: repository,
+              canManage: true,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Application properties'));
+    await tester.pumpAndSettle();
+    final hospital = tester.widget<Image>(
+      find.byKey(const ValueKey('preview.asset.hospitalLogo')),
+    );
+    expect(
+      (hospital.image as NetworkImage).url,
+      '${AppStrings.apiBaseUrl}${AppStrings.apiPathPrefix}/app-properties/assets/$imageId',
+    );
+    final institute = tester.widget<Image>(
+      find.byKey(const ValueKey('preview.asset.instituteLogo')),
+    );
+    expect(
+      (institute.image as NetworkImage).url,
+      'https://client.example/institute.png',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('loads lazily, searches properties and saves a versioned draft', (
     tester,
   ) async {

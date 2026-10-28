@@ -113,3 +113,7 @@ The source implements an explainable review queue and monthly recording calendar
 ## Runtime presentation properties, 2026-10-27
 
 Production deployment, real-device offline/resume behavior and external image hosting remain unverified. Configuration is currently global; hospital-specific overrides and pre-login hospital selection are future work. Native launcher/splash/store metadata and provider-managed SMS/authenticator issuer settings remain outside runtime properties. Uploaded brand images are intentionally public and retained; automatic unreferenced-image cleanup is not implemented. Local validation evidence is recorded in the validation report.
+
+## Client branding acceptance, 2026-10-28
+
+The inspected source already provides public branding snapshots, protected draft/publication controls and logo uploads. This follow-up connects the administrator navigation logo and corrects the draft preview. A deployed administrator upload/save/publish/restore flow, installed-device refresh and offline behavior, and each client's image layout and color contrast still need acceptance in the intended environment. No client artwork or production configuration was supplied or published in this task. Hospital-specific branding within a shared backend remains unimplemented; the supported scope is one brand per backend deployment. Native icons, splash screens and store metadata still require a platform release.

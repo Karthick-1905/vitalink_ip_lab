@@ -179,6 +179,16 @@ class AppCopy {
       AppProperties.instance.text(key, arguments: arguments);
 }
 
+/// Shared by published artwork and the administrator's unsaved image preview.
+ImageProvider propertyImageProvider(String value) {
+  if (value.startsWith('assets/')) return AssetImage(value);
+  if (value.startsWith('brand-asset:')) {
+    value =
+        '${AppStrings.apiBaseUrl}${AppStrings.apiPathPrefix}/app-properties/assets/${value.substring(12)}';
+  }
+  return NetworkImage(value);
+}
+
 /// Remote artwork shares the bundled image's layout and error recovery.
 class PropertyImage extends StatelessWidget {
   const PropertyImage(
@@ -208,14 +218,10 @@ class PropertyImage extends StatelessWidget {
       filterQuality: filterQuality,
       errorBuilder: errorBuilder,
     );
-    var value = AppCopy.text(propertyKey);
-    if (value.startsWith('brand-asset:')) {
-      value =
-          '${AppStrings.apiBaseUrl}${AppStrings.apiPathPrefix}/app-properties/assets/${value.substring(12)}';
-    }
+    final value = AppCopy.text(propertyKey);
     if (value == propertyDefaults[propertyKey]) return fallback();
-    return Image.network(
-      value,
+    return Image(
+      image: propertyImageProvider(value),
       width: width,
       height: height,
       fit: fit,

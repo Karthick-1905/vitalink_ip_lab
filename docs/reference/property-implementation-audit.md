@@ -8,6 +8,7 @@ This source and functional-test pass compares the runtime-property implementatio
 - Flutter now stores the published ETag with its cached snapshot and issues conditional requests. HTTP 304 retains the current configuration. Backend CORS exposes ETag and permits If-None-Match for browser clients.
 - A forced publication refresh no longer shares an older in-flight request. It waits for that request and fetches again.
 - Uploaded branding references are checked against BrandAsset storage before saving or publishing, preventing missing images from becoming accepted configuration.
+- The administrator sidebar and mobile drawer now use the published hospital logo. The draft preview shows both logos and shares image resolution with published artwork, fixing uploaded-image previews against local HTTP backends.
 
 ## Plan coverage and limits
 

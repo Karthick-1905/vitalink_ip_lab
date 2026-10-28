@@ -97,7 +97,7 @@ class AdminScaffold extends StatelessWidget {
     }
 
     final selectedLabel = destinations.isEmpty
-        ? 'VitaLink Admin'
+        ? AppCopy.text('branding.appName')
         : destinations[safeIndex].label;
     return Scaffold(
       appBar: AppBar(
@@ -151,6 +151,17 @@ class _AdminSideNav extends StatelessWidget {
   Widget build(BuildContext context) {
     AppProperties.watch(context);
     final theme = Theme.of(context);
+    final logo = PropertyImage(
+      'asset.hospitalLogo',
+      width: 32,
+      height: 32,
+      fit: BoxFit.contain,
+      errorBuilder: (_, _, _) => Icon(
+        Icons.monitor_heart_outlined,
+        size: 28,
+        color: theme.colorScheme.primary,
+      ),
+    );
     return Material(
       color: theme.colorScheme.surface,
       child: Column(
@@ -166,11 +177,7 @@ class _AdminSideNav extends StatelessWidget {
             child: extended
                 ? Row(
                     children: [
-                      Icon(
-                        Icons.monitor_heart_outlined,
-                        size: 28,
-                        color: theme.colorScheme.primary,
-                      ),
+                      logo,
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -185,11 +192,7 @@ class _AdminSideNav extends StatelessWidget {
                       ),
                     ],
                   )
-                : Icon(
-                    Icons.monitor_heart_outlined,
-                    size: 28,
-                    color: theme.colorScheme.primary,
-                  ),
+                : Center(child: logo),
           ),
           const SizedBox(height: 8),
           Expanded(

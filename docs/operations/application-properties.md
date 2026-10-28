@@ -10,7 +10,7 @@ An Application Admin with `platform.system_config.read` opens **Platform Configu
 
 1. Search by property name or current draft text. Results show 20 properties per page.
 2. Edit text or color values. Image properties accept their bundled default, an HTTPS URL, or an uploaded PNG/JPEG. Uploads are limited to 512 KiB and 2048 pixels per side and are stored as separate public `BrandAsset` documents. Their references use `brand-asset:<sha256>`. Saving or publishing rejects a reference whose uploaded image is absent.
-3. Inspect the draft branding preview. It shows the draft hospital logo, application name, and primary color. Screen text/layout and all supported device sizes still require acceptance checks.
+3. Inspect the draft branding preview. It shows both draft logos, application name, and primary color. Uploaded logos resolve through the same public asset endpoint used by the app, including a local HTTP backend. Failed preview downloads show an unavailable-image indicator. Screen text/layout and all supported device sizes still require acceptance checks.
 4. Select **Save draft**. Saving replaces the full override map, limited to 256 KiB with at most 4000 characters per value; values equal to defaults are omitted. Unsaved local edits must be saved before publishing or restoring a revision. Reload asks before discarding local edits.
 5. Select **Publish saved draft** and confirm. Users receive the published revision on their next configuration refresh.
 6. Expand **Publication history** to restore a retained revision. Restore creates a new publication revision rather than rewriting history. The initial defaults are a rollback target after the first publication. Only the latest 20 publication entries are retained.
@@ -18,6 +18,21 @@ An Application Admin with `platform.system_config.read` opens **Platform Configu
 Edits use `expectedVersion`. A stale draft save, publication, or rollback returns HTTP 409, preserves server state, and requires reloading before retrying. Generic admin auditing records action/version metadata without copying property content or image bytes. Audit persistence follows the existing admin middleware's post-commit failure reporting contract.
 
 All catalogue defaults and published properties are public. Drafts, history and actor identities are restricted to the management endpoint. Public image URLs can be fetched without signing in, including images uploaded for a draft. Use only artwork intended for public distribution. Private patient files keep their existing access controls and storage paths.
+
+## Client branding
+
+Use the existing Application properties editor for each client's backend deployment. Search for these keys, save the draft, then publish it:
+
+| Property | Runtime use |
+| --- | --- |
+| `branding.appName` | Flutter application title and administrator navigation name |
+| `asset.hospitalLogo` | Login and patient/doctor headers, administrator sidebar and mobile drawer, draft preview |
+| `asset.instituteLogo` | Login and patient/doctor headers, draft preview |
+| `theme.primary`, `theme.secondary`, `theme.accent` | Supported Flutter theme colors |
+
+Upload a PNG/JPEG for either logo or supply an HTTPS image URL. Uploading alone does not publish the logo reference. The administrator preview uses unsaved draft values; the rest of the app uses published values. Published images keep their bounded layout and contain fit, and download/decode failures fall back to bundled artwork. To reset a logo, select **Use default**, save, and publish. Restoring an earlier publication also restores its image references.
+
+Branding is global to the selected backend, including before login. All hospitals using that backend receive the same publication. Separate client deployments can publish different branding without rebuilding a client that already supports these keys and targets the intended API. Changing the bootstrap API address still uses the existing build-time configuration. Do not use this workflow to promise hospital-specific branding within one shared backend.
 
 ## Runtime behavior
 

@@ -215,3 +215,36 @@ Compared the runtime-property behavior with the original plan and corrected miss
 - The optional CodeRabbit review was unavailable: the installer rejected Windows Git Bash, and WSL had no /bin/bash. No CodeRabbit review result is claimed.
 
 These checks do not establish live deployment, hospital-specific overrides, device acceptance, remote typography or locale support.
+
+## Client branding completion, 2026-10-28
+
+Inspected Flutter startup, API bootstrap, theme, property cache, shared headers, login artwork, administrator navigation/editor/repository, backend SystemConfig, AppProperties publication, BrandAsset storage/controllers, and existing configuration documentation. The existing runtime-property service already supports application name, colors and logo publication. This change reuses that service, connects the published hospital logo to administrator navigation, and shares image resolution with the draft preview so both logos render against local HTTP or deployed APIs.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Focused Flutter regression tests | Pass | 38 tests covering property cache/refresh, atomic validation, editor drafts, administrator permissions, branding updates without losing form edits, remote-image fallback and phone/tablet/desktop navigation; run with `--dart-define=API_BASE_URL=http://127.0.0.1:3000` |
+| Preview visual checks | Pass | Three editor tests rerun with screenshot capture and Flutter SDK Roboto/MaterialIcons fonts; inspected 1440x1000 and 390x844 captures with both logos and no layout exceptions |
+| Dart analysis | Pass | `dart analyze --format machine lib test` from `frontend`; focused analysis also passed after the screenshot font-loader addition |
+| Flutter release web build | Pass | `flutter build web --release --no-pub --dart-define=API_BASE_URL=http://127.0.0.1:3000`; Wasm dry run also succeeded. This is a local validation build |
+| Backend TypeScript build | Pass | `npm.cmd run build --prefix backend` |
+| Property catalogue | Pass | `python scripts/properties/sync.py --check`; 884 defaults and static consumers match |
+| Documentation contract | Pass | `python scripts/docs/validate_docs.py`; 122 matching API operations, 20 matching models and byte-identical OpenAPI copies |
+| Strict MkDocs build | Pass | `mkdocs build --strict` |
+| OpenAPI lint | Pass with existing warnings | `npm.cmd run lint:openapi --prefix backend`; valid contract, 106 warnings |
+| UI detector | Pass | Impeccable mechanical detector returned no findings for the three changed Flutter implementation files |
+| Whitespace integrity | Pass | `git diff --check` |
+| MongoDB integration suite | Not rerun | Docker Desktop's Linux engine pipe was unavailable. Backend implementation, API contracts and persistence did not change |
+
+No API, persistence, Mermaid or Structurizr inputs changed, and no new architectural decision supersedes ADR-0016. No production configuration, client image, database, account or deployment was changed. Deployment, installed-device refresh/offline behavior, client-specific artwork/contrast and tenant-specific branding limits are recorded in [open questions](open-questions.md#client-branding-acceptance-2026-10-28). Unrelated pre-existing working-tree changes were preserved.
+
+## Backend CI dependency repair, 2026-10-28
+
+GitHub Actions run `40561306997` failed at the production audit before build/tests. Reproduced `npm run audit:dependencies` exiting 1 under local Node 24.15.0/npm 11.12.1 with four high and two moderate production findings. Updated only compatible lockfile resolutions for body-parser, follow-redirects, multer, Zod, qs and ip-address, with body-parser's content-type/iconv-lite dependencies. The full-tree audit then exposed high findings in development-only undici; its 7.30.1 patch resolves that second blocker. No audit threshold, allowlist, manifest dependency range, application API, schema or workflow changed.
+
+- Clean `npm ci --no-audit --fund=false` succeeded. Backend TypeScript build and OpenAPI lint passed; lint retained 106 warnings.
+- The complete `npm run audit:dependencies` gate passed after the final patch: zero production vulnerabilities, zero high/critical full-tree findings, and seven low development findings. The pre-existing expiring exception is unchanged; audit-ci reported its paths unused by the current registry report.
+- All 32 backend suites that do not require container fixtures passed, totaling 249 tests, including validation, file handling, route enforcement, runtime configuration and the eight audit-policy regression cases.
+- `flutter analyze --no-pub` passed and the complete Flutter suite passed all 170 tests, including the branding changes. Property catalogue validation passed for all 884 defaults.
+- Documentation validation, strict MkDocs build, OpenAPI copy parity and whitespace checks passed. No Mermaid or Structurizr inputs changed.
+
+Local Docker remains unavailable, so the complete container-backed coverage run requires the hosted workflow. Hosted checks for the pushed commit must be distinguished from these local results. Application deployment, real-device branding acceptance and client artwork remain outside this CI repair; see [client branding acceptance](open-questions.md#client-branding-acceptance-2026-10-28).

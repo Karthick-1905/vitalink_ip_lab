@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/config/app_properties.dart';
-import 'package:frontend/core/constants/strings.dart';
 import 'package:frontend/features/admin/data/admin_repository.dart';
 
 /// Loaded on expansion so the operational settings remain independently usable.
@@ -171,12 +170,6 @@ class _PresentationPropertiesEditorState
     final color = RegExp(r'^#[a-fA-F0-9]{6}$').hasMatch(hex)
         ? Color(int.parse(hex.replaceFirst('#', 'FF'), radix: 16))
         : Theme.of(context).colorScheme.primary;
-    var logo = _controllers['asset.hospitalLogo']?.text ?? '';
-    if (logo.startsWith('brand-asset:')) {
-      logo =
-          '${AppStrings.apiBaseUrl}${AppStrings.apiPathPrefix}/app-properties/assets/${logo.substring(12)}';
-    }
-    final uri = Uri.tryParse(logo);
     return Semantics(
       label: AppCopy.text('text.draft_branding_preview_edf53b57'),
       child: Container(
@@ -191,21 +184,21 @@ class _PresentationPropertiesEditorState
           runSpacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (logo.startsWith('assets/'))
-              Image.asset(logo, height: 48, width: 100, fit: BoxFit.contain),
-            if (uri != null && (uri.scheme == 'https' || logo.startsWith('/')))
-              Image.network(
-                logo,
-                height: 48,
-                width: 100,
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => Icon(
-                  Icons.broken_image_outlined,
-                  semanticLabel: AppCopy.text(
-                    'text.image_preview_unavailable_516e1158',
+            for (final key in ['asset.instituteLogo', 'asset.hospitalLogo'])
+              if (_controllers.containsKey(key))
+                Image(
+                  key: ValueKey('preview.$key'),
+                  image: propertyImageProvider(_controllers[key]!.text),
+                  height: 48,
+                  width: 100,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => Icon(
+                    Icons.broken_image_outlined,
+                    semanticLabel: AppCopy.text(
+                      'text.image_preview_unavailable_516e1158',
+                    ),
                   ),
                 ),
-              ),
             Text(
               name,
               style: Theme.of(

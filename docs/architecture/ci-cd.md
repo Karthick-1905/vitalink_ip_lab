@@ -54,6 +54,8 @@ The only temporary exception is [GHSA-vfj7-8cjw-p6xm](https://github.com/advisor
 
 `nodemon` is a development dependency and is absent from the production-only Docker dependency installation. Review upstream patches before the deadline, regenerate the lockfile with compatible fixes, and remove the exception once the full audit passes without it. Extending the exception requires a fresh risk review and an explicit configuration change; there is no automatic renewal.
 
+The 2026-10-28 lockfile refresh addresses the production audit failure in run `40561306997`: body-parser 2.4.0, follow-redirects 1.16.2, multer 2.5.0 and Zod 4.6.7 replace affected versions. It also updates qs to 6.17.0, ip-address to 10.7.5 and development-only undici to 7.30.1. These versions fit the existing dependency ranges; the audit thresholds and temporary development-only exception remain unchanged. Use `npm ci` before reproducing the gate so validation uses the committed lockfile.
+
 ## Release limitations
 
 - Backend CD runs `git reset --hard origin/main` on the remote deployment checkout by design; it assumes `/opt/vitalink` is a dedicated deploy clone.
